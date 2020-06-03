@@ -6,7 +6,8 @@
 PREFIXES=("https://github.com/" "git@github.com:" "https://gitlab.com/" "git@gitlab.com:")
 SUFFIXES=(".git")
 USAGE="./vissues.sh <command (create|view)> <username> <api key>"
-FOOTER="\n\n<hr>\n\n<sub>_This issue was created with [Vissues](https://github.com/benbusby/vissues)!_</sub>"
+FOOTER="<hr>\n\n<sub>_This issue was created with [Vissues](https://github.com/benbusby/vissues)!_</sub>"
+BODY="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 
 COMMAND=$1
 USERNAME=$2
@@ -34,14 +35,19 @@ done
 
 # Create new issue
 if [[ "$COMMAND" == "create" ]]; then
-    curl -o /dev/null -s -w "%{http_code}" \
+    curl -o /dev/null -s \
+        -w "%{http_code}" \
         -A "$USERNAME" \
         -bc /tmp/vissues-cookies \
         -u $USERNAME:$API_KEY \
-        --data '{"title": "Vissues Test", "body": "Test\n\n<hr>\n\n<sub>_This issue was created with [Vissues](https://github.com/benbusby/vissues)!_</sub>", "labels": ["ignore"]}' \
-        -X POST "https://api.github.com/repos/$REPO_PATH/issues"
+        --data "{\"title\": \"Vissues Test\", \"body\": \"$BODY\n\n$FOOTER\", \"labels\": [\"ignore\"]}" \
+        -X POST "https://api.github.com/repos/$REPO_PATH/issues" | jq .
 elif [[ "$COMMAND" == "view" ]]; then
-    curl -v -A "$USERNAME" -bc /tmp/vissues-cookies -u "$USERNAME:$API_KEY" "https://api.github.com/repos/${REPO_PATH}/issues"
+    curl -o /dev/null -s \
+        -A "$USERNAME" \
+        -bc /tmp/vissues-cookies \
+        -u "$USERNAME:$API_KEY" \
+        "https://api.github.com/repos/${REPO_PATH}/issues" | jq .
 else
     echo "Unknown command (should be 'create' or 'view')"
 fi
