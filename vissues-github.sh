@@ -12,7 +12,7 @@ BODY="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod te
 COMMAND=$1
 USERNAME=$2
 API_KEY=$3
-REPO_PATH=$(git remote get-url origin)
+REPO_PATH=$(git ls-remote --get-url)
 
 # Exit early if not in a git repo
 if [[ -z "$REPO_PATH" ]]; then

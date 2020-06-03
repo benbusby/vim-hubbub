@@ -11,7 +11,7 @@ FOOTER="\n\n<hr>\n\n<sub>_This issue was created with [Vissues](https://gitlab.c
 COMMAND=$1
 USERNAME=$2
 API_KEY=$3
-REPO_PATH=$(git remote get-url origin)
+REPO_PATH=$(git ls-remote --get-url)
 
 # Exit early if not in a git repo
 if [[ -z "$REPO_PATH" ]]; then
