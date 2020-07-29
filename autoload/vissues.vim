@@ -1,8 +1,8 @@
 " ============================================================================
 " File:        vissues.vim
-" Description: Lists, and allows interactions with, issues for the git repo
+" Description: Lists (and allows interactions with) issues for the git repo
 " Author:      Ben Busby <contact@benbusby.com>
-" Licence:     MIT
+" License:     MIT
 " Website:     https://benbusby.com/vissues/
 " Version:     1.0
 " ============================================================================

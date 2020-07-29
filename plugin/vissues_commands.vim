@@ -2,7 +2,7 @@
 " File:        vissues_commands.vim
 " Description: Establishes commands that the user can run to access repo issues
 " Author:      Ben Busby <contact@benbusby.com>
-" Licence:     MIT
+" License:     MIT
 " Website:     https://benbusby.com/vissues/
 " Version:     1.0
 " ============================================================================
