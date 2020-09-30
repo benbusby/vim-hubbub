@@ -1,11 +1,11 @@
 #!/bin/bash
 # Script for viewing and creating github/gitlab issues
 #
-# Usage: ./vissues.sh <token file location> <command (create|view)>
+# Usage: ./vimgmt.sh <token file location> <command (create|view)>
 
 PREFIXES=("https://github.com/" "git@github.com:" "https://gitlab.com/" "git@gitlab.com:")
 SUFFIXES=(".git")
-API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VISSUES_TOKEN_GH -k $1)"
+API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GH -k $1)"
 REPO_PATH=$(git ls-remote --get-url)
 COMMAND="$2"
 
@@ -14,16 +14,16 @@ function github_command {
         # Create new placeholder issue
         RESULT=$(curl -o /dev/null -s \
             -w "%{http_code}" \
-            -A "$VISSUES_USERNAME_GH" \
-            -bc /tmp/vissues-cookies \
+            -A "$VIMGMT_USERNAME_GH" \
+            -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            --data "{\"title\": \"Vissues Test\", \"body\": \"$BODY\n\n$FOOTER\", \"labels\": [\"ignore\"]}" \
+            --data "{\"title\": \"vimgmt test\", \"body\": \"$BODY\n\n$FOOTER\", \"labels\": [\"ignore\"]}" \
             -X POST "https://api.github.com/repos/$REPO_PATH/issues")
     elif [[ "$COMMAND" == "view" ]]; then
         # View list of github issues
         RESULT=$(curl -o /dev/null -s \
-            -A "$VISSUES_USERNAME_GH" \
-            -bc /tmp/vissues-cookies \
+            -A "$VIMGMT_USERNAME_GH" \
+            -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             "https://api.github.com/repos/${REPO_PATH}/issues?state=open")
     else
@@ -41,7 +41,7 @@ function gitlab_command {
             -A "$USERNAME" \
             -H "Content-Type: application/json"
             -H "PRIVATE-TOKEN: $API_KEY" \
-            --data '{"title": "Vissues Test", "description": "Test\n\n<hr>\n\n<sub>_This issue was created with [Vissues](https://gitlab.com/benbusby/vissues)!_</sub>", "labels": ["ignore"]}' \
+            --data '{"title": "vimgmt test", "description": "Test\n\n<hr>\n\n<sub>_This issue was created with [vimgmt](https://gitlab.com/benbusby/vimgmt)!_</sub>", "labels": ["ignore"]}' \
             -X POST "https://gitlab.com/repos/$REPO_PATH/issues")
     elif [[ "$COMMAND" == "view" ]]; then
         RESULT=$(curl -A "$USERNAME" \

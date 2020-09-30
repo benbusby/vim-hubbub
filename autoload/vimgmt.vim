@@ -1,33 +1,33 @@
 " ============================================================================
-" File:        vissues.vim
+" File:        vimgmt.vim
 " Description: Lists (and allows interactions with) issues for the git repo
 " Author:      Ben Busby <contact@benbusby.com>
 " License:     MIT
-" Website:     https://benbusby.com/vissues/
+" Website:     https://benbusby.com/projects/vimgmt/
 " Version:     1.0
 " ============================================================================
 
 let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 " =====================
-" Vissues Commands
+" Commands
 " =====================
 
-function! vissues#VissuesOpen()
+function! vimgmt#vimgmt()
     call inputsave()
     let w:token_password = inputsecret("Enter token password: ")
     call inputrestore()
-    call MakeVissuesBuffer(IssuesQuery())
+    call MakeBuffer(IssuesQuery())
 endfunction
 
-function! vissues#VissuesBack()
-    b /tmp/vissues.tmp
-    bw! /tmp/issue.tmp
+function! vimgmt#vimgmtBack()
+    b /tmp/vimgmt.tmp
+    bw! /tmp/vimgmt.tmp
 endfunction
 
-function! vissues#VissuesExit()
-    if bufexists(bufnr("/tmp/vissues.tmp")) > 0
-        bw! /tmp/vissues.tmp
+function! vimgmt#vimgmtExit()
+    if bufexists(bufnr("/tmp/vimgmt.tmp")) > 0
+        bw! /tmp/vimgmt.tmp
     endif
 
     if bufexists(bufnr("/tmp/issue.tmp")) > 0
@@ -40,7 +40,7 @@ endfunction
 " =====================
 
 function! IssuesQuery()
-    let result = json_decode(system(s:dir . "/scripts/vissues.sh " . w:token_password . " view"))
+    let result = json_decode(system(s:dir . "/scripts/vimgmt.sh " . w:token_password . " view"))
     return result
 endfunction
 
@@ -70,9 +70,9 @@ function! MakeHeader()
 endfunction
 
 " Create buffer for the list of issues
-function! MakeVissuesBuffer(results)
+function! MakeBuffer(results)
     vnew
-    file /tmp/vissues.tmp
+    file /tmp/vimgmt.tmp
     set hidden
     setlocal bufhidden=hide noswapfile wrap
 
