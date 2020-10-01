@@ -13,19 +13,19 @@ let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 " Commands
 " =====================
 
-function! vimgmt#vimgmt()
+function! vimgmt#Vimgmt()
     call inputsave()
     let w:token_password = inputsecret("Enter token password: ")
     call inputrestore()
     call MakeBuffer(IssuesQuery())
 endfunction
 
-function! vimgmt#vimgmtBack()
+function! vimgmt#VimgmtBack()
     b /tmp/vimgmt.tmp
     bw! /tmp/vimgmt.tmp
 endfunction
 
-function! vimgmt#vimgmtExit()
+function! vimgmt#VimgmtExit()
     if bufexists(bufnr("/tmp/vimgmt.tmp")) > 0
         bw! /tmp/vimgmt.tmp
     endif

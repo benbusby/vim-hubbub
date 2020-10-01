@@ -7,6 +7,6 @@
 " Version:     1.0
 " ============================================================================
 
-command! -nargs=0 vimgmt call vimgmt#vimgmt()
-command! -nargs=0 vimgmtBack call vimgmt#vimgmtBack()
-command! -nargs=0 vimgmtExit call vimgmt#vimgmtExit()
+command! -nargs=0 Vimgmt call vimgmt#Vimgmt()
+command! -nargs=0 VimgmtBack call vimgmt#VimgmtBack()
+command! -nargs=0 VimgmtExit call vimgmt#VimgmtExit()

@@ -44,3 +44,9 @@ This should now install the plugin in the correct directory.
 
 To remove, run `:RmVimball <vmb file>`
 
+### FAQ
+##### Why is it called "vimgmt"? How is it pronounced?
+It's supposed to be (kind of) a portmantaeu of the words "vim" and "mgmt" (the common abbreviation for "management"). It's used for managing a repo within vim, so it made sense. It's pronounced "vim-gee-em-tee" or "vimagement", whichever you prefer.
+
+##### Why did you make this?
+I use vim a lot, so I wanted to try out/learn vimscript by making something (marginally) useful.
