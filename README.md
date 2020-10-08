@@ -46,7 +46,13 @@ To remove, run `:RmVimball <vmb file>`
 
 ### FAQ
 ##### Why is it called "vimgmt"? How is it pronounced?
-It's supposed to be (kind of) a portmantaeu of the words "vim" and "mgmt" (the common abbreviation for "management"). It's used for managing a repo within vim, so it made sense. It's pronounced "vim-gee-em-tee" or "vimagement", whichever you prefer.
+It's supposed to be (kind of) a portmantaeu of the word "vim" and and the abbreviation for "management", mgmt. It's used for managing a repo within vim, so it made sense. It's pronounced "vim-gee-em-tee" or "vimagement", whichever you prefer.
+
+##### Why does the repo token need to be encrypted? Will vimgmt work if the token is unencrypted?
+The alternative would be setting the token value in a file (unencrypted) in a reliable place that vimgmt could always find, meaning that any other program could find the token if you used vimgmt. Encrypting the token, even with a weak password, makes a lot more sense.
+
+Storing the token unencrypted will not work. The token decryption process is a mandatory step that is built into vimgmt.
 
 ##### Why did you make this?
 I use vim a lot, so I wanted to try out/learn vimscript by making something (marginally) useful.
+

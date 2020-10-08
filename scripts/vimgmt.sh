@@ -5,11 +5,12 @@
 
 PREFIXES=("https://github.com/" "git@github.com:" "https://gitlab.com/" "git@gitlab.com:")
 SUFFIXES=(".git")
-API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GH -k $1)"
 REPO_PATH=$(git ls-remote --get-url)
+TOKEN_PW="$1"
 COMMAND="$2"
 
 function github_command {
+    API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GH -k $TOKEN_PW)"
     if [[ "$COMMAND" == "create" ]]; then
         # Create new placeholder issue
         RESULT=$(curl -o /dev/null -s \
@@ -35,24 +36,35 @@ function github_command {
 }
 
 function gitlab_command {
+    API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GL -k $TOKEN_PW)"
+
+    # GitLab requires the repo path to be url encoded
+    REPO_PATH=${REPO_PATH//\//%2F}
+
+    # Retrieve project id for subsequent api calls
+    RESULT=$(curl -s -A "$USERNAME" \
+        -H "PRIVATE-TOKEN: $API_KEY" \
+        "https://gitlab.com/api/v4/projects/$REPO_PATH")
+    PROJECT_ID=$(echo $RESULT | jq -r .id)
+
     if [[ "$COMMAND" == "create" ]]; then
         # Create new placeholder issue
         RESULT=$(curl -o /dev/null -s -w "%{http_code}" \
             -A "$USERNAME" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json" \
             -H "PRIVATE-TOKEN: $API_KEY" \
-            --data '{"title": "vimgmt test", "description": "Test\n\n<hr>\n\n<sub>_This issue was created with [vimgmt](https://gitlab.com/benbusby/vimgmt)!_</sub>", "labels": ["ignore"]}' \
-            -X POST "https://gitlab.com/repos/$REPO_PATH/issues")
+            --data '{"title": "vimgmt test", "description": "Test\n\n<hr>\n\n<sub>_This issue was created with [vimgmt](https://gitlab.com/benbusby/vimgmt)!_</sub>", "labels": "ignore"}' \
+            -X POST "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues")
     elif [[ "$COMMAND" == "view" ]]; then
-        RESULT=$(curl -A "$USERNAME" \
+        RESULT=$(curl -s -A "$USERNAME" \
             -H "PRIVATE-TOKEN: $API_KEY" \
-            "https://gitlab.com/api/v4/repos/${REPO_PATH}/issues")
+            "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues")
     else
         echo "ERROR: Unknown command (should be 'create' or 'view')"
         exit 1
     fi
 
-    echo $RESULT | jq -r .
+    echo $RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | del(.iid, .description) | .labels |= [{"name": .[]}]]'
 }
 
 # Exit early if not in a git repo

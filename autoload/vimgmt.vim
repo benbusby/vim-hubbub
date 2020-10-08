@@ -91,11 +91,14 @@ function! MakeBuffer(results)
         let label_list = ""
         for label in item['labels']
             let label_name = '|' . label['name'] . '|'
-            let label_color = '#' . label['color']
 
-            " Use colors provided by json to color the tag text
-            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' guifg=' . label_color
-            exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
+            " Use colors for labels if provided by the response
+            if has_key(label, 'color')
+                let label_color = '#' . label['color']
+
+                exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' guifg=' . label_color
+                exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
+            endif
 
             " Append a comma if there is more than one tag
             if label_list =~ '[^\s]'
@@ -104,7 +107,7 @@ function! MakeBuffer(results)
 
             let label_list = label_list . label_name
         endfor
-        call setline(line_idx + 2, label_list)
+        call setline(line_idx + 2, 'Labels: ' . label_list)
         call setline(line_idx + 3, '=========================================')
 
         let idx = line_idx
