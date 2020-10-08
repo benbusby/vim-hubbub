@@ -27,10 +27,10 @@
 
 ### Usage
 #### Available Commands
-- `:vimgmt` -> Opens the list of issues for the current repository
+- `:Vimgmt` -> Opens the list of issues for the current repository
   - You will be prompted for the password used to encrypt the token file here
-- `:vimgmtBack` -> When in an issue view, navigates back to the list of issues
-- `:vimgmtExit` -> Closes all issue/results buffers
+- `:VimgmtBack` -> When in an issue view, navigates back to the list of issues
+- `:VimgmtExit` -> Closes all issue/results buffers
 
 ### Manual Build (vimball)
 1. Using vim, open `vimball-build.txt`
