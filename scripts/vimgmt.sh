@@ -26,7 +26,7 @@ function github_command {
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            "https://api.github.com/repos/${REPO_PATH}/issues?state=open")
+            "https://api.github.com/repos/${REPO_PATH}")
     else
         echo "ERROR: Unknown command (should be 'create' or 'view')"
         exit 1
@@ -64,7 +64,7 @@ function gitlab_command {
         exit 1
     fi
 
-    echo $RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | del(.iid, .description) | .labels |= [{"name": .[]}]]'
+    echo $RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]'
 }
 
 # Exit early if not in a git repo

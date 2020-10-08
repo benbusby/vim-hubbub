@@ -108,12 +108,15 @@ function! MakeBuffer(results)
             let label_list = label_list . label_name
         endfor
         call setline(line_idx + 2, 'Labels: ' . label_list)
-        call setline(line_idx + 3, '=========================================')
+        call setline(line_idx + 3, 'Comments: ' . item['comments'])
+        call setline(line_idx + 4, 'Created: ' . item['created_at'])
+        call setline(line_idx + 5, 'Updated: ' . item['updated_at'])
+        call setline(line_idx + 6, '=========================================')
 
         let idx = line_idx
 
         " Store issue number and title to use for viewing issue details later
-        while idx <= line_idx + 3
+        while idx <= line_idx + 6
             let b:issue_lookup[idx] = {'number': item['number'], 'title': item['title']}
             let idx += 1
         endwhile
