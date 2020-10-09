@@ -1,32 +1,37 @@
 #!/bin/bash
 # Script for viewing and creating github/gitlab issues
 #
-# Usage: ./vimgmt.sh <token file location> <command (create|view)>
+# Usage: ./vimgmt.sh <token pw> <command (create|view)> [issue title] [issue body] [label]
 
 PREFIXES=("https://github.com/" "git@github.com:" "https://gitlab.com/" "git@gitlab.com:")
 SUFFIXES=(".git")
 REPO_PATH=$(git ls-remote --get-url)
 TOKEN_PW="$1"
 COMMAND="$2"
+TITLE="$3"
+BODY="$4"
+LABEL="$5"
 
 function github_command {
+    FOOTER="<hr>\n\n<sub>_This issue was created with [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"
+
     API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GH -k $TOKEN_PW)"
     if [[ "$COMMAND" == "create" ]]; then
-        # Create new placeholder issue
+        # Create new issue
         RESULT=$(curl -o /dev/null -s \
             -w "%{http_code}" \
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            --data "{\"title\": \"vimgmt test\", \"body\": \"$BODY\n\n$FOOTER\", \"labels\": [\"ignore\"]}" \
+            --data "{\"title\": \"$TITLE\", \"body\": \"$BODY\n\n$FOOTER\", \"labels\": [\"$LABEL\"]}" \
             -X POST "https://api.github.com/repos/$REPO_PATH/issues")
     elif [[ "$COMMAND" == "view" ]]; then
-        # View list of github issues
+        # View list of github issues / pull requests
         RESULT=$(curl -o /dev/null -s \
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            "https://api.github.com/repos/${REPO_PATH}")
+            "https://api.github.com/repos/${REPO_PATH}/issues?state=open")
     else
         echo "ERROR: Unknown command (should be 'create' or 'view')"
         exit 1
@@ -36,6 +41,7 @@ function github_command {
 }
 
 function gitlab_command {
+    FOOTER="<hr>\n\n<sub>_This issue was created with [vimgmt](https://gitlab.com/benbusby/vimgmt)!_</sub>"
     API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GL -k $TOKEN_PW)"
 
     # GitLab requires the repo path to be url encoded
@@ -53,7 +59,7 @@ function gitlab_command {
             -A "$USERNAME" \
             -H "Content-Type: application/json" \
             -H "PRIVATE-TOKEN: $API_KEY" \
-            --data '{"title": "vimgmt test", "description": "Test\n\n<hr>\n\n<sub>_This issue was created with [vimgmt](https://gitlab.com/benbusby/vimgmt)!_</sub>", "labels": "ignore"}' \
+            --data "{\"title\": \"$TITLE\", \"description\": \"$BODY\n\n$FOOTER\", \"labels\": \"$LABEL\"}" \
             -X POST "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues")
     elif [[ "$COMMAND" == "view" ]]; then
         RESULT=$(curl -s -A "$USERNAME" \
@@ -65,6 +71,7 @@ function gitlab_command {
     fi
 
     echo $RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]'
+    #echo $RESULT | jq .
 }
 
 # Exit early if not in a git repo

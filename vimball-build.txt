@@ -2,3 +2,4 @@ assets/header.txt
 autoload/vimgmt.vim
 plugin/vimgmt_commands.vim
 scripts/vimgmt.sh
+scripts/vimgmt_issue.sh
