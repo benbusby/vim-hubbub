@@ -1,15 +1,26 @@
 # vimgmt
 
-### Setup
-- Vundle: `Plugin 'benbusby/vimgmt'`
+### Requirements
+- [jq](https://stedolan.github.io/jq/download/)
 
-- Set up authentication
-  - Create a personal access token with the "repo" box checked
-  - Encrypt this token on your machine with the following command:
-    - `echo "<paste token here>" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out <output file name>`
-      - You'll be prompted for a password to encrypt this token
-    - Example: `echo "abcdefghij123456789" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out /home/ben/.vimgmt-token-gh`
-  - Copy your username and token path into your .bashrc, .zshrc, etc
+### Install
+- Vundle: `Plugin 'benbusby/vimgmt'`
+- vim-plug: `Plug 'benbusby/vimgmt'`
+- [DIY](#manual-build-vimball)
+
+### Setup
+1. Create a personal access token
+  - GitHub
+    - Settings > Developer Settings > Personal Access Tokens
+    - Generate new token with the "repo" box checked
+  - GitLab
+    - Settings > Access Tokens
+    - Generate new token with the "api", "read_repository" and "write_repository" boxes checked
+2. Encrypt this token on your machine with the following command:
+  - `echo "<paste token here>" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out <output file name>`
+    - You'll be prompted for a password to encrypt this token
+  - Example: `echo "abcdefghij123456789" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out /home/ben/.vimgmt-token-gh`
+3. Copy your username and token path into your .bashrc, .zshrc, etc
     ```bash
     # For github repos
     export VIMGMT_USERNAME_GH="<github username>"
@@ -23,26 +34,30 @@
       ```bash
       export VIMGMT_USERNAME_GH="benbusby"
       export VIMGMT_TOKEN_GH="/home/benbusby/.vimgmt-token-gh"
+
+      export VIMGMT_USERNAME_GL="benbusby"
+      export VIMGMT_TOKEN_GL="/home/benbusby/.vimgmt-token-gl"
       ```
 
 ### Usage
 #### Available Commands
-- `:Vimgmt` -> Opens the list of issues for the current repository
+- `:Vimgmt` -> Opens the list of issues/pull requests for the current repository
   - You will be prompted for the password used to encrypt the token file here
 - `:VimgmtBack` -> When in an issue view, navigates back to the list of issues
 - `:VimgmtExit` -> Closes all issue/results buffers
 
 ### Manual Build (vimball)
-1. Using vim, open `vimball-build.txt`
-2. Run `:let g:vimball_home="<full repo path>"`
-3. Select all lines (`ggVG`)
-4. Run `:MkVimball <name>`
-5. Exit from `vimball-build.txt`
-6. Open the new vmb file in vim and run `:source %`
+1. Clone the repo
+2. Using vim, open `vimball-build.txt`
+3. Run `:let g:vimball_home="<full repo path>"`
+4. Select all lines (`ggVG`)
+5. Run `:MkVimball <name>`
+6. Exit from `vimball-build.txt`
+7. Open the new vmb file in vim and run `:so %`
 
 This should now install the plugin in the correct directory.
 
-To remove, run `:RmVimball <vmb file>`
+To remove, run `:RmVimball <vimball name>` (example: `:RmVimball vimgmt`)
 
 ### FAQ
 ##### Why is it called "vimgmt"? How is it pronounced?
