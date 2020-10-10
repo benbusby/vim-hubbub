@@ -10,7 +10,6 @@
 " Navigation
 command! -nargs=0 Vimgmt     call vimgmt#Vimgmt()
 command! -nargs=0 VimgmtBack call vimgmt#VimgmtBack()
-command! -nargs=0 VimgmtExit call vimgmt#VimgmtExit()
 
 " Interactions
 command! -nargs=0 VimgmtComment call vimgmt#VimgmtComment()

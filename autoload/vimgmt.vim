@@ -17,6 +17,8 @@ let g:vimgmt_comment_pad = '    '
 let g:current_issue = -1
 let g:in_pr = 0
 
+let g:token_password = ""
+
 set ff=unix
 
 " ==============================================================
@@ -25,9 +27,21 @@ set ff=unix
 
 " Navigation ---------------------------------------------------
 function! vimgmt#Vimgmt()
-    call inputsave()
-    let g:token_password = inputsecret("Enter token password: ")
-    call inputrestore()
+    if len(g:token_password) > 0
+        " User is already using Vimgmt, treat as a refresh
+        if bufexists(bufnr("/tmp/vimgmt.tmp")) > 0
+            bw! /tmp/vimgmt.tmp
+        endif
+
+        if bufexists(bufnr("/tmp/issue.tmp")) > 0
+            bw! /tmp/issue.tmp
+        endif
+    else
+        " New session, prompt for token pw
+        call inputsave()
+        let g:token_password = inputsecret("Enter token password: ")
+        call inputrestore()
+    endif
     call MakeBuffer(HomePageQuery())
 endfunction
 
@@ -38,16 +52,6 @@ function! vimgmt#VimgmtBack()
     " Reset issue number
     let g:current_issue = -1
     let g:in_pr = 0
-endfunction
-
-function! vimgmt#VimgmtExit()
-    if bufexists(bufnr("/tmp/vimgmt.tmp")) > 0
-        bw! /tmp/vimgmt.tmp
-    endif
-
-    if bufexists(bufnr("/tmp/issue.tmp")) > 0
-        bw! /tmp/issue.tmp
-    endif
 endfunction
 
 " Interaction --------------------------------------------------

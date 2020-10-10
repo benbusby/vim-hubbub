@@ -25,6 +25,8 @@ function github_command {
             -H "Authorization: token $API_KEY" \
             --data "{\"title\": \"$TITLE\", \"body\": \"$BODY\n\n$FOOTER\", \"labels\": [\"$LABEL\"]}" \
             -X POST "https://api.github.com/repos/$REPO_PATH/issues")
+
+        echo $RESULT | jq -r .
     elif [[ "$COMMAND" == "view" ]]; then
         # View list of github issues / pull requests
         RESULT=$(curl -o /dev/null -s \
@@ -32,12 +34,14 @@ function github_command {
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             "https://api.github.com/repos/${REPO_PATH}/issues?state=open")
+
+        # Default sort by when it was updated
+        echo $RESULT | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
     else
         echo "ERROR: Unknown command (should be 'create' or 'view')"
         exit 1
     fi
 
-    echo $RESULT | jq -r .
 }
 
 function gitlab_command {
@@ -62,15 +66,26 @@ function gitlab_command {
             --data "{\"title\": \"$TITLE\", \"description\": \"$BODY\n\n$FOOTER\", \"labels\": \"$LABEL\"}" \
             -X POST "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues")
     elif [[ "$COMMAND" == "view" ]]; then
-        RESULT=$(curl -s -A "$USERNAME" \
+        ISSUE_RESULT=$(curl -s -A "$USERNAME" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues")
+        MR_RESULT=$(curl -s -A "$USERNAME" \
+            -H "PRIVATE-TOKEN: $API_KEY" \
+            "https://gitlab.com/api/v4/projects/$PROJECT_ID/merge_requests")
+
+            echo $ISSUE_RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]' > /tmp/.tmp.issue.json
+            echo $MR_RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | .["pull_request"] = 1 | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]' > /tmp/.tmp.mr.json
+
+             jq -s '[.[][]]' /tmp/.tmp.issue.json /tmp/.tmp.mr.json > /tmp/.tmp.group.json
+             cat /tmp/.tmp.group.json | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
+
+             rm -f /tmp/.tmp.mr.json /tmp/.tmp.issue.json /tmp/.tmp.group.json
+
     else
         echo "ERROR: Unknown command (should be 'create' or 'view')"
         exit 1
     fi
 
-    echo $RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]'
     #echo $RESULT | jq .
 }
 

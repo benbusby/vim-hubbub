@@ -56,6 +56,7 @@ function github_command {
 
 function gitlab_command {
     API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in $VIMGMT_TOKEN_GL -k $TOKEN_PW)"
+    FOOTER="<sub>_— Posted with [vimgmt](https://gitlab.com/benbusby/vimgmt)</a>_</sub>"
 
     # GitLab requires the repo path to be url encoded
     REPO_PATH=${REPO_PATH//\//%2F}
@@ -72,7 +73,7 @@ function gitlab_command {
             -A "$USERNAME" \
             -H "Content-Type: application/json" \
             -H "PRIVATE-TOKEN: $API_KEY" \
-            --data "{\"body\": \"$COMMENT\"}" \
+            --data "{\"body\": \"$COMMENT\n\n$FOOTER\"}" \
             -X POST "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues/$ISSUE_ID/notes")
 
         echo $RESULT | jq .
@@ -87,7 +88,7 @@ function gitlab_command {
 
         # Combine comments and issue info into one json object
         echo $ISSUE_RESULT | jq '. | .number = .iid | .body = .description | .author.login = .author.username | .user = .author | del(.iid, .description, .author)' > /tmp/.tmp.issue.json
-        echo $COMMENTS_RESULT | jq '[.[] | .author.login = .author.username | .user = .author | del(.author)]' > /tmp/.tmp.comments.json
+        echo $COMMENTS_RESULT | jq '[.[] | .author.login = .author.username | .user = .author | del(.author) ]' > /tmp/.tmp.comments.json
 
         jq -s '.[0] + {comments: .[1]}' /tmp/.tmp.issue.json /tmp/.tmp.comments.json
 
