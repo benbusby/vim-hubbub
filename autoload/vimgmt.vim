@@ -9,8 +9,8 @@
 let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 " Formatting constants
-let g:vimgmt_spacer = '======================================================='
-let g:vimgmt_spacer_small = '-------------------------------'
+let g:vimgmt_spacer = '░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░'
+let g:vimgmt_spacer_small = '─────────────────────────────────'
 let g:vimgmt_comment_pad = '    '
 
 " Issue variables
@@ -142,24 +142,17 @@ function! MakeIssueBuffer(contents)
     call setline(line_idx + 1, g:vimgmt_spacer_small)
 
     " Split body on line breaks for proper formatting
-    let break_num = 0
-    for chunk in split(a:contents['body'], '\n')
-        call setline(line_idx + break_num + 2, chunk)
-        let break_num += 1
-    endfor
+    let break_num = InsertBodyText(a:contents['body'], line_idx + 2)
 
-    " Decrement break_num to return cursor to next line
-    let break_num -= 1
+    call setline(line_idx + break_num + 2, g:vimgmt_spacer_small)
+    call setline(line_idx + break_num + 3, 'Created: ' . FormatTime(a:contents['created_at']))
+    call setline(line_idx + break_num + 4, 'Updated: ' . FormatTime(a:contents['updated_at']))
+    call setline(line_idx + break_num + 5, 'Author:  ' . a:contents['user']['login'])
+    call setline(line_idx + break_num + 6, g:vimgmt_spacer_small)
+    call setline(line_idx + break_num + 7, '')
+    call setline(line_idx + break_num + 8, g:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
 
-    call setline(line_idx + break_num + 3, g:vimgmt_spacer_small)
-    call setline(line_idx + break_num + 4, 'Created: ' . a:contents['created_at'])
-    call setline(line_idx + break_num + 5, 'Updated: ' . a:contents['updated_at'])
-    call setline(line_idx + break_num + 6, 'Author:  ' . a:contents['user']['login'])
-    call setline(line_idx + break_num + 7, g:vimgmt_spacer_small)
-    call setline(line_idx + break_num + 8, '')
-    call setline(line_idx + break_num + 9, g:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
-
-    let line_idx += break_num + 10
+    let line_idx += break_num + 9
 
     for comment in a:contents['comments']
         let commenter = comment['user']['login']
@@ -167,7 +160,7 @@ function! MakeIssueBuffer(contents)
             let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
         endif
         call setline(line_idx, g:vimgmt_comment_pad . g:vimgmt_spacer)
-        call setline(line_idx + 1, g:vimgmt_comment_pad . comment['created_at'])
+        call setline(line_idx + 1, g:vimgmt_comment_pad . FormatTime(comment['created_at']))
         call setline(line_idx + 2, g:vimgmt_comment_pad . commenter . ':')
         call setline(line_idx + 3, g:vimgmt_comment_pad . '')
 
@@ -186,14 +179,16 @@ function! MakeIssueBuffer(contents)
     " etc)
     let g:current_issue = a:contents['number']
 
-    %s///ge
-    call feedkeys('gg')
-    setlocal nomodifiable
+    call CloseBuffer()
 endfunction
 
 
-" Create buffer for the list of issues
 function! MakeBuffer(results)
+    " Creates a buffer for the list of issues or PRs.
+    "
+    " Since GitHub treats PRs as issues, this list will contain a mix of both,
+    " with indicators to differentiate the two.
+
     if line('$') == 1 && getline(1) == ''
         enew  " Use whole window for results
     elseif winwidth(0) > winheight(0) * 2
@@ -202,62 +197,33 @@ function! MakeBuffer(results)
         new   " Window is too narrow, use horizontal split
     endif
     file /tmp/vimgmt.tmp
-    set hidden
     setlocal bufhidden=hide noswapfile wrap
 
     let line_idx = MakeHeader()
     let s:results_line = line_idx
     let b:issue_lookup = {}
 
+    " Write issue details to buffer
     for item in a:results
-        " Write issue details to buffer
-        " #<Number> <Title>
-        " <Description>
-        " <Tag List>
-
-        if has_key(item, 'pull_request')  " GitHub only
-            call setline(line_idx, '(Pull Request) #' . item['number'] . ': ' . item['title'])
-        else
-            call setline(line_idx, '(Issue) #' . item['number'] . ': ' . item['title'])
-        endif
+        " Establish title and type of issue (PRs are 'issues' in GitHub)
+        let item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . ' #' . item['number'] . ': ' . item['title']
+        call setline(line_idx, item_name)
 
         " Draw boundary between title and body
         call setline(line_idx + 1, g:vimgmt_spacer_small)
         let line_idx += 1
 
-        " Split body on line breaks to properly format
-        let break_num = 0
-        for chunk in split(item['body'], '\n')
-            call setline(line_idx + break_num + 1, chunk)
-            let break_num += 1
-        endfor
+        " Insert body text with properly formatted line breaks
+        let break_num = InsertBodyText(item['body'], line_idx + 1)
 
         " Draw boundary between body and info
         call setline(line_idx + break_num + 1, g:vimgmt_spacer_small)
 
-        let label_list = ""
-        for label in item['labels']
-            let label_name = '|' . label['name'] . '|'
-
-            " Use colors for labels if provided by the response
-            if has_key(label, 'color')
-                let label_color = '#' . label['color']
-
-                exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' guifg=' . label_color
-                exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
-            endif
-
-            " Append a comma if there is more than one tag
-            if label_list =~ '[^\s]'
-                let label_list = label_list . ', '
-            endif
-
-            let label_list = label_list . label_name
-        endfor
+        let label_list = ParseLabels(item['labels'])
         call setline(line_idx + break_num + 2, 'Labels: ' . label_list)
         call setline(line_idx + break_num + 3, 'Comments: ' . item['comments'])
-        call setline(line_idx + break_num + 4, 'Created: ' . item['created_at'])
-        call setline(line_idx + break_num + 5, 'Updated: ' . item['updated_at'])
+        call setline(line_idx + break_num + 4, 'Created: ' . FormatTime(item['created_at']))
+        call setline(line_idx + break_num + 5, 'Updated: ' . FormatTime(item['updated_at']))
         call setline(line_idx + break_num + 6, '')
         call setline(line_idx + break_num + 7, g:vimgmt_spacer)
         call setline(line_idx + break_num + 8, '')
@@ -277,8 +243,74 @@ function! MakeBuffer(results)
     call cursor(s:results_line, 1)
     nnoremap <buffer> <silent> <CR> :call ViewIssue(b:issue_lookup[getcurpos()[1]]['number'], b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
+    call CloseBuffer()
+endfunction
+
+" ==============================================================
+" Utils
+" ==============================================================
+
+function! ParseLabels(labels)
+    " Parses labels from an array into a comma separated list, as well as sets
+    " highlighting rules for each label (if a color is returned in the
+    " response).
+    "
+    " Returns a comma separated list of label.
+
+    let label_list = ""
+
+    for label in a:labels
+        let label_name = '|' . label['name'] . '|'
+
+        " Use colors for labels if provided by the response
+        if has_key(label, 'color')
+            let label_color = '#' . label['color']
+
+            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' guifg=' . label_color
+            exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
+        endif
+
+        " Append a comma if there is more than one tag
+        if label_list =~ '[^\s]'
+            let label_list = label_list . ', '
+        endif
+
+        let label_list = label_list . label_name
+    endfor
+
+    return label_list
+endfunction
+
+function! InsertBodyText(body, start_idx)
+    " Insert segments of issue/request body, inserting line breaks as
+    " needed.
+    "
+    " Returns a cursor position for the next line draw
+
+    let break_num = 0
+    for chunk in split(a:body, '\n')
+        call setline(break_num + a:start_idx, chunk)
+        let break_num += 1
+    endfor
+
+    return break_num
+endfunction
+
+function! FormatTime(time_str)
+    " Removes alphabetical characters from time string
+    "
+    " Returns an easily readable time str (ex: 2020-10-07 15:10:03)
+
+    return substitute(a:time_str, "[a-zA-Z]", " ", "g")
+endfunction
+
+function! CloseBuffer()
+    " Filters out ^M characters, brings the cursor to the top of the
+    " buffer, and sets the buffer as not modifiable
+
+    set cmdheight=2
     %s///ge
     normal gg
     setlocal nomodifiable
+    set cmdheight=1 hidden bt=nofile
 endfunction
-
