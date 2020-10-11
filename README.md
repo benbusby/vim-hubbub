@@ -2,11 +2,12 @@
 
 ### Requirements
 - [jq](https://stedolan.github.io/jq/download/)
+- curl
 
 ### Install
 - Vundle: `Plugin 'benbusby/vimgmt'`
 - vim-plug: `Plug 'benbusby/vimgmt'`
-- [DIY](#manual-build-vimball)
+- [DIY](#manual-build)
 
 ### Setup
 1. Create a personal access token
@@ -41,12 +42,25 @@
 
 ### Usage
 #### Available Commands
-- `:Vimgmt` -> Opens the list of issues/pull requests for the current repository
-  - You will be prompted for the password used to encrypt the token file here
-- `:VimgmtBack` -> When in an issue view, navigates back to the list of issues
-- `:VimgmtExit` -> Closes all issue/results buffers
+- `:Vimgmt`
+  - Opens the list of issues/pull requests for the current repository
+    - Can also be used to refresh the current view
+  - Note: You will be prompted for the password used to encrypt the token file here
+- `:VimgmtBack`
+  - When in an issue/page view, this navigates back to the home page
+- `:VimgmtComment`
+  - Allows for the user to write and post a comment on an issue/PR/etc.
+- `:VimgmtClose`
+  - Closes the current issue/PR/etc.
 
-### Manual Build (vimball)
+### Manual Build
+#### Option A
+1. Clone the repo to your vim plugin directory
+  - Ex: `git clone https://github.com/benbusby/vimgmt.git ~/.vim/bundle/vimgmt`
+2. Update your runtime path in your .vimrc file
+  - Ex: `:set rtp+=~/.vim/bundle/vimgmt`
+
+#### Option B (using [Vimball](https://www.vim.org/scripts/script.php?script_id=1502))
 1. Clone the repo
 2. Using vim, open `vimball-build.txt`
 3. Run `:let g:vimball_home="<full repo path>"`
