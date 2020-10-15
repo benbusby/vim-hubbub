@@ -259,7 +259,7 @@ function! ParseLabels(labels)
     let label_list = ""
 
     for label in a:labels
-        let label_name = '├' . label['name'] . '┤'
+        let label_name = '|' . label['name'] . '|'
 
         " Use colors for labels if provided by the response
         if has_key(label, 'color')
