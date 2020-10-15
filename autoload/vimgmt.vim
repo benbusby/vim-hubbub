@@ -9,7 +9,7 @@
 let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 " Formatting constants
-let g:vimgmt_spacer = '░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░'
+let g:vimgmt_spacer = '─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ '
 let g:vimgmt_spacer_small = '─────────────────────────────────'
 let g:vimgmt_comment_pad = '    '
 
@@ -42,7 +42,7 @@ function! vimgmt#Vimgmt()
         let g:token_password = inputsecret("Enter token password: ")
         call inputrestore()
     endif
-    call MakeBuffer(HomePageQuery())
+    call CreateHomeBuffer(HomePageQuery())
 endfunction
 
 function! vimgmt#VimgmtBack()
@@ -56,22 +56,35 @@ endfunction
 
 " Interaction --------------------------------------------------
 function! vimgmt#VimgmtComment()
-    if g:current_issue == -1
+    if bufexists(bufnr("/tmp/post.tmp")) > 0
+        echo "Error: Post buffer already open"
+        return
+    elseif g:current_issue == -1
         echo "Error: Must be on an issue/PR page to comment!"
         return
     endif
 
-    set cmdheight=4
-    let comment = input("Type comment here (press enter to submit): ")
-    call inputrestore()
-    echo ""
-    set cmdheight=1
+    call CreateCommentBuffer()
 
-    call PostComment(comment)
+endfunction
+
+function! vimgmt#VimgmtPost()
+    if bufexists(bufnr("/tmp/post.tmp")) > 0
+        b /tmp/post.tmp
+        silent %s/`/\\`/ge
+        silent %s/\"/\\"/ge
+        let comment_text = join(getline(1, '$'), '\\n')
+        call PostComment(comment_text)
+        bw! /tmp/post.tmp
+    else
+        echo "Error: No post buffer detected"
+        return
+    endif
 
     bw! /tmp/issue.tmp
     call ViewIssue(g:current_issue, g:in_pr)
 endfunction
+
 
 " ==============================================================
 " External Script Calls
@@ -101,19 +114,16 @@ endfunction
 
 " Open issue based on the provided issue number
 function! ViewIssue(issue_number, in_pr)
+    let g:in_pr = a:in_pr
+    set cmdheight=4
+    echo "Loading..."
+
     if a:in_pr
         " TODO
         echo "TODO"
-        let g:in_pr = a:is_pr
     else
-        set cmdheight=2
-        echo "Fetching issue, please wait..."
-        call MakeIssueBuffer(IssueQuery(a:issue_number))
-        echo ""
-        set cmdheight=1
+        call CreateIssueBuffer(IssueQuery(a:issue_number))
     endif
-
-    normal gg
 endfunction
 
 " ==============================================================
@@ -121,7 +131,7 @@ endfunction
 " ==============================================================
 
 " Write out header to buffer
-function! MakeHeader()
+function! SetHeader()
     let line_idx = 1
     for line in readfile(s:dir . '/assets/header.txt')
         call setline(line_idx, line)
@@ -131,14 +141,35 @@ function! MakeHeader()
     return line_idx
 endfunction
 
+" Create a buffer for a comment
+function! CreateCommentBuffer()
+    set splitbelow
+    new
+    file /tmp/post.tmp
+    call setline(1, "<!-- Write comment here -->")
+    call CloseBuffer()
+
+    " Re-enable modifiable so that we can write something
+    set modifiable
+endfunction
+
 " Create issue/(pull|merge) request buffer
-function! MakeIssueBuffer(contents)
-    enew
+function! CreateIssueBuffer(contents)
+    if winwidth(0) > winheight(0) * 2
+        vnew  " Window is wide enough for vertical split
+    else
+        enew   " Window is too narrow, use new buffer
+    endif
+
+    " Clear buffer if it already exists
+    if bufexists(bufnr("/tmp/issue.tmp")) > 0
+        bw! /tmp/issue.tmp
+    endif
     file /tmp/issue.tmp
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
-    let line_idx = MakeHeader()
+    let line_idx = SetHeader()
     let s:results_line = line_idx
 
     " Write issue and comments to buffer
@@ -187,11 +218,8 @@ function! MakeIssueBuffer(contents)
 endfunction
 
 
-function! MakeBuffer(results)
+function! CreateHomeBuffer(results)
     " Creates a buffer for the list of issues or PRs.
-    "
-    " Since GitHub treats PRs as issues, this list will contain a mix of both,
-    " with indicators to differentiate the two.
 
     if line('$') == 1 && getline(1) == ''
         enew  " Use whole window for results
@@ -203,45 +231,37 @@ function! MakeBuffer(results)
     file /tmp/vimgmt.tmp
     setlocal bufhidden=hide noswapfile wrap
 
-    let line_idx = MakeHeader()
+    let line_idx = SetHeader()
     let s:results_line = line_idx
     let b:issue_lookup = {}
 
     " Write issue details to buffer
     for item in a:results
+        let start_idx = line_idx
         " Establish title and type of issue (PRs are 'issues' in GitHub)
-        let item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . ' #' . item['number'] . ': ' . item['title']
+        let item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . '#' . item['number'] . ': ' . item['title']
         call setline(line_idx, item_name)
 
         " Draw boundary between title and body
         call setline(line_idx + 1, g:vimgmt_spacer_small)
         let line_idx += 1
 
-        " Insert body text with properly formatted line breaks
-        let break_num = InsertBodyText(item['body'], line_idx + 1)
-
-        " Draw boundary between body and info
-        call setline(line_idx + break_num + 1, g:vimgmt_spacer_small)
-
         let label_list = ParseLabels(item['labels'])
-        call setline(line_idx + break_num + 2, 'Labels: ' . label_list)
-        call setline(line_idx + break_num + 3, 'Comments: ' . item['comments'])
-        call setline(line_idx + break_num + 4, 'Created: ' . FormatTime(item['created_at']))
-        call setline(line_idx + break_num + 5, 'Updated: ' . FormatTime(item['updated_at']))
-        call setline(line_idx + break_num + 6, '')
-        call setline(line_idx + break_num + 7, g:vimgmt_spacer)
-        call setline(line_idx + break_num + 8, '')
-
-        let idx = line_idx
+        call setline(line_idx + 1, 'Comments: ' . item['comments'])
+        call setline(line_idx + 2, 'Labels:   ' . label_list)
+        call setline(line_idx + 3, 'Updated:  ' . FormatTime(item['updated_at']))
+        call setline(line_idx + 4, '')
+        call setline(line_idx + 5, g:vimgmt_spacer)
+        call setline(line_idx + 6, '')
 
         " Store issue number and title to use for viewing issue details later
-        while idx <= line_idx + break_num + 8
-            let b:issue_lookup[idx] = {'number': item['number'], 'title': item['title'], 'is_pr': has_key(item, 'pull_request')}
-            let idx += 1
+        while start_idx <= line_idx + 6
+            let b:issue_lookup[start_idx] = {'number': item['number'], 'title': item['title'], 'is_pr': has_key(item, 'pull_request')}
+            let start_idx += 1
         endwhile
 
         " Offset index to account for the previous lines of issue detail
-        let line_idx += break_num + 9
+        let line_idx += 7
     endfor
 
     call cursor(s:results_line, 1)
@@ -270,7 +290,7 @@ function! ParseLabels(labels)
         if has_key(label, 'color')
             let label_color = '#' . label['color']
 
-            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' guifg=' . label_color
+            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' gui=bold guifg=' . label_color
             exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
         endif
 
@@ -312,9 +332,9 @@ function! CloseBuffer()
     " Filters out ^M characters, brings the cursor to the top of the
     " buffer, and sets the buffer as not modifiable
 
-    set cmdheight=2
-    %s///ge
+    set cmdheight=4
+    silent %s///ge
     normal gg
     setlocal nomodifiable
-    set cmdheight=1 hidden bt=nofile
+    set cmdheight=1 hidden bt=nofile splitright
 endfunction

@@ -68,10 +68,10 @@ function gitlab_command {
     elif [[ "$COMMAND" == "view" ]]; then
         ISSUE_RESULT=$(curl -s -A "$USERNAME" \
             -H "PRIVATE-TOKEN: $API_KEY" \
-            "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues")
+            "https://gitlab.com/api/v4/projects/$PROJECT_ID/issues?state=opened")
         MR_RESULT=$(curl -s -A "$USERNAME" \
             -H "PRIVATE-TOKEN: $API_KEY" \
-            "https://gitlab.com/api/v4/projects/$PROJECT_ID/merge_requests")
+            "https://gitlab.com/api/v4/projects/$PROJECT_ID/merge_requests?state=opened")
 
             echo $ISSUE_RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]' > /tmp/.tmp.issue.json
             echo $MR_RESULT | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | .["pull_request"] = 1 | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]' > /tmp/.tmp.mr.json
