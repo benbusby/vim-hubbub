@@ -13,4 +13,5 @@ command! -nargs=0 VimgmtBack call vimgmt#VimgmtBack()
 
 " Interactions
 command! -nargs=0 VimgmtComment call vimgmt#VimgmtComment()
+command! -nargs=0 VimgmtPost    call vimgmt#VimgmtPost()
 command! -nargs=0 VimgmtClose   call vimgmt#VimgmtClose()

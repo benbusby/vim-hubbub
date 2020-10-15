@@ -9,7 +9,7 @@
 let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 " Formatting constants
-let g:vimgmt_spacer = '░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░'
+let g:vimgmt_spacer = '─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ '
 let g:vimgmt_spacer_small = '─────────────────────────────────'
 let g:vimgmt_comment_pad = '    '
 
@@ -42,7 +42,7 @@ function! vimgmt#Vimgmt()
         let g:token_password = inputsecret("Enter token password: ")
         call inputrestore()
     endif
-    call MakeBuffer(HomePageQuery())
+    call CreateHomeBuffer(HomePageQuery())
 endfunction
 
 function! vimgmt#VimgmtBack()
@@ -56,22 +56,35 @@ endfunction
 
 " Interaction --------------------------------------------------
 function! vimgmt#VimgmtComment()
-    if g:current_issue == -1
+    if bufexists(bufnr("/tmp/post.tmp")) > 0
+        echo "Error: Post buffer already open"
+        return
+    elseif g:current_issue == -1
         echo "Error: Must be on an issue/PR page to comment!"
         return
     endif
 
-    set cmdheight=4
-    let comment = input("Type comment here (press enter to submit): ")
-    call inputrestore()
-    echo ""
-    set cmdheight=1
+    call CreateCommentBuffer()
 
-    call PostComment(comment)
+endfunction
+
+function! vimgmt#VimgmtPost()
+    if bufexists(bufnr("/tmp/post.tmp")) > 0
+        b /tmp/post.tmp
+        silent %s/`/\\`/ge
+        silent %s/\"/\\"/ge
+        let comment_text = join(getline(1, '$'), '\\n')
+        call PostComment(comment_text)
+        bw! /tmp/post.tmp
+    else
+        echo "Error: No post buffer detected"
+        return
+    endif
 
     bw! /tmp/issue.tmp
     call ViewIssue(g:current_issue, g:in_pr)
 endfunction
+
 
 " ==============================================================
 " External Script Calls
@@ -109,7 +122,7 @@ function! ViewIssue(issue_number, in_pr)
         " TODO
         echo "TODO"
     else
-        call MakeIssueBuffer(IssueQuery(a:issue_number))
+        call CreateIssueBuffer(IssueQuery(a:issue_number))
     endif
 endfunction
 
@@ -118,7 +131,7 @@ endfunction
 " ==============================================================
 
 " Write out header to buffer
-function! MakeHeader()
+function! SetHeader()
     let line_idx = 1
     for line in readfile(s:dir . '/assets/header.txt')
         call setline(line_idx, line)
@@ -128,8 +141,20 @@ function! MakeHeader()
     return line_idx
 endfunction
 
+" Create a buffer for a comment
+function! CreateCommentBuffer()
+    set splitbelow
+    new
+    file /tmp/post.tmp
+    call setline(1, "<!-- Write comment here -->")
+    call CloseBuffer()
+
+    " Re-enable modifiable so that we can write something
+    set modifiable
+endfunction
+
 " Create issue/(pull|merge) request buffer
-function! MakeIssueBuffer(contents)
+function! CreateIssueBuffer(contents)
     if winwidth(0) > winheight(0) * 2
         vnew  " Window is wide enough for vertical split
     else
@@ -144,7 +169,7 @@ function! MakeIssueBuffer(contents)
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
-    let line_idx = MakeHeader()
+    let line_idx = SetHeader()
     let s:results_line = line_idx
 
     " Write issue and comments to buffer
@@ -193,7 +218,7 @@ function! MakeIssueBuffer(contents)
 endfunction
 
 
-function! MakeBuffer(results)
+function! CreateHomeBuffer(results)
     " Creates a buffer for the list of issues or PRs.
 
     if line('$') == 1 && getline(1) == ''
@@ -206,7 +231,7 @@ function! MakeBuffer(results)
     file /tmp/vimgmt.tmp
     setlocal bufhidden=hide noswapfile wrap
 
-    let line_idx = MakeHeader()
+    let line_idx = SetHeader()
     let s:results_line = line_idx
     let b:issue_lookup = {}
 
