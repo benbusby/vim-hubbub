@@ -222,9 +222,9 @@ function! MakeBuffer(results)
         let line_idx += 1
 
         let label_list = ParseLabels(item['labels'])
-        call setline(line_idx + 1, 'Labels: ' . label_list)
-        call setline(line_idx + 2, 'Comments: ' . item['comments'])
-        call setline(line_idx + 3, 'Updated: ' . FormatTime(item['updated_at']))
+        call setline(line_idx + 1, 'Comments: ' . item['comments'])
+        call setline(line_idx + 2, 'Labels:   ' . label_list)
+        call setline(line_idx + 3, 'Updated:  ' . FormatTime(item['updated_at']))
         call setline(line_idx + 4, '')
         call setline(line_idx + 5, g:vimgmt_spacer)
         call setline(line_idx + 6, '')
@@ -259,13 +259,13 @@ function! ParseLabels(labels)
     let label_list = ""
 
     for label in a:labels
-        let label_name = '|' . label['name'] . '|'
+        let label_name = '├' . label['name'] . '┤'
 
         " Use colors for labels if provided by the response
         if has_key(label, 'color')
             let label_color = '#' . label['color']
 
-            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' guifg=' . label_color
+            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' gui=bold guifg=' . label_color
             exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
         endif
 
