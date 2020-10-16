@@ -17,7 +17,7 @@ let g:vimgmt_comment_pad = '    '
 let g:current_issue = -1
 let g:in_pr = 0
 
-let g:token_password = ""
+let g:vimgmt_dict = {'token_pw': ''}
 
 set ff=unix
 
@@ -27,7 +27,10 @@ set ff=unix
 
 " Navigation ---------------------------------------------------
 function! vimgmt#Vimgmt()
-    if len(g:token_password) > 0
+    if len(g:vimgmt_dict.token_pw) > 0
+        set cmdheight=4
+        echo "Refreshing..."
+
         " User is already using Vimgmt, treat as a refresh
         if bufexists(bufnr("/tmp/vimgmt.tmp")) > 0
             bw! /tmp/vimgmt.tmp
@@ -39,10 +42,14 @@ function! vimgmt#Vimgmt()
     else
         " New session, prompt for token pw
         call inputsave()
-        let g:token_password = inputsecret("Enter token password: ")
+        let g:vimgmt_dict.token_pw = inputsecret("Enter token password: ")
         call inputrestore()
     endif
+
     call CreateHomeBuffer(HomePageQuery())
+    if g:current_issue != -1
+        call CreateIssueBuffer(IssueQuery(g:current_issue))
+    endif
 endfunction
 
 function! vimgmt#VimgmtBack()
@@ -71,9 +78,8 @@ endfunction
 function! vimgmt#VimgmtPost()
     if bufexists(bufnr("/tmp/post.tmp")) > 0
         b /tmp/post.tmp
-        silent %s/`/\\`/ge
         silent %s/\"/\\\\\\"/ge
-        let comment_text = join(getline(1, '$'), '\\n')
+        let comment_text = join(getline(1, '$'), '\n')
         call PostComment(comment_text)
         bw! /tmp/post.tmp
     else
@@ -91,21 +97,26 @@ endfunction
 " ==============================================================
 
 function! HomePageQuery()
-    let result = json_decode(system(s:dir . "/scripts/vimgmt.sh " . g:token_password . " view"))
-    return result
+    let g:vimgmt_dict.command = 'view_all'
+    return json_decode(VimgmtScript())
 endfunction
 
 function! IssueQuery(number)
-    let result = json_decode(system(s:dir . "/scripts/vimgmt_issue.sh " . g:token_password . " view " . a:number))
-    return result
+    let g:vimgmt_dict.command = 'view'
+    let g:vimgmt_dict.number = a:number
+    return json_decode(VimgmtScript())
 endfunction
 
 function! PostComment(comment)
-    if g:in_pr
-        echo "TODO"
-    else
-        call system(s:dir . '/scripts/vimgmt_issue.sh ' . g:token_password . ' comment ' . g:current_issue . ' "' . a:comment . '"')
-    endif
+    let g:vimgmt_dict.command = 'comment'
+    let g:vimgmt_dict.body = a:comment
+    let g:vimgmt_dict.number = g:current_issue
+    let g:vimgmt_dict.pr = g:in_pr
+    echo VimgmtScript()
+endfunction
+
+function! VimgmtScript()
+    return system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(g:vimgmt_dict), "'", "'\\\\''", "g") . "'")
 endfunction
 
 " ==============================================================
@@ -156,7 +167,7 @@ endfunction
 " Create issue/(pull|merge) request buffer
 function! CreateIssueBuffer(contents)
     if winwidth(0) > winheight(0) * 2
-        vnew  " Window is wide enough for vertical split
+        vnew   " Window is wide enough for vertical split
     else
         enew   " Window is too narrow, use new buffer
     endif
@@ -313,6 +324,7 @@ function! InsertBodyText(body, start_idx)
 
     let break_num = 0
     for chunk in split(a:body, '\n')
+        let chunk = substitute(chunk, '\"', '', 'ge')
         call setline(break_num + a:start_idx, chunk)
         let break_num += 1
     endfor
@@ -334,6 +346,7 @@ function! CloseBuffer()
 
     set cmdheight=4
     silent %s///ge
+    silent %s/\\"/"/ge
     normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
