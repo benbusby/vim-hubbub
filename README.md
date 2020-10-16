@@ -1,5 +1,14 @@
 # vimgmt
 
+## Table of Contents
+- [Requirements](#requirements)
+- [Install](#install)
+- [Setup](#setup)
+- [Usage](#usage)
+- [FAQ](#faq)
+
+___
+
 ### Requirements
 - [jq](https://stedolan.github.io/jq/download/)
 - curl
@@ -7,7 +16,11 @@
 ### Install
 - Vundle: `Plugin 'benbusby/vimgmt'`
 - vim-plug: `Plug 'benbusby/vimgmt'`
-- [DIY](#manual-build)
+- DIY
+  1. Clone the repo to your vim plugin directory
+    - Ex: `git clone https://github.com/benbusby/vimgmt.git ~/.vim/bundle/vimgmt`
+  2. Update your runtime path in your .vimrc file
+    - Ex: `:set rtp+=~/.vim/bundle/vimgmt`
 
 ### Setup
 1. Create a personal access token
@@ -49,29 +62,11 @@
 - `:VimgmtBack`
   - When in an issue/page view, this navigates back to the home page
 - `:VimgmtComment`
-  - Allows for the user to write and post a comment on an issue/PR/etc.
+  - Opens a new buffer for writing a comment on the current issue/PR/MR
+- `:VimgmtPost`
+  - Posts the contents of the comment buffer to the current issue/PR/MR
 - `:VimgmtClose`
   - Closes the current issue/PR/etc.
-
-### Manual Build
-#### Option A
-1. Clone the repo to your vim plugin directory
-  - Ex: `git clone https://github.com/benbusby/vimgmt.git ~/.vim/bundle/vimgmt`
-2. Update your runtime path in your .vimrc file
-  - Ex: `:set rtp+=~/.vim/bundle/vimgmt`
-
-#### Option B (using [Vimball](https://www.vim.org/scripts/script.php?script_id=1502))
-1. Clone the repo
-2. Using vim, open `vimball-build.txt`
-3. Run `:let g:vimball_home="<full repo path>"`
-4. Select all lines (`ggVG`)
-5. Run `:MkVimball <name>`
-6. Exit from `vimball-build.txt`
-7. Open the new vmb file in vim and run `:so %`
-
-This should now install the plugin in the correct directory.
-
-To remove, run `:RmVimball <vimball name>` (example: `:RmVimball vimgmt`)
 
 ### FAQ
 ##### Why is it called "vimgmt"? How is it pronounced?
