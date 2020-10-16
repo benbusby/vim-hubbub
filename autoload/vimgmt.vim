@@ -72,7 +72,7 @@ function! vimgmt#VimgmtPost()
     if bufexists(bufnr("/tmp/post.tmp")) > 0
         b /tmp/post.tmp
         silent %s/`/\\`/ge
-        silent %s/\"/\\"/ge
+        silent %s/\"/\\\\\\"/ge
         let comment_text = join(getline(1, '$'), '\\n')
         call PostComment(comment_text)
         bw! /tmp/post.tmp
@@ -104,7 +104,7 @@ function! PostComment(comment)
     if g:in_pr
         echo "TODO"
     else
-        call system(s:dir . "/scripts/vimgmt_issue.sh " . g:token_password . " comment " . g:current_issue . " \"" . a:comment . "\"")
+        call system(s:dir . '/scripts/vimgmt_issue.sh ' . g:token_password . ' comment ' . g:current_issue . ' "' . a:comment . '"')
     endif
 endfunction
 
