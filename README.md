@@ -1,4 +1,4 @@
-# vimgmt
+# vimgmt ![Vint](https://github.com/benbusby/vimgmt/workflows/Vint/badge.svg?branch=main)
 
 ## Table of Contents
 - [Requirements](#requirements)
