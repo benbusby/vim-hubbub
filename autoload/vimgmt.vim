@@ -78,7 +78,11 @@ endfunction
 function! vimgmt#VimgmtPost()
     if bufexists(bufnr("/tmp/post.tmp")) > 0
         b /tmp/post.tmp
+
+        " Format double quotes and tabs properly
         silent %s/\"/\\\\\\"/ge
+
+        " Condense buffer into a single line with line break chars
         let comment_text = join(getline(1, '$'), '\n')
         call PostComment(comment_text)
         bw! /tmp/post.tmp
@@ -144,8 +148,14 @@ endfunction
 " Write out header to buffer
 function! SetHeader()
     let line_idx = 1
+    let header_str = ""
     for line in readfile(s:dir . '/assets/header.txt')
-        call setline(line_idx, line)
+        if line_idx == 1
+            let repo_name = system("source " . s:dir . "/scripts/vimgmt_utils.sh && get_path")
+            call setline(line_idx, line . ' ' . repo_name)
+        else
+            call setline(line_idx, line)
+        endif
         let line_idx += 1
     endfor
 
@@ -248,7 +258,10 @@ function! CreateHomeBuffer(results)
 
     " Write issue details to buffer
     for item in a:results
-        let start_idx = line_idx
+        " Start index begins one line before content is written to allow
+        " selecting an issue starting at the '- - - -' separator
+        let start_idx = line_idx - 1
+
         " Establish title and type of issue (PRs are 'issues' in GitHub)
         let item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . '#' . item['number'] . ': ' . item['title']
         call setline(line_idx, item_name)
@@ -266,15 +279,17 @@ function! CreateHomeBuffer(results)
         call setline(line_idx + 6, '')
 
         " Store issue number and title to use for viewing issue details later
-        while start_idx <= line_idx + 6
+        while start_idx <= line_idx + 5
             let b:issue_lookup[start_idx] = {'number': item['number'], 'title': item['title'], 'is_pr': has_key(item, 'pull_request')}
             let start_idx += 1
         endwhile
 
         " Offset index to account for the previous lines of issue detail
-        let line_idx += 7
+        let line_idx += 6
     endfor
 
+    " Set up the ability to hit Enter on any issue section to open an issue
+    " buffer
     call cursor(s:results_line, 1)
     nnoremap <buffer> <silent> <CR> :call ViewIssue(b:issue_lookup[getcurpos()[1]]['number'], b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
@@ -347,6 +362,7 @@ function! CloseBuffer()
     set cmdheight=4
     silent %s///ge
     silent %s/\\"/"/ge
+    silent %s/\%x00//ge
     normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright

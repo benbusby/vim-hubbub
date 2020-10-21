@@ -41,3 +41,7 @@ function jq_read {
     # Usage: jq_read "$1" $2
     echo $1 | jq -r .$2
 }
+
+function get_path {
+    echo "$REPO_PATH"
+}
