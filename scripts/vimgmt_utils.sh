@@ -5,12 +5,11 @@ SUFFIXES=(".git")
 REPO_PATH=$(git ls-remote --get-url)
 
 # API Paths
-GITHUB_API="https://api.github.com"
-GITLAB_API="https://gitlab.com/api/v4"
+export GITHUB_API="https://api.github.com"
+export GITLAB_API="https://gitlab.com/api/v4"
 
 # Footers for issues/comments
-GH_FOOTER="<hr>\n\n<sub>_Posted using [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"
-GL_FOOTER="<hr>\n\n<sub>_Posted using [vimgmt](https://gitlab.com/benbusby/vimgmt)!_</sub>"
+export FOOTER="<hr>\n\n<sub>_Posted with [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"
 
 # -------------------------------------------------
 # Initialization
@@ -23,11 +22,11 @@ if [[ -z "$REPO_PATH" ]]; then
 fi
 
 # Clean up prefixes/suffixes to determine <username>/<repo> string
-for PREFIX in ${PREFIXES[@]}; do
+for PREFIX in "${PREFIXES[@]}"; do
     REPO_PATH=${REPO_PATH#"$PREFIX"}
 done
 
-for SUFFIX in ${SUFFIXES[@]}; do
+for SUFFIX in "${SUFFIXES[@]}"; do
     REPO_PATH=${REPO_PATH%"$SUFFIX"}
 done
 
@@ -39,7 +38,7 @@ function jq_read {
     # Returns the value for a key ($2)
     # within a json string ($1)
     # Usage: jq_read "$1" $2
-    echo $1 | jq -r .$2
+    echo "$1" | jq -r ."$2"
 }
 
 function get_path {
