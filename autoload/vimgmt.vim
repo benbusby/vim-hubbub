@@ -5,6 +5,7 @@
 " Website:     https://benbusby.com/projects/vimgmt/
 " Version:     1.0
 " ============================================================================
+scriptencoding utf-8
 
 let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
@@ -19,30 +20,30 @@ let g:in_pr = 0
 
 let g:vimgmt_dict = {'token_pw': ''}
 
-set ff=unix
+set fileformat=unix
 
 " ==============================================================
 " Commands
 " ==============================================================
 
 " Navigation ---------------------------------------------------
-function! vimgmt#Vimgmt()
+function! vimgmt#Vimgmt() abort
     if len(g:vimgmt_dict.token_pw) > 0
         set cmdheight=4
-        echo "Refreshing..."
+        echo 'Refreshing...'
 
         " User is already using Vimgmt, treat as a refresh
-        if bufexists(bufnr("/tmp/vimgmt.tmp")) > 0
+        if bufexists(bufnr('/tmp/vimgmt.tmp')) > 0
             bw! /tmp/vimgmt.tmp
         endif
 
-        if bufexists(bufnr("/tmp/issue.tmp")) > 0
+        if bufexists(bufnr('/tmp/issue.tmp')) > 0
             bw! /tmp/issue.tmp
         endif
     else
         " New session, prompt for token pw
         call inputsave()
-        let g:vimgmt_dict.token_pw = inputsecret("Enter token password: ")
+        let g:vimgmt_dict.token_pw = inputsecret('Enter token password: ')
         call inputrestore()
     endif
 
@@ -52,7 +53,7 @@ function! vimgmt#Vimgmt()
     endif
 endfunction
 
-function! vimgmt#VimgmtBack()
+function! vimgmt#VimgmtBack() abort
     b /tmp/vimgmt.tmp
     bw! /tmp/issue.tmp
 
@@ -62,12 +63,12 @@ function! vimgmt#VimgmtBack()
 endfunction
 
 " Interaction --------------------------------------------------
-function! vimgmt#VimgmtComment()
-    if bufexists(bufnr("/tmp/post.tmp")) > 0
-        echo "Error: Post buffer already open"
+function! vimgmt#VimgmtComment() abort
+    if bufexists(bufnr('/tmp/post.tmp')) > 0
+        echo 'Error: Post buffer already open'
         return
     elseif g:current_issue == -1
-        echo "Error: Must be on an issue/PR page to comment!"
+        echo 'Error: Must be on an issue/PR page to comment!'
         return
     endif
 
@@ -75,19 +76,19 @@ function! vimgmt#VimgmtComment()
 
 endfunction
 
-function! vimgmt#VimgmtPost()
-    if bufexists(bufnr("/tmp/post.tmp")) > 0
+function! vimgmt#VimgmtPost() abort
+    if bufexists(bufnr('/tmp/post.tmp')) > 0
         b /tmp/post.tmp
 
         " Format double quotes and tabs properly
         silent %s/\"/\\\\\\"/ge
 
         " Condense buffer into a single line with line break chars
-        let comment_text = join(getline(1, '$'), '\n')
-        call PostComment(comment_text)
+        let l:comment_text = join(getline(1, '$'), '\n')
+        call PostComment(l:comment_text)
         bw! /tmp/post.tmp
     else
-        echo "Error: No post buffer detected"
+        echo 'Error: No post buffer detected'
         return
     endif
 
@@ -100,18 +101,18 @@ endfunction
 " External Script Calls
 " ==============================================================
 
-function! HomePageQuery()
+function! HomePageQuery() abort
     let g:vimgmt_dict.command = 'view_all'
     return json_decode(VimgmtScript())
 endfunction
 
-function! IssueQuery(number)
+function! IssueQuery(number) abort
     let g:vimgmt_dict.command = 'view'
     let g:vimgmt_dict.number = a:number
     return json_decode(VimgmtScript())
 endfunction
 
-function! PostComment(comment)
+function! PostComment(comment) abort
     let g:vimgmt_dict.command = 'comment'
     let g:vimgmt_dict.body = a:comment
     let g:vimgmt_dict.number = g:current_issue
@@ -119,7 +120,9 @@ function! PostComment(comment)
     echo VimgmtScript()
 endfunction
 
-function! VimgmtScript()
+function! VimgmtScript() abort
+    " Use double quotes here to avoid unneccessary confusion when calling the
+    " script with a single-quoted json body
     return system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(g:vimgmt_dict), "'", "'\\\\''", "g") . "'")
 endfunction
 
@@ -128,7 +131,7 @@ endfunction
 " ==============================================================
 
 " Open issue based on the provided issue number
-function! ViewIssue(issue_number, in_pr)
+function! ViewIssue(issue_number, in_pr) abort
     let g:in_pr = a:in_pr
     set cmdheight=4
     echo "Loading..."
@@ -146,28 +149,27 @@ endfunction
 " ==============================================================
 
 " Write out header to buffer
-function! SetHeader()
-    let line_idx = 1
-    let header_str = ""
+function! SetHeader() abort
+    let l:line_idx = 1
     for line in readfile(s:dir . '/assets/header.txt')
-        if line_idx == 1
-            let repo_name = system("source " . s:dir . "/scripts/vimgmt_utils.sh && get_path")
-            call setline(line_idx, line . ' ' . repo_name)
+        if l:line_idx == 1
+            let l:repo_name = system('source ' . s:dir . '/scripts/vimgmt_utils.sh && get_path')
+            call setline(l:line_idx, line . ' ' . l:repo_name)
         else
-            call setline(line_idx, line)
+            call setline(l:line_idx, line)
         endif
-        let line_idx += 1
+        let l:line_idx += 1
     endfor
 
-    return line_idx
+    return l:line_idx
 endfunction
 
 " Create a buffer for a comment
-function! CreateCommentBuffer()
+function! CreateCommentBuffer() abort
     set splitbelow
     new
     file /tmp/post.tmp
-    call setline(1, "<!-- Write comment here -->")
+    call setline(1, '<!-- Write comment here -->')
     call CloseBuffer()
 
     " Re-enable modifiable so that we can write something
@@ -175,7 +177,7 @@ function! CreateCommentBuffer()
 endfunction
 
 " Create issue/(pull|merge) request buffer
-function! CreateIssueBuffer(contents)
+function! CreateIssueBuffer(contents) abort
     if winwidth(0) > winheight(0) * 2
         vnew   " Window is wide enough for vertical split
     else
@@ -183,52 +185,52 @@ function! CreateIssueBuffer(contents)
     endif
 
     " Clear buffer if it already exists
-    if bufexists(bufnr("/tmp/issue.tmp")) > 0
+    if bufexists(bufnr('/tmp/issue.tmp')) > 0
         bw! /tmp/issue.tmp
     endif
     file /tmp/issue.tmp
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
-    let line_idx = SetHeader()
-    let s:results_line = line_idx
+    let l:line_idx = SetHeader()
+    let s:results_line = l:line_idx
 
     " Write issue and comments to buffer
-    call setline(line_idx, '(Issue) #' . a:contents['number'] . ': ' . a:contents['title'])
-    call setline(line_idx + 1, g:vimgmt_spacer_small)
+    call setline(l:line_idx, '(Issue) #' . a:contents['number'] . ': ' . a:contents['title'])
+    call setline(l:line_idx + 1, g:vimgmt_spacer_small)
 
     " Split body on line breaks for proper formatting
-    let break_num = InsertBodyText(a:contents['body'], line_idx + 2)
+    let l:chunk_num = InsertBodyText(a:contents['body'], l:line_idx + 2)
 
-    call setline(line_idx + break_num + 2, g:vimgmt_spacer_small)
-    call setline(line_idx + break_num + 3, 'Created: ' . FormatTime(a:contents['created_at']))
-    call setline(line_idx + break_num + 4, 'Updated: ' . FormatTime(a:contents['updated_at']))
-    call setline(line_idx + break_num + 5, 'Author:  ' . a:contents['user']['login'])
-    call setline(line_idx + break_num + 6, g:vimgmt_spacer_small)
-    call setline(line_idx + break_num + 7, '')
-    call setline(line_idx + break_num + 8, g:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
+    call setline(l:line_idx + l:chunk_num + 2, g:vimgmt_spacer_small)
+    call setline(l:line_idx + l:chunk_num + 3, 'Created: ' . FormatTime(a:contents['created_at']))
+    call setline(l:line_idx + l:chunk_num + 4, 'Updated: ' . FormatTime(a:contents['updated_at']))
+    call setline(l:line_idx + l:chunk_num + 5, 'Author:  ' . a:contents['user']['login'])
+    call setline(l:line_idx + l:chunk_num + 6, g:vimgmt_spacer_small)
+    call setline(l:line_idx + l:chunk_num + 7, '')
+    call setline(l:line_idx + l:chunk_num + 8, g:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
 
-    let line_idx += break_num + 9
+    let l:line_idx += l:chunk_num + 9
 
     for comment in a:contents['comments']
         let commenter = comment['user']['login']
-        if has_key(comment, 'author_association') && comment['author_association'] != 'none'
+        if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
         endif
-        call setline(line_idx, g:vimgmt_comment_pad . g:vimgmt_spacer)
-        call setline(line_idx + 1, g:vimgmt_comment_pad . FormatTime(comment['created_at']))
-        call setline(line_idx + 2, g:vimgmt_comment_pad . commenter . ':')
-        call setline(line_idx + 3, g:vimgmt_comment_pad . '')
+        call setline(l:line_idx, g:vimgmt_comment_pad . g:vimgmt_spacer)
+        call setline(l:line_idx + 1, g:vimgmt_comment_pad . FormatTime(comment['created_at']))
+        call setline(l:line_idx + 2, g:vimgmt_comment_pad . commenter . ':')
+        call setline(l:line_idx + 3, g:vimgmt_comment_pad . '')
 
         " Split comment body on line breaks for proper formatting
-        let break_num = 0
+        let l:chunk_num = 0
         for comment_line in split(comment['body'], '\n')
-            call setline(line_idx + break_num + 4, g:vimgmt_comment_pad . comment_line)
-            let break_num += 1
+            call setline(l:line_idx + l:chunk_num + 4, g:vimgmt_comment_pad . comment_line)
+            let l:chunk_num += 1
         endfor
 
-        call setline(line_idx + break_num + 4, g:vimgmt_comment_pad . '')
-        let line_idx += break_num + 5
+        call setline(l:line_idx + l:chunk_num + 4, g:vimgmt_comment_pad . '')
+        let l:line_idx += l:chunk_num + 5
     endfor
 
     " Store issue number for interacting with the issue (commenting, closing,
@@ -239,10 +241,10 @@ function! CreateIssueBuffer(contents)
 endfunction
 
 
-function! CreateHomeBuffer(results)
+function! CreateHomeBuffer(results) abort
     " Creates a buffer for the list of issues or PRs.
 
-    if line('$') == 1 && getline(1) == ''
+    if line('$') ==? 1 && getline(1) ==? ''
         enew  " Use whole window for results
     elseif winwidth(0) > winheight(0) * 2
         vnew  " Window is wide enough for vertical split
@@ -252,40 +254,40 @@ function! CreateHomeBuffer(results)
     file /tmp/vimgmt.tmp
     setlocal bufhidden=hide noswapfile wrap
 
-    let line_idx = SetHeader()
-    let s:results_line = line_idx
+    let l:line_idx = SetHeader()
+    let s:results_line = l:line_idx
     let b:issue_lookup = {}
 
     " Write issue details to buffer
     for item in a:results
         " Start index begins one line before content is written to allow
         " selecting an issue starting at the '- - - -' separator
-        let start_idx = line_idx - 1
+        let start_idx = l:line_idx - 1
 
         " Establish title and type of issue (PRs are 'issues' in GitHub)
-        let item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . '#' . item['number'] . ': ' . item['title']
-        call setline(line_idx, item_name)
+        let l:item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . '#' . item['number'] . ': ' . item['title']
+        call setline(l:line_idx, l:item_name)
 
         " Draw boundary between title and body
-        call setline(line_idx + 1, g:vimgmt_spacer_small)
-        let line_idx += 1
+        call setline(l:line_idx + 1, g:vimgmt_spacer_small)
+        let l:line_idx += 1
 
-        let label_list = ParseLabels(item['labels'])
-        call setline(line_idx + 1, 'Comments: ' . item['comments'])
-        call setline(line_idx + 2, 'Labels:   ' . label_list)
-        call setline(line_idx + 3, 'Updated:  ' . FormatTime(item['updated_at']))
-        call setline(line_idx + 4, '')
-        call setline(line_idx + 5, g:vimgmt_spacer)
-        call setline(line_idx + 6, '')
+        let l:label_list = ParseLabels(item['labels'])
+        call setline(l:line_idx + 1, 'Comments: ' . item['comments'])
+        call setline(l:line_idx + 2, 'Labels:   ' . l:label_list)
+        call setline(l:line_idx + 3, 'Updated:  ' . FormatTime(item['updated_at']))
+        call setline(l:line_idx + 4, '')
+        call setline(l:line_idx + 5, g:vimgmt_spacer)
+        call setline(l:line_idx + 6, '')
 
         " Store issue number and title to use for viewing issue details later
-        while start_idx <= line_idx + 5
+        while start_idx <= l:line_idx + 5
             let b:issue_lookup[start_idx] = {'number': item['number'], 'title': item['title'], 'is_pr': has_key(item, 'pull_request')}
             let start_idx += 1
         endwhile
 
         " Offset index to account for the previous lines of issue detail
-        let line_idx += 6
+        let l:line_idx += 6
     endfor
 
     " Set up the ability to hit Enter on any issue section to open an issue
@@ -300,62 +302,62 @@ endfunction
 " Utils
 " ==============================================================
 
-function! ParseLabels(labels)
+function! ParseLabels(labels) abort
     " Parses labels from an array into a comma separated list, as well as sets
     " highlighting rules for each label (if a color is returned in the
     " response).
     "
     " Returns a comma separated list of label.
 
-    let label_list = ""
+    let l:label_list = ''
 
     for label in a:labels
-        let label_name = '|' . label['name'] . '|'
+        let l:label_name = '|' . label['name'] . '|'
 
         " Use colors for labels if provided by the response
         if has_key(label, 'color')
-            let label_color = '#' . label['color']
+            let l:label_color = '#' . label['color']
 
-            exe 'hi ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' gui=bold guifg=' . label_color
-            exe 'syn match ' . substitute(label['name'], "[^a-zA-Z]", "", "g") . ' /' . label_name . '/'
+            exe 'hi ' . substitute(label['name'], '[^a-zA-Z]', '', 'g') . ' gui=bold guifg=' . l:label_color
+            exe 'syn match ' . substitute(label['name'], '[^a-zA-Z]', '', 'g') . ' /' . l:label_name . '/'
         endif
 
         " Append a comma if there is more than one tag
-        if label_list =~ '[^\s]'
-            let label_list = label_list . ', '
+        if l:label_list =~? '[^\s]'
+            let l:label_list = l:label_list . ', '
         endif
 
-        let label_list = label_list . label_name
+        let l:label_list = l:label_list . l:label_name
     endfor
 
-    return label_list
+    return l:label_list
 endfunction
 
-function! InsertBodyText(body, start_idx)
+function! InsertBodyText(body, start_idx) abort
     " Insert segments of issue/request body, inserting line breaks as
     " needed.
     "
     " Returns a cursor position for the next line draw
 
-    let break_num = 0
+    let l:chunk_num = 0
     for chunk in split(a:body, '\n')
         let chunk = substitute(chunk, '\"', '', 'ge')
-        call setline(break_num + a:start_idx, chunk)
-        let break_num += 1
+        call setline(l:chunk_num + a:start_idx, chunk)
+        let l:chunk_num += 1
     endfor
 
-    return break_num
+    return l:chunk_num
 endfunction
 
-function! FormatTime(time_str)
+function! FormatTime(time_str) abort
     " Removes alphabetical characters from time string
     "
     " Returns an easily readable time str (ex: 2020-10-07 15:10:03)
 
-    return substitute(a:time_str, "[a-zA-Z]", " ", "g")
+    return substitute(a:time_str, '[a-zA-Z]', ' ', 'g')
 endfunction
 
-function! CloseBuffer()
+function! CloseBuffer() abort
     " Filters out ^M characters, brings the cursor to the top of the
     " buffer, and sets the buffer as not modifiable
 
