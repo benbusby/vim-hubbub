@@ -14,6 +14,13 @@ let g:vimgmt_spacer = '─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ �
 let g:vimgmt_spacer_small = '─────────────────────────────────'
 let g:vimgmt_comment_pad = '    '
 
+" Buffer names
+let g:buf_vimgmt = '/tmp/vimgmt.vimgmt'
+let g:buf_issue = '/tmp/issue.vimgmt'
+let g:buf_comment = '/tmp/comment.vimgmt'
+let g:buf_new_issue = '/tmp/new_issue.vimgmt'
+let g:buf_new_request = '/tmp/new_request.vimgmt'
+
 " Issue variables
 let g:current_issue = -1
 let g:in_pr = 0
@@ -22,23 +29,29 @@ let g:vimgmt_dict = {'token_pw': ''}
 
 set fileformat=unix
 
-" ==============================================================
+" ============================================================================
 " Commands
-" ==============================================================
+" ============================================================================
 
+" --------------------------------------------------------------
 " Navigation ---------------------------------------------------
+" --------------------------------------------------------------
+" :Vimgmt can either:
+"   - Open a new instance of Vimgmt to the 'home' view. If
+"     there's already a Vimgmt buffer open, it will:
+"   - Refresh the currently active Vimgmt buffers
 function! vimgmt#Vimgmt() abort
     if len(g:vimgmt_dict.token_pw) > 0
         set cmdheight=4
         echo 'Refreshing...'
 
         " User is already using Vimgmt, treat as a refresh
-        if bufexists(bufnr('/tmp/vimgmt.tmp')) > 0
-            bw! /tmp/vimgmt.tmp
+        if bufexists(bufnr(g:buf_vimgmt)) > 0
+            execute 'bw! ' . fnameescape(g:buf_vimgmt)
         endif
 
-        if bufexists(bufnr('/tmp/issue.tmp')) > 0
-            bw! /tmp/issue.tmp
+        if bufexists(bufnr(g:buf_issue)) > 0
+            execute 'bw! ' . fnameescape(g:buf_issue)
         endif
     else
         " New session, prompt for token pw
@@ -47,68 +60,130 @@ function! vimgmt#Vimgmt() abort
         call inputrestore()
     endif
 
+    " Recreate home buffer, and optionally the issue buffer
+    " as well
     call CreateHomeBuffer(HomePageQuery())
     if g:current_issue != -1
-        call CreateIssueBuffer(IssueQuery(g:current_issue))
+        call CreateIssueBuffer(IssueQuery(g:current_issue, g:in_pr))
     endif
 endfunction
 
+" :VimgmtBack can be used to navigate back to the home page buffer
+" in instances where the issue buffer was opened on top of it.
 function! vimgmt#VimgmtBack() abort
-    b /tmp/vimgmt.tmp
-    bw! /tmp/issue.tmp
+    " Reopen main 'vimgmt.tmp' buffer, and close the issue buffer
+    execute 'b ' . fnameescape(g:buf_vimgmt)
+    execute 'bw! ' . fnameescape(g:buf_issue)
 
     " Reset issue number
     let g:current_issue = -1
     let g:in_pr = 0
 endfunction
 
+" --------------------------------------------------------------
 " Interaction --------------------------------------------------
+" --------------------------------------------------------------
+" :VimgmtComment splits the issue buffer in half horizontally,
+" and allows the user to enter a comment of any length.
+"
+" Used in conjunction with :VimgmtPost to post the comment.
 function! vimgmt#VimgmtComment() abort
-    if bufexists(bufnr('/tmp/post.tmp')) > 0
+    if bufexists(bufnr(g:buf_comment)) > 0
         echo 'Error: Post buffer already open'
         return
-    elseif g:current_issue == -1
+    elseif g:current_issue <= 0
         echo 'Error: Must be on an issue/PR page to comment!'
         return
     endif
 
     call CreateCommentBuffer()
-
 endfunction
 
+" :VimgmtPost posts the contents of the comment buffer to the
+" comment section for whichever issue/PR/MR is currently open.
 function! vimgmt#VimgmtPost() abort
-    if bufexists(bufnr('/tmp/post.tmp')) > 0
-        b /tmp/post.tmp
+    if bufexists(bufnr(g:buf_new_issue)) > 0 || bufexists(bufnr(g:buf_new_request))
+        " Determine which buffer to use for the post
+        let l:post_buf = g:buf_new_issue
+        let l:pr = 0
+        if bufexists(bufnr(g:buf_new_request))
+            let l:post_buf = g:buf_new_request
+            let l:pr = 1
+        endif
 
-        " Format double quotes and tabs properly
+        " Focus on active buffer for issue/request creation
+        execute 'b ' . fnameescape(l:post_buf)
+
+        " Format double quotes
+        silent %s/\"/\\\\\\"/ge
+
+        " Extract title and body segments
+        let l:title = getline(1)
+        let l:body = join(getline(3, '$'), '\n')
+        call NewItem(l:pr, l:title, l:body)
+        execute 'bw! ' . fnameescape(l:post_buf)
+    elseif bufexists(bufnr(g:buf_comment)) > 0
+        execute 'b ' . fnameescape(g:buf_comment)
+
+        " Format double quotes
         silent %s/\"/\\\\\\"/ge
 
         " Condense buffer into a single line with line break chars
         let l:comment_text = join(getline(1, '$'), '\n')
         call PostComment(l:comment_text)
-        bw! /tmp/post.tmp
+        execute 'bw! ' . fnameescape(g:buf_comment)
     else
-        echo 'Error: No post buffer detected'
+        echo 'Error: No buffers open to post'
         return
     endif
 
-    bw! /tmp/issue.tmp
-    call ViewIssue(g:current_issue, g:in_pr)
+    call Vimgmt()
 endfunction
 
+" :VimgmtNew creates a new issue/PR/MR.
+" - a:1: Either 'issue' or 'pr'/'mr'
+function! vimgmt#VimgmtNew(...) abort
+    let l:item_type = a:1
+    if bufexists(bufnr(g:buf_new_issue)) > 0 || bufexists(bufnr(g:buf_new_request))
+        echo 'Error: New item buffer already open'
+        return
+    endif
 
-" ==============================================================
+    call CreateItemBuffer(l:item_type)
+endfunction
+
+" :VimgmtClose closes the currently selected issue/PR/MR, depending
+" on the current active buffer.
+function! vimgmt#VimgmtClose() abort
+    let l:number_to_close = g:current_issue
+    let l:pr = g:in_pr
+    if s:number_to_close <= 0
+        let l:number = b:issue_lookup[getcurpos()[1]]['number']
+        let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
+    endif
+
+    call inputsave()
+    let s:answer = input('Close #' . l:number . '? (y/n)')
+    call inputrestore()
+
+    if s:answer ==? 'y'
+        call CloseItem(l:number_to_close, l:pr)
+    endif
+endfunction
+
+" ============================================================================
 " External Script Calls
-" ==============================================================
+" ============================================================================
 
 function! HomePageQuery() abort
     let g:vimgmt_dict.command = 'view_all'
     return json_decode(VimgmtScript())
 endfunction
 
-function! IssueQuery(number) abort
+function! IssueQuery(number, pr) abort
     let g:vimgmt_dict.command = 'view'
     let g:vimgmt_dict.number = a:number
+    let g:vimgmt_dict.pr = a:pr
     return json_decode(VimgmtScript())
 endfunction
 
@@ -117,18 +192,35 @@ function! PostComment(comment) abort
     let g:vimgmt_dict.body = a:comment
     let g:vimgmt_dict.number = g:current_issue
     let g:vimgmt_dict.pr = g:in_pr
-    echo VimgmtScript()
+    call VimgmtScript()
+endfunction
+
+function! NewItem(type, title, body) abort
+    let g:vimgmt_dict.command = 'new'
+    let g:vimgmt_dict.title = a:title
+    let g:vimgmt_dict.body = a:body
+    let g:vimgmt_dict.pr = (a:type ==? 'issue' ? 0 : 1)
+    call VimgmtScript()
+endfunction
+
+function! CloseItem(number, pr) abort
+    let g:vimgmt_dict.command = 'close'
+    let g:vimgmt_dict.number = a:number
+    let g:vimgmt_dict.pr = a:pr
+    call VimgmtScript()
 endfunction
 
 function! VimgmtScript() abort
     " Use double quotes here to avoid unneccessary confusion when calling the
     " script with a single-quoted json body
-    return system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(g:vimgmt_dict), "'", "'\\\\''", "g") . "'")
+    let l:response = system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(g:vimgmt_dict), "'", "'\\\\''", "g") . "'")
+    call ResetDict()
+    return l:response
 endfunction
 
-" ==============================================================
+" ============================================================================
 " Interactions
-" ==============================================================
+" ============================================================================
 
 " Open issue based on the provided issue number
 function! ViewIssue(issue_number, in_pr) abort
@@ -144,11 +236,11 @@ function! ViewIssue(issue_number, in_pr) abort
     endif
 endfunction
 
-" ==============================================================
+" ============================================================================
 " Buffer Functions
-" ==============================================================
+" ============================================================================
 
-" Write out header to buffer
+" Write out header to buffer, including the name of the repo.
 function! SetHeader() abort
     let l:line_idx = 1
     for line in readfile(s:dir . '/assets/header.txt')
@@ -168,8 +260,31 @@ endfunction
 function! CreateCommentBuffer() abort
     set splitbelow
     new
-    file /tmp/post.tmp
+    execute "file " . fnameescape(g:buf_comment)
     call setline(1, '<!-- Write comment here -->')
+    call CloseBuffer()
+
+    " Re-enable modifiable so that we can write something
+    set modifiable
+endfunction
+
+" Create a buffer for a new item (issue/pr/mr/etc)
+function! CreateItemBuffer(type) abort
+    set splitbelow
+    new
+
+    let l:descriptor = 'Issue'
+
+    if a:type ==? 'issue'
+        execute "file " . fnameescape(g:buf_new_issue)
+    else
+        execute "file " . fnameescape(g:buf_new_request)
+        let l:descriptor = 'Request'
+    endif
+
+    call setline(1, l:descriptor . ' Title')
+    call setline(2, '--------------------')
+    call setline(3, l:descriptor . ' Description')
     call CloseBuffer()
 
     " Re-enable modifiable so that we can write something
@@ -185,10 +300,10 @@ function! CreateIssueBuffer(contents) abort
     endif
 
     " Clear buffer if it already exists
-    if bufexists(bufnr('/tmp/issue.tmp')) > 0
-        bw! /tmp/issue.tmp
+    if bufexists(bufnr(g:buf_issue)) > 0
+        execute 'bw! ' . fnameescape(g:buf_issue)
     endif
-    file /tmp/issue.tmp
+    execute "file " . fnameescape(g:buf_issue)
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
@@ -240,10 +355,8 @@ function! CreateIssueBuffer(contents) abort
     call CloseBuffer()
 endfunction
 
-
+" Creates a buffer for the list of issues or PRs.
 function! CreateHomeBuffer(results) abort
-    " Creates a buffer for the list of issues or PRs.
-
     if line('$') ==? 1 && getline(1) ==? ''
         enew  " Use whole window for results
     elseif winwidth(0) > winheight(0) * 2
@@ -251,7 +364,7 @@ function! CreateHomeBuffer(results) abort
     else
         new   " Window is too narrow, use horizontal split
     endif
-    file /tmp/vimgmt.tmp
+    execute "file " . fnameescape(g:buf_vimgmt)
     setlocal bufhidden=hide noswapfile wrap
 
     let l:line_idx = SetHeader()
@@ -298,17 +411,16 @@ function! CreateHomeBuffer(results) abort
     call CloseBuffer()
 endfunction
 
-" ==============================================================
+" ============================================================================
 " Utils
-" ==============================================================
+" ============================================================================
 
+" Parses labels from an array into a comma separated list, as well as sets
+" highlighting rules for each label (if a color is returned in the
+" response).
+"
+" Returns a comma separated list of label.
 function! ParseLabels(labels) abort
-    " Parses labels from an array into a comma separated list, as well as sets
-    " highlighting rules for each label (if a color is returned in the
-    " response).
-    "
-    " Returns a comma separated list of label.
-
     let l:label_list = ''
 
     for label in a:labels
@@ -333,12 +445,11 @@ function! ParseLabels(labels) abort
     return l:label_list
 endfunction
 
+" Insert segments of issue/request body, inserting line breaks as
+" needed.
+"
+" Returns a cursor position for the next line draw
 function! InsertBodyText(body, start_idx) abort
-    " Insert segments of issue/request body, inserting line breaks as
-    " needed.
-    "
-    " Returns a cursor position for the next line draw
-
     let l:chunk_num = 0
     for chunk in split(a:body, '\n')
         let chunk = substitute(chunk, '\"', '', 'ge')
@@ -349,18 +460,15 @@ function! InsertBodyText(body, start_idx) abort
     return l:chunk_num
 endfunction
 
+" Removes alphabetical characters from time string.
+" Returns an easily readable time str (ex: 2020-10-07 15:10:03)
 function! FormatTime(time_str) abort
-    " Removes alphabetical characters from time string
-    "
-    " Returns an easily readable time str (ex: 2020-10-07 15:10:03)
-
     return substitute(a:time_str, '[a-zA-Z]', ' ', 'g')
 endfunction
 
+" Filters out bad characters, brings the cursor to the top of the
+" buffer, and sets the buffer as not modifiable
 function! CloseBuffer() abort
-    " Filters out ^M characters, brings the cursor to the top of the
-    " buffer, and sets the buffer as not modifiable
-
     set cmdheight=4
     silent %s///ge
     silent %s/\\"/"/ge
@@ -368,4 +476,9 @@ function! CloseBuffer() abort
     normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
+endfunction
+
+" Resets the Vimgmt script dictionary to a clean state.
+function! ResetDict() abort
+    let g:vimgmt_dict = {'token_pw': g:vimgmt_dict.token_pw}
 endfunction

@@ -55,15 +55,19 @@ case $(jq_read "$JSON_ARG" command) in
         echo "$RESULT" | jq .
         ;;
 
-    *"new_issue"*)
-        # Create new issue
-        RESULT=$(curl -o /dev/null -s \
-            -w "%{http_code}" \
-            -A "$VIMGMT_USERNAME_GH" \
-            -bc /tmp/vimgmt-cookies \
-            -H "Authorization: token $API_KEY" \
-            --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\", \"labels\": [\"$(jq_read "$JSON_ARG" labels)\"]}" \
-            -X POST "https://api.github.com/repos/$REPO_PATH/issues")
+    *"new"*)
+        # Create new issue/PR/MR
+        if [[ "$(jq_read "$JSON_ARG" pr)" == "1" ]]; then
+            RESULT="{}"
+        else
+            RESULT=$(curl -o /dev/null -s \
+                -w "%{http_code}" \
+                -A "$VIMGMT_USERNAME_GH" \
+                -bc /tmp/vimgmt-cookies \
+                -H "Authorization: token $API_KEY" \
+                --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\", \"labels\": [\"$(jq_read "$JSON_ARG" labels)\"]}" \
+                -X POST "https://api.github.com/repos/$REPO_PATH/issues")
+        fi
 
         echo "$RESULT" | jq -r .
         ;;
