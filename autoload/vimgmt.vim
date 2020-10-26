@@ -15,11 +15,14 @@ let s:vimgmt_spacer_small = repeat('─', 33)
 let s:vimgmt_comment_pad = repeat(' ', 4)
 
 " Buffers
-let s:buf_vimgmt = '/tmp/vimgmt.vimgmt'
-let s:buf_issue = '/tmp/issue.vimgmt'
-let s:buf_comment = '/tmp/comment.vimgmt'
-let s:buf_new_issue = '/tmp/new_issue.vimgmt'
-let s:buf_new_request = '/tmp/new_request.vimgmt'
+let s:vimgmt_bufs =
+    \{
+        \'issue':     '/tmp/issue.vimgmt',
+        \'main':      '/tmp/vimgmt.vimgmt',
+        \'comment':   '/tmp/comment.vimgmt',
+        \'new_issue': '/tmp/new_issue.vimgmt',
+        \'new_req':   '/tmp/new_req.vimgmt'
+    \}
 
 " Issue variables
 let s:current_issue = -1
@@ -46,12 +49,12 @@ function! vimgmt#Vimgmt() abort
         echo 'Refreshing...'
 
         " User is already using Vimgmt, treat as a refresh
-        if bufexists(bufnr(s:buf_vimgmt)) > 0
-            execute 'bw! ' . fnameescape(s:buf_vimgmt)
+        if bufexists(bufnr(s:vimgmt_bufs.main)) > 0
+            execute 'bw! ' . fnameescape(s:vimgmt_bufs.main)
         endif
 
-        if bufexists(bufnr(s:buf_issue)) > 0
-            execute 'bw! ' . fnameescape(s:buf_issue)
+        if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
+            execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
         endif
     else
         " New session, prompt for token pw
@@ -72,8 +75,8 @@ endfunction
 " in instances where the issue buffer was opened on top of it.
 function! vimgmt#VimgmtBack() abort
     " Reopen main 'vimgmt.tmp' buffer, and close the issue buffer
-    execute 'b ' . fnameescape(s:buf_vimgmt)
-    execute 'bw! ' . fnameescape(s:buf_issue)
+    execute 'b ' . fnameescape(s:vimgmt_bufs.main)
+    execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
 
     " Reset issue number
     let s:current_issue = -1
@@ -88,7 +91,7 @@ endfunction
 "
 " Used in conjunction with :VimgmtPost to post the comment.
 function! vimgmt#VimgmtComment() abort
-    if bufexists(bufnr(s:buf_comment)) > 0
+    if bufexists(bufnr(s:vimgmt_bufs.comment)) > 0
         echo 'Error: Post buffer already open'
         return
     elseif s:current_issue <= 0
@@ -102,12 +105,12 @@ endfunction
 " :VimgmtPost posts the contents of the comment buffer to the
 " comment section for whichever issue/PR/MR is currently open.
 function! vimgmt#VimgmtPost() abort
-    if bufexists(bufnr(s:buf_new_issue)) > 0 || bufexists(bufnr(s:buf_new_request))
+    if bufexists(bufnr(s:vimgmt_bufs.new_issue)) > 0 || bufexists(bufnr(s:vimgmt_bufs.new_req))
         " Determine which buffer to use for the post
-        let l:post_buf = s:buf_new_issue
+        let l:post_buf = s:vimgmt_bufs.new_issue
         let l:pr = 0
-        if bufexists(bufnr(s:buf_new_request))
-            let l:post_buf = s:buf_new_request
+        if bufexists(bufnr(s:vimgmt_bufs.new_req))
+            let l:post_buf = s:vimgmt_bufs.new_req
             let l:pr = 1
         endif
 
@@ -122,8 +125,8 @@ function! vimgmt#VimgmtPost() abort
         let l:body = join(getline(3, '$'), '\n')
         call NewItem(l:pr, l:title, l:body)
         execute 'bw! ' . fnameescape(l:post_buf)
-    elseif bufexists(bufnr(s:buf_comment)) > 0
-        execute 'b ' . fnameescape(s:buf_comment)
+    elseif bufexists(bufnr(s:vimgmt_bufs.comment)) > 0
+        execute 'b ' . fnameescape(s:vimgmt_bufs.comment)
 
         " Format double quotes
         silent %s/\"/\\\\\\"/ge
@@ -131,7 +134,7 @@ function! vimgmt#VimgmtPost() abort
         " Condense buffer into a single line with line break chars
         let l:comment_text = join(getline(1, '$'), '\n')
         call PostComment(l:comment_text)
-        execute 'bw! ' . fnameescape(s:buf_comment)
+        execute 'bw! ' . fnameescape(s:vimgmt_bufs.comment)
     else
         echo 'Error: No buffers open to post'
         return
@@ -144,7 +147,7 @@ endfunction
 " - a:1: Either 'issue' or 'pr'/'mr'
 function! vimgmt#VimgmtNew(...) abort
     let l:item_type = a:1
-    if bufexists(bufnr(s:buf_new_issue)) > 0 || bufexists(bufnr(s:buf_new_request))
+    if bufexists(bufnr(s:vimgmt_bufs.new_issue)) > 0 || bufexists(bufnr(s:vimgmt_bufs.new_req))
         echo 'Error: New item buffer already open'
         return
     endif
@@ -260,7 +263,7 @@ endfunction
 function! CreateCommentBuffer() abort
     set splitbelow
     new
-    execute "file " . fnameescape(s:buf_comment)
+    execute "file " . fnameescape(s:vimgmt_bufs.comment)
     call setline(1, '<!-- Write comment here -->')
     call CloseBuffer()
 
@@ -276,9 +279,9 @@ function! CreateItemBuffer(type) abort
     let l:descriptor = 'Issue'
 
     if a:type ==? 'issue'
-        execute "file " . fnameescape(s:buf_new_issue)
+        execute "file " . fnameescape(s:vimgmt_bufs.new_issue)
     else
-        execute "file " . fnameescape(s:buf_new_request)
+        execute "file " . fnameescape(s:vimgmt_bufs.new_req)
         let l:descriptor = 'Request'
     endif
 
@@ -300,10 +303,10 @@ function! CreateIssueBuffer(contents) abort
     endif
 
     " Clear buffer if it already exists
-    if bufexists(bufnr(s:buf_issue)) > 0
-        execute 'bw! ' . fnameescape(s:buf_issue)
+    if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
+        execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
     endif
-    execute "file " . fnameescape(s:buf_issue)
+    execute "file " . fnameescape(s:vimgmt_bufs.issue)
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
@@ -364,7 +367,7 @@ function! CreateHomeBuffer(results) abort
     else
         new   " Window is too narrow, use horizontal split
     endif
-    execute "file " . fnameescape(s:buf_vimgmt)
+    execute "file " . fnameescape(s:vimgmt_bufs.main)
     setlocal bufhidden=hide noswapfile wrap
 
     let l:line_idx = SetHeader()
