@@ -25,12 +25,14 @@ case $(jq_read "$JSON_ARG" command) in
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
+            -H "Accept: "$GITHUB_REACTIONS"" \
             "$GITHUB_API/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
 
         COMMENTS_RESULT=$(curl -o /dev/null -s \
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
+            -H "Accept: "$GITHUB_REACTIONS"" \
             "$GITHUB_API/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
 
         # Combine comments and issue info into one json object
@@ -71,7 +73,22 @@ case $(jq_read "$JSON_ARG" command) in
 
         echo "$RESULT" | jq -r .
         ;;
+    *"close"*)
+        # Close issue/PR/MR
+        if [[ "$(jq_read "$JSON_ARG" pr)" == "1" ]]; then
+            RESULT="{}"
+        else
+            RESULT=$(curl -o /dev/null -s \
+                -w "%{http_code}" \
+                -A "$VIMGMT_USERNAME_GH" \
+                -bc /tmp/vimgmt-cookies \
+                -H "Authorization: token $API_KEY" \
+                --data "{\"state\": \"closed\"}" \
+                -X PATCH "https://api.github.com/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
+        fi
 
+        echo "$RESULT" | jq -r .
+        ;;
     *)
         echo "ERROR: Unrecognized command"
         exit 1

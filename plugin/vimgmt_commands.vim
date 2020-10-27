@@ -1,9 +1,8 @@
 " ============================================================================
 " File:        vimgmt_commands.vim
-" Description: Establishes vim commands for managing git repos
 " Author:      Ben Busby <contact@benbusby.com>
 " License:     MIT
-" Website:     https://benbusby.com/projects/vimgmt/
+" Website:     https://github.com/benbusby/vimgmt/
 " Version:     1.0
 " ============================================================================
 

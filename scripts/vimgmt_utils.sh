@@ -11,6 +11,12 @@ export GITLAB_API="https://gitlab.com/api/v4"
 # Footers for issues/comments
 export FOOTER="<hr>\n\n<sub>_Posted with [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"
 
+# GitHub extra media types (enables receiving reactions, multi-line review comments, etc)
+# application/vnd.github.squirrel-girl-preview -- reactions
+# application/vnd.github.comfort-fade-preview+json -- review multiline comments
+export GITHUB_REACTIONS="application/vnd.github.squirrel-girl-preview"
+export GITHUB_MULTILINE="application/vnd.github.comfort-fade-preview+json"
+
 # -------------------------------------------------
 # Initialization
 # -------------------------------------------------

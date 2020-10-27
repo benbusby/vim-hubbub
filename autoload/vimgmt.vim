@@ -2,35 +2,41 @@
 " File:        vimgmt.vim
 " Author:      Ben Busby <contact@benbusby.com>
 " License:     MIT
-" Website:     https://benbusby.com/projects/vimgmt/
+" Website:     https://github.com/benbusby/vimgmt
 " Version:     1.0
 " ============================================================================
 scriptencoding utf-8
 
 let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
-" Formatting
 let s:vimgmt_spacer = repeat('─ ', 27)
 let s:vimgmt_spacer_small = repeat('─', 33)
 let s:vimgmt_comment_pad = repeat(' ', 4)
 
-" Buffers
-let s:vimgmt_bufs =
-    \{
-        \'issue':     '/tmp/issue.vimgmt',
-        \'main':      '/tmp/vimgmt.vimgmt',
-        \'comment':   '/tmp/comment.vimgmt',
-        \'new_issue': '/tmp/new_issue.vimgmt',
-        \'new_req':   '/tmp/new_req.vimgmt'
-    \}
+let s:vimgmt_bufs = {
+    \'issue':     '/tmp/issue.vimgmt',
+    \'main':      '/tmp/vimgmt.vimgmt',
+    \'comment':   '/tmp/comment.vimgmt',
+    \'new_issue': '/tmp/new_issue.vimgmt',
+    \'new_req':   '/tmp/new_req.vimgmt'
+\}
 
-" Issue variables
-let s:current_issue = -1
-let s:in_pr = 0
+let s:vimgmt = {
+    \'token_pw': '',
+    \'current_issue': -1,
+    \'in_pr': 0
+\}
 
-let s:vimgmt_dict = {'token_pw': ''}
-
-set fileformat=unix
+let s:reactions = {
+    \'+1': '👍',
+    \'-1': '👎',
+    \'laugh': '🤣',
+    \'eyes': '👀',
+    \'hooray': '🎉',
+    \'confused': '🤔',
+    \'heart': '🫀',
+    \'rocket': '🚀'
+\}
 
 " ============================================================================
 " Commands
@@ -44,7 +50,7 @@ set fileformat=unix
 "     there's already a Vimgmt buffer open, it will:
 "   - Refresh the currently active Vimgmt buffers
 function! vimgmt#Vimgmt() abort
-    if len(s:vimgmt_dict.token_pw) > 0
+    if len(s:vimgmt.token_pw) > 0
         set cmdheight=4
         echo 'Refreshing...'
 
@@ -59,15 +65,15 @@ function! vimgmt#Vimgmt() abort
     else
         " New session, prompt for token pw
         call inputsave()
-        let s:vimgmt_dict.token_pw = inputsecret('Enter token password: ')
+        let s:vimgmt.token_pw = inputsecret('Enter token password: ')
         call inputrestore()
     endif
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
     call CreateHomeBuffer(HomePageQuery())
-    if s:current_issue != -1
-        call CreateIssueBuffer(IssueQuery(s:current_issue, s:in_pr))
+    if s:vimgmt.current_issue != -1
+        call CreateIssueBuffer(IssueQuery(s:vimgmt.current_issue, s:vimgmt.in_pr))
     endif
 endfunction
 
@@ -79,8 +85,8 @@ function! vimgmt#VimgmtBack() abort
     execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
 
     " Reset issue number
-    let s:current_issue = -1
-    let s:in_pr = 0
+    let s:vimgmt.current_issue = -1
+    let s:vimgmt.in_pr = 0
 endfunction
 
 " --------------------------------------------------------------
@@ -94,7 +100,7 @@ function! vimgmt#VimgmtComment() abort
     if bufexists(bufnr(s:vimgmt_bufs.comment)) > 0
         echo 'Error: Post buffer already open'
         return
-    elseif s:current_issue <= 0
+    elseif s:vimgmt.current_issue <= 0
         echo 'Error: Must be on an issue/PR page to comment!'
         return
     endif
@@ -140,7 +146,7 @@ function! vimgmt#VimgmtPost() abort
         return
     endif
 
-    call Vimgmt()
+    call vimgmt#Vimgmt()
 endfunction
 
 " :VimgmtNew creates a new issue/PR/MR.
@@ -158,19 +164,28 @@ endfunction
 " :VimgmtClose closes the currently selected issue/PR/MR, depending
 " on the current active buffer.
 function! vimgmt#VimgmtClose() abort
-    let l:number_to_close = s:current_issue
-    let l:pr = s:in_pr
-    if s:number_to_close <= 0
-        let l:number = b:issue_lookup[getcurpos()[1]]['number']
+    let l:number_to_close = s:vimgmt.current_issue
+    let l:pr = s:vimgmt.in_pr
+    let l:reset_current = 1
+
+    " Check to see if the user is not in an issue buffer, and
+    " if not, close the issue under their cursor
+    if expand('%:p') =~ s:vimgmt_bufs.main
+        let l:number_to_close = b:issue_lookup[getcurpos()[1]]['number']
         let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
+        let l:reset_current = 0
     endif
 
     call inputsave()
-    let s:answer = input('Close #' . l:number . '? (y/n)')
+    let s:answer = input('Close #' . l:number_to_close . '? (y/n) ')
     call inputrestore()
 
     if s:answer ==? 'y'
         call CloseItem(l:number_to_close, l:pr)
+        if l:reset_current
+            let s:vimgmt.current_issue = -1
+        endif
+        call vimgmt#Vimgmt()
     endif
 endfunction
 
@@ -179,45 +194,45 @@ endfunction
 " ============================================================================
 
 function! HomePageQuery() abort
-    let s:vimgmt_dict.command = 'view_all'
+    let s:vimgmt.command = 'view_all'
     return json_decode(VimgmtScript())
 endfunction
 
 function! IssueQuery(number, pr) abort
-    let s:vimgmt_dict.command = 'view'
-    let s:vimgmt_dict.number = a:number
-    let s:vimgmt_dict.pr = a:pr
+    let s:vimgmt.command = 'view'
+    let s:vimgmt.number = a:number
+    let s:vimgmt.pr = a:pr
     return json_decode(VimgmtScript())
 endfunction
 
 function! PostComment(comment) abort
-    let s:vimgmt_dict.command = 'comment'
-    let s:vimgmt_dict.body = a:comment
-    let s:vimgmt_dict.number = s:current_issue
-    let s:vimgmt_dict.pr = s:in_pr
+    let s:vimgmt.command = 'comment'
+    let s:vimgmt.body = a:comment
+    let s:vimgmt.number = s:vimgmt.current_issue
+    let s:vimgmt.pr = s:vimgmt.in_pr
     call VimgmtScript()
 endfunction
 
 function! NewItem(type, title, body) abort
-    let s:vimgmt_dict.command = 'new'
-    let s:vimgmt_dict.title = a:title
-    let s:vimgmt_dict.body = a:body
-    let s:vimgmt_dict.pr = (a:type ==? 'issue' ? 0 : 1)
+    let s:vimgmt.command = 'new'
+    let s:vimgmt.title = a:title
+    let s:vimgmt.body = a:body
+    let s:vimgmt.pr = (a:type ==? 'issue' ? 0 : 1)
     call VimgmtScript()
 endfunction
 
 function! CloseItem(number, pr) abort
-    let s:vimgmt_dict.command = 'close'
-    let s:vimgmt_dict.number = a:number
-    let s:vimgmt_dict.pr = a:pr
+    let s:vimgmt.command = 'close'
+    let s:vimgmt.number = a:number
+    let s:vimgmt.pr = a:pr
     call VimgmtScript()
 endfunction
 
 function! VimgmtScript() abort
     " Use double quotes here to avoid unneccessary confusion when calling the
     " script with a single-quoted json body
-    let l:response = system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(s:vimgmt_dict), "'", "'\\\\''", "g") . "'")
-    call ResetDict()
+    let l:response = system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(s:vimgmt), "'", "'\\\\''", "g") . "'")
+    call ResetState()
     return l:response
 endfunction
 
@@ -227,7 +242,7 @@ endfunction
 
 " Open issue based on the provided issue number
 function! ViewIssue(issue_number, in_pr) abort
-    let s:in_pr = a:in_pr
+    let s:vimgmt.in_pr = a:in_pr
     set cmdheight=4
     echo "Loading..."
 
@@ -248,7 +263,9 @@ function! SetHeader() abort
     let l:line_idx = 1
     for line in readfile(s:dir . '/assets/header.txt')
         if l:line_idx == 1
-            let l:repo_name = system('source ' . s:dir . '/scripts/vimgmt_utils.sh && get_path')
+            let l:repo_name = system(
+                \'source ' . s:dir . '/scripts/vimgmt_utils.sh && get_path'
+            \)
             call setline(l:line_idx, line . ' ' . l:repo_name)
         else
             call setline(l:line_idx, line)
@@ -286,7 +303,7 @@ function! CreateItemBuffer(type) abort
     endif
 
     call setline(1, l:descriptor . ' Title')
-    call setline(2, '--------------------')
+    call setline(2, repeat('-', 20))
     call setline(3, l:descriptor . ' Description')
     call CloseBuffer()
 
@@ -318,42 +335,31 @@ function! CreateIssueBuffer(contents) abort
     call setline(l:line_idx + 1, s:vimgmt_spacer_small)
 
     " Split body on line breaks for proper formatting
-    let l:chunk_num = InsertBodyText(a:contents['body'], l:line_idx + 2)
+    let l:chunk_num = InsertBodyText(
+        \a:contents['body'], l:line_idx + 2)
 
     call setline(l:line_idx + l:chunk_num + 2, s:vimgmt_spacer_small)
     call setline(l:line_idx + l:chunk_num + 3, 'Created: ' . FormatTime(a:contents['created_at']))
     call setline(l:line_idx + l:chunk_num + 4, 'Updated: ' . FormatTime(a:contents['updated_at']))
     call setline(l:line_idx + l:chunk_num + 5, 'Author:  ' . a:contents['user']['login'])
-    call setline(l:line_idx + l:chunk_num + 6, s:vimgmt_spacer_small)
-    call setline(l:line_idx + l:chunk_num + 7, '')
-    call setline(l:line_idx + l:chunk_num + 8, s:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
+    call setline(l:line_idx + l:chunk_num + 6,s:vimgmt_spacer_small)
 
-    let l:line_idx += l:chunk_num + 9
+    " Add reactions to issue (important)
+    if has_key(a:contents, 'reactions')
+        let l:reactions_str = GenerateReactionsStr(a:contents['reactions'])
+    endif
 
-    for comment in a:contents['comments']
-        let commenter = comment['user']['login']
-        if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
-            let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
-        endif
-        call setline(l:line_idx, s:vimgmt_comment_pad . s:vimgmt_spacer)
-        call setline(l:line_idx + 1, s:vimgmt_comment_pad . FormatTime(comment['created_at']))
-        call setline(l:line_idx + 2, s:vimgmt_comment_pad . commenter . ':')
-        call setline(l:line_idx + 3, s:vimgmt_comment_pad . '')
+    call setline(l:line_idx + l:chunk_num + 7, l:reactions_str)
+    call setline(l:line_idx + l:chunk_num + 8, s:vimgmt_spacer_small)
 
-        " Split comment body on line breaks for proper formatting
-        let l:chunk_num = 0
-        for comment_line in split(comment['body'], '\n')
-            call setline(l:line_idx + l:chunk_num + 4, s:vimgmt_comment_pad . comment_line)
-            let l:chunk_num += 1
-        endfor
+    call setline(l:line_idx + l:chunk_num + 9, s:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
 
-        call setline(l:line_idx + l:chunk_num + 4, s:vimgmt_comment_pad . '')
-        let l:line_idx += l:chunk_num + 5
-    endfor
+    let l:line_idx += l:chunk_num + 10
+    call InsertComments(a:contents['comments'], l:line_idx)
 
     " Store issue number for interacting with the issue (commenting, closing,
     " etc)
-    let s:current_issue = a:contents['number']
+    let s:vimgmt.current_issue = a:contents['number']
 
     call CloseBuffer()
 endfunction
@@ -380,8 +386,11 @@ function! CreateHomeBuffer(results) abort
         " selecting an issue starting at the '- - - -' separator
         let start_idx = l:line_idx - 1
 
-        " Establish title and type of issue (PRs are 'issues' in GitHub)
-        let l:item_name = (has_key(item, 'pull_request') ? '(Pull Request) ' : '(Issue) ') . '#' . item['number'] . ': ' . item['title']
+        " Set title and indicator for whether or not the item is a Pull
+        " Request
+        let l:item_name = (has_key(item, 'pull_request')
+            \? '(Pull Request) ' : '(Issue) ') .
+            \'#' . item['number'] . ': ' . item['title']
         call setline(l:line_idx, l:item_name)
 
         " Draw boundary between title and body
@@ -398,7 +407,11 @@ function! CreateHomeBuffer(results) abort
 
         " Store issue number and title to use for viewing issue details later
         while start_idx <= l:line_idx + 5
-            let b:issue_lookup[start_idx] = {'number': item['number'], 'title': item['title'], 'is_pr': has_key(item, 'pull_request')}
+            let b:issue_lookup[start_idx] = {
+                \'number': item['number'],
+                \'title': item['title'],
+                \'is_pr': has_key(item, 'pull_request')
+            \}
             let start_idx += 1
         endwhile
 
@@ -409,7 +422,9 @@ function! CreateHomeBuffer(results) abort
     " Set up the ability to hit Enter on any issue section to open an issue
     " buffer
     call cursor(s:results_line, 1)
-    nnoremap <buffer> <silent> <CR> :call ViewIssue(b:issue_lookup[getcurpos()[1]]['number'], b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
+    nnoremap <buffer> <silent> <CR> :call ViewIssue(
+        \b:issue_lookup[getcurpos()[1]]['number'],
+        \b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
     call CloseBuffer()
 endfunction
@@ -463,6 +478,51 @@ function! InsertBodyText(body, start_idx) abort
     return l:chunk_num
 endfunction
 
+" Inserts comments into the buffer.
+"
+" Returns a cursor position for the next line draw
+function! InsertComments(comments, start_idx) abort
+    let l:chunk_num = 0
+    let l:curr_idx = a:start_idx
+    for comment in a:comments
+        let commenter = comment['user']['login']
+        if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
+            let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
+        endif
+        call setline(l:curr_idx, s:vimgmt_comment_pad . s:vimgmt_spacer)
+        call setline(l:curr_idx + 1, s:vimgmt_comment_pad . FormatTime(comment['created_at']))
+        call setline(l:curr_idx + 2, s:vimgmt_comment_pad . commenter . ':')
+        call setline(l:curr_idx + 3, s:vimgmt_comment_pad . '')
+
+        " Split comment body on line breaks for proper formatting
+        let l:chunk_num = 0
+        for comment_line in split(comment['body'], '\n')
+            call setline(l:curr_idx + l:chunk_num + 4, s:vimgmt_comment_pad . comment_line)
+            let l:chunk_num += 1
+        endfor
+
+        call setline(l:curr_idx + l:chunk_num + 4, s:vimgmt_comment_pad . '')
+        let l:curr_idx += l:chunk_num + 5
+    endfor
+
+    return l:chunk_num
+endfunction
+
+" Generates a string from a set of reactions
+"
+" Returns a string
+function! GenerateReactionsStr(reactions) abort
+    let l:reactions = ''
+    for key in keys(s:reactions)
+        if has_key(a:reactions, key) && a:reactions[key] > 0
+            let l:reactions = l:reactions .
+                \s:reactions[key] . ' x' . a:reactions[key] . ' '
+        endif
+    endfor
+
+    return l:reactions
+endfunction
+
 " Removes alphabetical characters from time string.
 " Returns an easily readable time str (ex: 2020-10-07 15:10:03)
 function! FormatTime(time_str) abort
@@ -481,7 +541,11 @@ function! CloseBuffer() abort
     set cmdheight=1 hidden bt=nofile splitright
 endfunction
 
-" Resets the Vimgmt script dictionary to a clean state.
-function! ResetDict() abort
-    let s:vimgmt_dict = {'token_pw': s:vimgmt_dict.token_pw}
+" Resets the Vimgmt script dictionary
+function! ResetState() abort
+    let s:vimgmt = {
+        \'token_pw': s:vimgmt.token_pw,
+        \'current_issue': s:vimgmt.current_issue,
+        \'in_pr': s:vimgmt.in_pr
+    \}
 endfunction
