@@ -1,4 +1,4 @@
-# vimgmt ![CI](https://github.com/benbusby/vimgmt/workflows/CI/badge.svg?branch=main)
+# vimgmt [![CI](https://github.com/benbusby/vimgmt/workflows/CI/badge.svg?branch=main)](https://github.com/benbusby/vimgmt/actions)
 
 ## Table of Contents
 - [Requirements](#requirements)

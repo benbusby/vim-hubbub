@@ -25,14 +25,14 @@ case $(jq_read "$JSON_ARG" command) in
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            -H "Accept: "$GITHUB_REACTIONS"" \
+            -H "Accept: $GITHUB_REACTIONS" \
             "$GITHUB_API/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
 
         COMMENTS_RESULT=$(curl -o /dev/null -s \
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            -H "Accept: "$GITHUB_REACTIONS"" \
+            -H "Accept: $GITHUB_REACTIONS" \
             "$GITHUB_API/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
 
         # Combine comments and issue info into one json object
