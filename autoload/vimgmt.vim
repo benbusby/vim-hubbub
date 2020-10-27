@@ -11,7 +11,7 @@ let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 let s:vimgmt_spacer = repeat('─ ', 27)
 let s:vimgmt_spacer_small = repeat('─', 33)
-let s:vimgmt_comment_pad = repeat(' ', 4)
+"let s:vimgmt_comment_pad = repeat(' ', 4)
 
 let s:vimgmt_bufs = {
     \'issue':     '/tmp/issue.vimgmt',
@@ -351,10 +351,11 @@ function! CreateIssueBuffer(contents) abort
 
     call setline(l:line_idx + l:chunk_num + 7, l:reactions_str)
     call setline(l:line_idx + l:chunk_num + 8, s:vimgmt_spacer_small)
+    call setline(l:line_idx + l:chunk_num + 9, '')
 
-    call setline(l:line_idx + l:chunk_num + 9, s:vimgmt_comment_pad . 'Comments (' . len(a:contents['comments']) . ')')
+    call setline(l:line_idx + l:chunk_num + 10, 'Comments (' . len(a:contents['comments']) . ')')
 
-    let l:line_idx += l:chunk_num + 10
+    let l:line_idx += l:chunk_num + 11
     call InsertComments(a:contents['comments'], l:line_idx)
 
     " Store issue number for interacting with the issue (commenting, closing,
@@ -489,19 +490,19 @@ function! InsertComments(comments, start_idx) abort
         if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
         endif
-        call setline(l:curr_idx, s:vimgmt_comment_pad . s:vimgmt_spacer)
-        call setline(l:curr_idx + 1, s:vimgmt_comment_pad . FormatTime(comment['created_at']))
-        call setline(l:curr_idx + 2, s:vimgmt_comment_pad . commenter . ':')
-        call setline(l:curr_idx + 3, s:vimgmt_comment_pad . '')
+        call setline(l:curr_idx, s:vimgmt_spacer)
+        call setline(l:curr_idx + 1, FormatTime(comment['created_at']))
+        call setline(l:curr_idx + 2, commenter . ':')
+        call setline(l:curr_idx + 3, '')
 
         " Split comment body on line breaks for proper formatting
         let l:chunk_num = 0
         for comment_line in split(comment['body'], '\n')
-            call setline(l:curr_idx + l:chunk_num + 4, s:vimgmt_comment_pad . comment_line)
+            call setline(l:curr_idx + l:chunk_num + 4, comment_line)
             let l:chunk_num += 1
         endfor
 
-        call setline(l:curr_idx + l:chunk_num + 4, s:vimgmt_comment_pad . '')
+        call setline(l:curr_idx + l:chunk_num + 4, '')
         let l:curr_idx += l:chunk_num + 5
     endfor
 
