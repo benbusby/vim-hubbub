@@ -26,13 +26,24 @@ case $(jq_read "$JSON_ARG" command) in
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/merge_requests?state=opened")
 
-        echo "$ISSUE_RESULT" | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]' > /tmp/.tmp.issue.json
-        echo "$MR_RESULT" | jq '[.[] | .["number"] = .iid | .["body"] = .description | .["comments"] = .user_notes_count | .["pull_request"] = 1 | del(.iid, .description, .user_notes_count) | .labels |= [{"name": .[]}]]' > /tmp/.tmp.mr.json
+        echo "$ISSUE_RESULT" | jq '[.[] |
+            .["number"] = .iid |
+            .["body"] = .description |
+            .["comments"] = .user_notes_count |
+            del(.iid, .description, .user_notes_count) |
+            .labels |= [{"name": .[]}]]' > /tmp/.vimgmt.issue.json
+        echo "$MR_RESULT" | jq '[.[] |
+            .["number"] = .iid |
+            .["body"] = .description |
+            .["comments"] = .user_notes_count |
+            .["pull_request"] = 1 |
+            del(.iid, .description, .user_notes_count) |
+            .labels |= [{"name": .[]}]]' > /tmp/.vimgmt.mr.json
 
-        jq -s '[.[][]]' /tmp/.tmp.issue.json /tmp/.tmp.mr.json > /tmp/.tmp.group.json
-        jq -r '[. |= sort_by(.updated_at) | reverse[]]' /tmp/.tmp.group.json
+        jq -s '[.[][]]' /tmp/.vimgmt.issue.json /tmp/.vimgmt.mr.json > /tmp/.vimgmt.group.json
+        jq -r '[. |= sort_by(.updated_at) | reverse[]]' /tmp/.vimgmt.group.json
 
-        rm -f /tmp/.tmp.mr.json /tmp/.tmp.issue.json /tmp/.tmp.group.json
+        rm -f /tmp/.vimgmt.*
         ;;
 
     *"view"*)
@@ -45,15 +56,23 @@ case $(jq_read "$JSON_ARG" command) in
             "$GITLAB_API/projects/$PROJECT_ID/issues/$(jq_read "$JSON_ARG" number)/notes")
 
         # Combine comments and issue info into one json object
-        echo "$ISSUE_RESULT" | jq '. | .number = .iid | .body = .description | .author.login = .author.username | .user = .author | del(.iid, .description, .author)' > /tmp/.tmp.issue.json
+        echo "$ISSUE_RESULT" | jq '. |
+            .number = .iid |
+            .body = .description |
+            .author.login = .author.username |
+            .user = .author |
+            del(.iid, .description, .author)' > /tmp/.vimgmt.issue.json
 
         # Retrieve and format comments for the issue, removing system messages
-        echo "$COMMENTS_RESULT" | jq '[.[] | .author.login = .author.username | .user = .author | del(.author) ] | map(select(.system != true))' > /tmp/.tmp.comments.json
+        echo "$COMMENTS_RESULT" | jq '[.[] |
+            .author.login = .author.username |
+            .user = .author |
+            del(.author) ] |
+            map(select(.system != true))' > /tmp/.vimgmt.comments.json
 
-        jq -r -s '.[0] + {comments: .[1]}' /tmp/.tmp.issue.json /tmp/.tmp.comments.json
+        jq -r -s '.[0] + {comments: .[1]}' /tmp/.vimgmt.issue.json /tmp/.vimgmt.comments.json
 
-        rm -f /tmp/.tmp.issue.json
-        rm -f /tmp/.tmp.comments.json
+        rm -f /tmp/.vimgmt.*
         ;;
 
     *"comment"*)
