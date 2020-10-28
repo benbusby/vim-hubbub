@@ -24,6 +24,7 @@ case $(jq_read "$JSON_ARG" command) in
         if [[ "$(jq_read "$JSON_ARG" pr)" == "1" ]]; then
             PATH_TYPE="pulls"
         fi
+
         # View issue details and comments
         ISSUE_RESULT=$(curl -o /dev/null -s \
             -A "$VIMGMT_USERNAME_GH" \
@@ -40,12 +41,7 @@ case $(jq_read "$JSON_ARG" command) in
             "$GITHUB_API/repos/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)/comments")
 
         # Combine comments and issue info into one json object
-        echo "$ISSUE_RESULT" > /tmp/.tmp.issue.json
-        echo "$COMMENTS_RESULT" > /tmp/.tmp.comments.json
-        jq -s '.[0] + {comments: .[1]}' /tmp/.tmp.issue.json /tmp/.tmp.comments.json
-
-        rm -f /tmp/.tmp.issue.json
-        rm -f /tmp/.tmp.comments.json
+        jq -n "$ISSUE_RESULT + {comments: $COMMENTS_RESULT}"
         ;;
 
     *"comment"*)
