@@ -1,0 +1,40 @@
+{
+    "en": {
+        "pw_prompt": "Enter token password: ",
+        "refresh": "Refreshing... ",
+        "load": "Loading... ",
+        "error": "Error: ",
+        "close": "Close ",
+        "comment_help": "<!-- Write comment here -->",
+        "created": "Created: ",
+        "updated": "Updated:  ",
+        "author": "Author: ",
+        "labels": "Labels:   ",
+        "no_reactions": "(No Reactions)",
+        "comments": "Comments: ",
+        "comments_alt": "Comments ",
+        "issue": "(Issue) ",
+        "pr": "(Pull Request) ",
+        "title": "Title",
+        "desc": "Description"
+    },
+    "es": {
+        "pw_prompt": "Ingrese la contraseña del token: ",
+        "refresh": "Refrescando... ",
+        "load": "Cargando... ",
+        "error": "Error: ",
+        "close": "Cierre ",
+        "comment_help": "<!-- Escribe un comentario aquí -->",
+        "created": "Creado: ",
+        "updated": "Actualizado: ",
+        "author": "Autor[a]: ",
+        "labels": "Etiquetas:   ",
+        "no_reactions": "(Sin Reacciones)",
+        "comments": "Comentarios: ",
+        "comments_alt": "Comentarios ",
+        "issue": "(Edición) ",
+        "pr": "(Solicitud) ",
+        "title": "Título",
+        "desc": "Descripción"
+    }
+}

@@ -38,6 +38,10 @@ let s:reactions = {
     \'rocket': '🚀'
 \}
 
+" Set language, if available
+let lang_dict = json_decode(readfile(s:dir . '/assets/strings.json'))
+let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
+
 " ============================================================================
 " Commands
 " ============================================================================
@@ -52,7 +56,7 @@ let s:reactions = {
 function! vimgmt#Vimgmt() abort
     if len(s:vimgmt.token_pw) > 0
         set cmdheight=4
-        echo 'Refreshing...'
+        echo s:strings.refresh
 
         " User is already using Vimgmt, treat as a refresh
         if bufexists(bufnr(s:vimgmt_bufs.main)) > 0
@@ -65,7 +69,7 @@ function! vimgmt#Vimgmt() abort
     else
         " New session, prompt for token pw
         call inputsave()
-        let s:vimgmt.token_pw = inputsecret('Enter token password: ')
+        let s:vimgmt.token_pw = inputsecret(s:strings.pw_prompt)
         call inputrestore()
     endif
 
@@ -98,10 +102,10 @@ endfunction
 " Used in conjunction with :VimgmtPost to post the comment.
 function! vimgmt#VimgmtComment() abort
     if bufexists(bufnr(s:vimgmt_bufs.comment)) > 0
-        echo 'Error: Post buffer already open'
+        echo s:strings.error . 'Post buffer already open'
         return
     elseif s:vimgmt.current_issue <= 0
-        echo 'Error: Must be on an issue/PR page to comment!'
+        echo s:strings.error . 'Must be on an issue/PR page to comment!'
         return
     endif
 
@@ -142,7 +146,7 @@ function! vimgmt#VimgmtPost() abort
         call PostComment(l:comment_text)
         execute 'bw! ' . fnameescape(s:vimgmt_bufs.comment)
     else
-        echo 'Error: No buffers open to post'
+        echo s:strings.error . 'No buffers open to post'
         return
     endif
 
@@ -154,11 +158,11 @@ endfunction
 function! vimgmt#VimgmtNew(...) abort
     let l:item_type = a:1
     if bufexists(bufnr(s:vimgmt_bufs.new_issue)) > 0 || bufexists(bufnr(s:vimgmt_bufs.new_req))
-        echo 'Error: New item buffer already open'
+        echo s:strings.error . 'New item buffer already open'
         return
     endif
 
-    call CreateItemBuffer(l:item_type)
+    call NewItemBuffer(l:item_type)
 endfunction
 
 " :VimgmtClose closes the currently selected issue/PR/MR, depending
@@ -177,7 +181,7 @@ function! vimgmt#VimgmtClose() abort
     endif
 
     call inputsave()
-    let s:answer = input('Close #' . l:number_to_close . '? (y/n) ')
+    let s:answer = input(s:strings.close . '#' . l:number_to_close . '? (y/n) ')
     call inputrestore()
 
     if s:answer ==? 'y'
@@ -247,7 +251,7 @@ endfunction
 function! ViewIssue(issue_number, in_pr) abort
     let s:vimgmt.in_pr = a:in_pr
     set cmdheight=4
-    echo "Loading..."
+    echo s:strings.load
 
     call CreateIssueBuffer(IssueQuery(a:issue_number, a:in_pr))
 endfunction
@@ -278,7 +282,7 @@ function! CreateCommentBuffer() abort
     set splitbelow
     new
     execute "file " . fnameescape(s:vimgmt_bufs.comment)
-    call WriteLine('<!-- Write comment here -->')
+    call WriteLine(s:strings.comment_help)
     call CloseBuffer()
 
     " Re-enable modifiable so that we can write something
@@ -286,7 +290,7 @@ function! CreateCommentBuffer() abort
 endfunction
 
 " Create a buffer for a new item (issue/pr/mr/etc)
-function! CreateItemBuffer(type) abort
+function! NewItemBuffer(type) abort
     set splitbelow
     new
 
@@ -299,9 +303,9 @@ function! CreateItemBuffer(type) abort
         let l:descriptor = 'Request'
     endif
 
-    call WriteLine(l:descriptor . ' Title')
+    call WriteLine(l:descriptor . ' ' . s:strings.title)
     call WriteLine(repeat('-', 20))
-    call WriteLine(l:descriptor . ' Description')
+    call WriteLine(l:descriptor . ' ' . s:strings.desc)
     call CloseBuffer()
 
     " Re-enable modifiable so that we can write something
@@ -328,20 +332,21 @@ function! CreateIssueBuffer(contents) abort
     let s:results_line = l:line_idx
 
     " Write issue and comments to buffer
-    call WriteLine('(Issue) #' . a:contents['number'] . ': ' . a:contents['title'])
+    let l:type = (s:vimgmt.in_pr ? s:strings.pr : s:strings.issue)
+    call WriteLine(l:type . '#' . a:contents['number'] . ': ' . a:contents['title'])
     let l:line_idx = WriteLine(s:vimgmt_spacer_small)
 
     " Split body on line breaks for proper formatting
     let l:line_idx += InsertBodyText(a:contents['body'])
 
     call WriteLine(s:vimgmt_spacer_small)
-    call WriteLine('Created: ' . FormatTime(a:contents['created_at']))
-    call WriteLine('Updated: ' . FormatTime(a:contents['updated_at']))
-    call WriteLine('Author:  ' . a:contents['user']['login'])
+    call WriteLine(s:strings.created . FormatTime(a:contents['created_at']))
+    call WriteLine(s:strings.updated . FormatTime(a:contents['updated_at']))
+    call WriteLine(s:strings.author . a:contents['user']['login'])
     call WriteLine(s:vimgmt_spacer_small)
 
     " Add reactions to issue (important)
-    let l:reactions_str = '(No Reactions)'
+    let l:reactions_str = s:strings.no_reactions
     if has_key(a:contents, 'reactions')
         let l:reactions_str = GenerateReactionsStr(a:contents['reactions'])
     endif
@@ -350,7 +355,7 @@ function! CreateIssueBuffer(contents) abort
     call WriteLine(s:vimgmt_spacer_small)
     call WriteLine('')
 
-    let l:line_idx = WriteLine('Comments (' . len(a:contents['comments']) . ')')
+    let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents['comments']) . ')')
     call InsertComments(a:contents['comments'])
 
     " Store issue number for interacting with the issue (commenting, closing,
@@ -385,7 +390,7 @@ function! CreateHomeBuffer(results) abort
         " Set title and indicator for whether or not the item is a Pull
         " Request
         let l:item_name = (has_key(item, 'pull_request')
-            \? '(Pull Request) ' : '(Issue) ') .
+            \? s:strings.pr : s:strings.issue) .
             \'#' . item['number'] . ': ' . item['title']
         call WriteLine(l:item_name)
 
@@ -393,9 +398,9 @@ function! CreateHomeBuffer(results) abort
         let l:line_idx = WriteLine(s:vimgmt_spacer_small)
 
         let l:label_list = ParseLabels(item['labels'])
-        call WriteLine('Comments: ' . item['comments'])
-        call WriteLine('Labels:   ' . l:label_list)
-        call WriteLine('Updated:  ' . FormatTime(item['updated_at']))
+        call WriteLine(s:strings.comments . item['comments'])
+        call WriteLine(s:strings.labels . l:label_list)
+        call WriteLine(s:strings.updated . FormatTime(item['updated_at']))
         call WriteLine('')
         call WriteLine(s:vimgmt_spacer)
         let l:line_idx = WriteLine('')
@@ -505,7 +510,7 @@ function! GenerateReactionsStr(reactions) abort
         endif
     endfor
 
-    return (len(l:reactions) > 0 ? l:reactions : '(No Reactions)')
+    return (len(l:reactions) > 0 ? l:reactions : s:strings.no_reactions)
 endfunction
 
 " Removes alphabetical characters from time string.
