@@ -14,7 +14,7 @@ let s:vimgmt_spacer_small = repeat('─', 33)
 "let s:vimgmt_comment_pad = repeat(' ', 4)
 
 let s:vimgmt_bufs = {
-    \'issue':     '/tmp/issue.vimgmt',
+    \'issue':     '/tmp/issue.vimgmt.diff',
     \'main':      '/tmp/vimgmt.vimgmt',
     \'comment':   '/tmp/comment.vimgmt',
     \'new_issue': '/tmp/new_issue.vimgmt',
@@ -231,7 +231,10 @@ endfunction
 function! VimgmtScript() abort
     " Use double quotes here to avoid unneccessary confusion when calling the
     " script with a single-quoted json body
-    let l:response = system(s:dir . "/scripts/vimgmt.sh '" . substitute(json_encode(s:vimgmt), "'", "'\\\\''", "g") . "'")
+    let l:response = system(
+                \s:dir . "/scripts/vimgmt.sh '" .
+                \substitute(json_encode(s:vimgmt), "'", "'\\\\''", "g")
+                \. "'")
     call ResetState()
     return l:response
 endfunction
@@ -246,12 +249,7 @@ function! ViewIssue(issue_number, in_pr) abort
     set cmdheight=4
     echo "Loading..."
 
-    if a:in_pr
-        " TODO
-        echo "TODO"
-    else
-        call CreateIssueBuffer(IssueQuery(a:issue_number, a:in_pr))
-    endif
+    call CreateIssueBuffer(IssueQuery(a:issue_number, a:in_pr))
 endfunction
 
 " ============================================================================
@@ -266,11 +264,10 @@ function! SetHeader() abort
             let l:repo_name = system(
                 \'source ' . s:dir . '/scripts/vimgmt_utils.sh && get_path'
             \)
-            call setline(l:line_idx, line . ' ' . l:repo_name)
+            let l:line_idx = WriteLine(line . ' ' . l:repo_name)
         else
-            call setline(l:line_idx, line)
+            let l:line_idx = WriteLine(line)
         endif
-        let l:line_idx += 1
     endfor
 
     return l:line_idx
@@ -281,7 +278,7 @@ function! CreateCommentBuffer() abort
     set splitbelow
     new
     execute "file " . fnameescape(s:vimgmt_bufs.comment)
-    call setline(1, '<!-- Write comment here -->')
+    call WriteLine('<!-- Write comment here -->')
     call CloseBuffer()
 
     " Re-enable modifiable so that we can write something
@@ -302,9 +299,9 @@ function! CreateItemBuffer(type) abort
         let l:descriptor = 'Request'
     endif
 
-    call setline(1, l:descriptor . ' Title')
-    call setline(2, repeat('-', 20))
-    call setline(3, l:descriptor . ' Description')
+    call WriteLine(l:descriptor . ' Title')
+    call WriteLine(repeat('-', 20))
+    call WriteLine(l:descriptor . ' Description')
     call CloseBuffer()
 
     " Re-enable modifiable so that we can write something
@@ -331,32 +328,30 @@ function! CreateIssueBuffer(contents) abort
     let s:results_line = l:line_idx
 
     " Write issue and comments to buffer
-    call setline(l:line_idx, '(Issue) #' . a:contents['number'] . ': ' . a:contents['title'])
-    call setline(l:line_idx + 1, s:vimgmt_spacer_small)
+    call WriteLine('(Issue) #' . a:contents['number'] . ': ' . a:contents['title'])
+    let l:line_idx = WriteLine(s:vimgmt_spacer_small)
 
     " Split body on line breaks for proper formatting
-    let l:chunk_num = InsertBodyText(
-        \a:contents['body'], l:line_idx + 2)
+    let l:line_idx += InsertBodyText(a:contents['body'])
 
-    call setline(l:line_idx + l:chunk_num + 2, s:vimgmt_spacer_small)
-    call setline(l:line_idx + l:chunk_num + 3, 'Created: ' . FormatTime(a:contents['created_at']))
-    call setline(l:line_idx + l:chunk_num + 4, 'Updated: ' . FormatTime(a:contents['updated_at']))
-    call setline(l:line_idx + l:chunk_num + 5, 'Author:  ' . a:contents['user']['login'])
-    call setline(l:line_idx + l:chunk_num + 6,s:vimgmt_spacer_small)
+    call WriteLine(s:vimgmt_spacer_small)
+    call WriteLine('Created: ' . FormatTime(a:contents['created_at']))
+    call WriteLine('Updated: ' . FormatTime(a:contents['updated_at']))
+    call WriteLine('Author:  ' . a:contents['user']['login'])
+    call WriteLine(s:vimgmt_spacer_small)
 
     " Add reactions to issue (important)
+    let l:reactions_str = '(No Reactions)'
     if has_key(a:contents, 'reactions')
         let l:reactions_str = GenerateReactionsStr(a:contents['reactions'])
     endif
 
-    call setline(l:line_idx + l:chunk_num + 7, l:reactions_str)
-    call setline(l:line_idx + l:chunk_num + 8, s:vimgmt_spacer_small)
-    call setline(l:line_idx + l:chunk_num + 9, '')
+    call WriteLine(l:reactions_str)
+    call WriteLine(s:vimgmt_spacer_small)
+    call WriteLine('')
 
-    call setline(l:line_idx + l:chunk_num + 10, 'Comments (' . len(a:contents['comments']) . ')')
-
-    let l:line_idx += l:chunk_num + 11
-    call InsertComments(a:contents['comments'], l:line_idx)
+    let l:line_idx = WriteLine('Comments (' . len(a:contents['comments']) . ')')
+    call InsertComments(a:contents['comments'])
 
     " Store issue number for interacting with the issue (commenting, closing,
     " etc)
@@ -392,22 +387,21 @@ function! CreateHomeBuffer(results) abort
         let l:item_name = (has_key(item, 'pull_request')
             \? '(Pull Request) ' : '(Issue) ') .
             \'#' . item['number'] . ': ' . item['title']
-        call setline(l:line_idx, l:item_name)
+        call WriteLine(l:item_name)
 
         " Draw boundary between title and body
-        call setline(l:line_idx + 1, s:vimgmt_spacer_small)
-        let l:line_idx += 1
+        let l:line_idx = WriteLine(s:vimgmt_spacer_small)
 
         let l:label_list = ParseLabels(item['labels'])
-        call setline(l:line_idx + 1, 'Comments: ' . item['comments'])
-        call setline(l:line_idx + 2, 'Labels:   ' . l:label_list)
-        call setline(l:line_idx + 3, 'Updated:  ' . FormatTime(item['updated_at']))
-        call setline(l:line_idx + 4, '')
-        call setline(l:line_idx + 5, s:vimgmt_spacer)
-        call setline(l:line_idx + 6, '')
+        call WriteLine('Comments: ' . item['comments'])
+        call WriteLine('Labels:   ' . l:label_list)
+        call WriteLine('Updated:  ' . FormatTime(item['updated_at']))
+        call WriteLine('')
+        call WriteLine(s:vimgmt_spacer)
+        let l:line_idx = WriteLine('')
 
         " Store issue number and title to use for viewing issue details later
-        while start_idx <= l:line_idx + 5
+        while start_idx <= l:line_idx
             let b:issue_lookup[start_idx] = {
                 \'number': item['number'],
                 \'title': item['title'],
@@ -415,9 +409,6 @@ function! CreateHomeBuffer(results) abort
             \}
             let start_idx += 1
         endwhile
-
-        " Offset index to account for the previous lines of issue detail
-        let l:line_idx += 6
     endfor
 
     " Set up the ability to hit Enter on any issue section to open an issue
@@ -468,11 +459,11 @@ endfunction
 " needed.
 "
 " Returns a cursor position for the next line draw
-function! InsertBodyText(body, start_idx) abort
+function! InsertBodyText(body) abort
     let l:chunk_num = 0
     for chunk in split(a:body, '\n')
         let chunk = substitute(chunk, '\"', '', 'ge')
-        call setline(l:chunk_num + a:start_idx, chunk)
+        call WriteLine(chunk)
         let l:chunk_num += 1
     endfor
 
@@ -482,31 +473,24 @@ endfunction
 " Inserts comments into the buffer.
 "
 " Returns a cursor position for the next line draw
-function! InsertComments(comments, start_idx) abort
-    let l:chunk_num = 0
-    let l:curr_idx = a:start_idx
+function! InsertComments(comments) abort
     for comment in a:comments
         let commenter = comment['user']['login']
         if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
         endif
-        call setline(l:curr_idx, s:vimgmt_spacer)
-        call setline(l:curr_idx + 1, FormatTime(comment['created_at']))
-        call setline(l:curr_idx + 2, commenter . ':')
-        call setline(l:curr_idx + 3, '')
+        call WriteLine(s:vimgmt_spacer)
+        call WriteLine(FormatTime(comment['created_at']))
+        call WriteLine(commenter . ':')
+        call WriteLine('')
 
         " Split comment body on line breaks for proper formatting
-        let l:chunk_num = 0
         for comment_line in split(comment['body'], '\n')
-            call setline(l:curr_idx + l:chunk_num + 4, comment_line)
-            let l:chunk_num += 1
+            call WriteLine(comment_line)
         endfor
 
-        call setline(l:curr_idx + l:chunk_num + 4, '')
-        let l:curr_idx += l:chunk_num + 5
+        call WriteLine('')
     endfor
-
-    return l:chunk_num
 endfunction
 
 " Generates a string from a set of reactions
@@ -521,7 +505,7 @@ function! GenerateReactionsStr(reactions) abort
         endif
     endfor
 
-    return l:reactions
+    return (len(l:reactions) > 0 ? l:reactions : '(No Reactions)')
 endfunction
 
 " Removes alphabetical characters from time string.
@@ -540,6 +524,22 @@ function! CloseBuffer() abort
     normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
+endfunction
+
+" Writes a line to the buffer
+"
+" Returns the current line position
+function! WriteLine(line) abort
+    if empty(getline(1))
+        " Write over line 1 if empty
+        call setline(1, a:line)
+        return 2
+    endif
+
+    " Write to the next line
+    let l:pos = line('$') + 1
+    call setline(l:pos, a:line)
+    return l:pos
 endfunction
 
 " Resets the Vimgmt script dictionary
