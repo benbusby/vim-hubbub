@@ -53,6 +53,27 @@ ___
       export VIMGMT_TOKEN_GL="/home/benbusby/.vimgmt-token-gl"
       ```
 
+### Configuration
+#### Global Variables
+##### Required
+Todo? Could replace bashrc changes for global vimrc variables instead.
+
+##### Optional
+There are a few additional variables you can include in your `.vimrc` file to tweak Vimgmt to your preference:
+
+- `g:vimgmt_show_outdated` - Enables/disables showing outdated comments on pull requests
+  - `0`: (Default) Disabled
+  - `1`: Enabled
+- `g:vimgmt_language` - Sets the language for Vimgmt
+  - `en`: (Default) English
+  - `es`: Spanish
+- `g:vimgmt_include_footer` - Enables/disables the "Posted with Vimgmt" footer for comments/issues
+  - `0`: (Default) Disabled
+  - `1`: Enabled
+- `g:vimgmt_token` - Stores the value of your GitHub API token (not recommended!)
+  - Ex: `let g:vimgmt_token="abcdefg1234567"`
+  - Be advised that storing your token in plaintext as a global variable in your `.vimrc` file means that any other Vim plugin can read your token
+
 ### Usage
 #### Available Commands
 - `:Vimgmt`
@@ -71,12 +92,3 @@ ___
 ### FAQ
 ##### Why is it called "vimgmt"? How is it pronounced?
 It's supposed to be (kind of) a portmantaeu of the word "vim" and and the abbreviation for "management", mgmt. It's used for managing a repo within vim, so it made sense. It's pronounced "vim-gee-em-tee" or "vimagement", whichever you prefer.
-
-##### Why does the repo token need to be encrypted? Will vimgmt work if the token is unencrypted?
-The alternative would be setting the token value in a file (unencrypted) in a reliable place that vimgmt could always find, meaning that any other program could find the token if you used vimgmt. Encrypting the token, even with a weak password, makes a lot more sense.
-
-Storing the token unencrypted will not work. The token decryption process is a mandatory step that is built into vimgmt.
-
-##### Why did you make this?
-I use vim a lot, so I wanted to try out/learn vimscript by making something (marginally) useful.
-

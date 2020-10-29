@@ -13,14 +13,14 @@ case $(jq_read "$JSON_ARG" command) in
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            "$GITHUB_API/repos/$REPO_PATH/issues?state=open")
+            "$GITHUB_API/$REPO_PATH/issues?state=open")
 
         # Default sort by when it was updated
         echo "$RESULT" | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
         ;;
 
     *"view"*)
-        PATH_TYPE="issues"
+        PATH_TYPE="$(jq_read "$JSON_ARG" type)"
         if [[ "$(jq_read "$JSON_ARG" pr)" == "1" ]]; then
             PATH_TYPE="pulls"
         fi
@@ -31,14 +31,33 @@ case $(jq_read "$JSON_ARG" command) in
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             -H "Accept: $GITHUB_REACTIONS" \
-            "$GITHUB_API/repos/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)")
+            "$GITHUB_API/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)")
 
         COMMENTS_RESULT=$(curl -o /dev/null -s \
             -A "$VIMGMT_USERNAME_GH" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             -H "Accept: $GITHUB_REACTIONS" \
-            "$GITHUB_API/repos/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)/comments")
+            "$GITHUB_API/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)/comments")
+
+        # Also need issue comments if in a pull request
+        if [[ "$(jq_read "$JSON_ARG" type)" == "pulls" ]]; then
+            #echo "$COMMENTS_RESULT" | jq 'GROUPS_BY(.[]; [.diff_hunk]) | (.[0]|del(.body)) + { members: (map(.body)) }'
+            COMMENTS_RESULT=$(echo "$COMMENTS_RESULT" | jq 'group_by( [.diff_hunk]) | map((.[0]|del(.body)) +
+                { review_comments: (map(.user + { comment: .body } +
+                { created_at: .created_at } +
+                { author_association: .author_association} +
+                { reactions: .reactions })) })')
+
+            ISSUE_COMMENTS=$(curl -o /dev/null -s \
+                -A "$VIMGMT_USERNAME_GH" \
+                -bc /tmp/vimgmt-cookies \
+                -H "Authorization: token $API_KEY" \
+                -H "Accept: $GITHUB_REACTIONS" \
+                "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
+
+            COMMENTS_RESULT=$(jq -n "$ISSUE_COMMENTS + $COMMENTS_RESULT" | jq '. |= sort_by(.updated_at)')
+        fi
 
         # Combine comments and issue info into one json object
         jq -n "$ISSUE_RESULT + {comments: $COMMENTS_RESULT}"
@@ -52,7 +71,7 @@ case $(jq_read "$JSON_ARG" command) in
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             --data "{\"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \
-            -X POST "$GITHUB_API/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
+            -X POST "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
 
         echo "$RESULT" | jq .
         ;;
@@ -68,7 +87,7 @@ case $(jq_read "$JSON_ARG" command) in
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\", \"labels\": [\"$(jq_read "$JSON_ARG" labels)\"]}" \
-                -X POST "https://api.github.com/repos/$REPO_PATH/issues")
+                -X POST "https://api.github.com/$REPO_PATH/issues")
         fi
 
         echo "$RESULT" | jq -r .
@@ -84,7 +103,7 @@ case $(jq_read "$JSON_ARG" command) in
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"state\": \"closed\"}" \
-                -X PATCH "https://api.github.com/repos/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
+                -X PATCH "https://api.github.com/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
         fi
 
         echo "$RESULT" | jq -r .

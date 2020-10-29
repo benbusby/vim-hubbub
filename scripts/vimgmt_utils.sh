@@ -5,8 +5,8 @@ SUFFIXES=(".git")
 REPO_PATH=$(git ls-remote --get-url)
 
 # API Paths
-export GITHUB_API="https://api.github.com"
-export GITLAB_API="https://gitlab.com/api/v4"
+export GITHUB_API="https://api.github.com/repos"
+export GITLAB_API="https://gitlab.com/api/v4/projects"
 
 # Footers for issues/comments
 export FOOTER="<hr>\n\n<sub>_Posted with [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"

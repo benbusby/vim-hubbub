@@ -11,7 +11,6 @@ let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 let s:vimgmt_spacer = repeat('─ ', 27)
 let s:vimgmt_spacer_small = repeat('─', 33)
-"let s:vimgmt_comment_pad = repeat(' ', 4)
 
 let s:vimgmt_bufs = {
     \'issue':     '/tmp/issue.vimgmt.diff',
@@ -24,7 +23,9 @@ let s:vimgmt_bufs = {
 let s:vimgmt = {
     \'token_pw': '',
     \'current_issue': -1,
-    \'in_pr': 0
+    \'in_pr': 0,
+    \'github_token': (exists('g:vimgmt_github') ? g:vimgmt_github : ''),
+    \'gitlab_token': (exists('g:vimgmt_gitlab') ? g:vimgmt_gitlab : ''),
 \}
 
 let s:reactions = {
@@ -41,6 +42,7 @@ let s:reactions = {
 " Set language, if available
 let lang_dict = json_decode(readfile(s:dir . '/assets/strings.json'))
 let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
+let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
 
 " ============================================================================
 " Commands
@@ -52,7 +54,7 @@ let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
 " :Vimgmt can either:
 "   - Open a new instance of Vimgmt to the 'home' view. If
 "     there's already a Vimgmt buffer open, it will:
-"   - Refresh the currently active Vimgmt buffers
+"   - Refresh the currently active Vimgmt buffer(s)
 function! vimgmt#Vimgmt() abort
     if len(s:vimgmt.token_pw) > 0
         set cmdheight=4
@@ -205,7 +207,8 @@ endfunction
 function! IssueQuery(number, pr) abort
     let s:vimgmt.command = 'view'
     let s:vimgmt.number = a:number
-    let s:vimgmt.pr = a:pr
+    let s:vimgmt.type = (a:pr ? 'pulls' : 'issues')
+    let s:vimgmt.pr = s:vimgmt.in_pr
     return json_decode(VimgmtScript())
 endfunction
 
@@ -314,16 +317,17 @@ endfunction
 
 " Create issue/(pull|merge) request buffer
 function! CreateIssueBuffer(contents) abort
+    " Clear buffer if it already exists
+    if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
+        execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
+    endif
+
     if winwidth(0) > winheight(0) * 2
         vnew   " Window is wide enough for vertical split
     else
         enew   " Window is too narrow, use new buffer
     endif
 
-    " Clear buffer if it already exists
-    if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
-        execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
-    endif
     execute "file " . fnameescape(s:vimgmt_bufs.issue)
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
@@ -349,9 +353,11 @@ function! CreateIssueBuffer(contents) abort
     let l:reactions_str = s:strings.no_reactions
     if has_key(a:contents, 'reactions')
         let l:reactions_str = GenerateReactionsStr(a:contents['reactions'])
+        if !empty(l:reactions_str)
+            call WriteLine(l:reactions_str)
+        endif
     endif
 
-    call WriteLine(l:reactions_str)
     call WriteLine(s:vimgmt_spacer_small)
     call WriteLine('')
 
@@ -484,17 +490,73 @@ function! InsertComments(comments) abort
         if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
         endif
-        call WriteLine(s:vimgmt_spacer)
-        call WriteLine(FormatTime(comment['created_at']))
-        call WriteLine(commenter . ':')
-        call WriteLine('')
 
-        " Split comment body on line breaks for proper formatting
-        for comment_line in split(comment['body'], '\n')
-            call WriteLine(comment_line)
+        call WriteLine(s:vimgmt_spacer)
+
+        if has_key(comment, 'pull_request_review_id')
+            set syntax=diff
+            call InsertReviewComment(comment)
+        else
+            let l:reactions_str = s:strings.no_reactions
+            if has_key(comment, 'reactions')
+                let l:reactions_str = GenerateReactionsStr(comment['reactions'])
+            endif
+            call WriteLine(FormatTime(comment['created_at']))
+            call WriteLine(commenter . ': ')
+            call WriteLine('')
+            call InsertIssueComment(comment)
+            if !empty(l:reactions_str)
+                call WriteLine('')
+                call WriteLine(l:reactions_str)
+            endif
+        endif
+
+        call WriteLine('')
+    endfor
+endfunction
+
+function! InsertIssueComment(comment) abort
+    " Split comment body on line breaks for proper formatting
+    for comment_line in split(a:comment['body'], '\n')
+        call WriteLine(comment_line)
+    endfor
+endfunction
+
+function! InsertReviewComment(comment) abort
+    let l:padding = ''
+    if !a:comment['position']
+        if exists('g:vimgmt_show_outdated') && g:vimgmt_show_outdated
+            call WriteLine('!!! OUTDATED')
+        else
+            return
+        endif
+    endif
+    for diff_line in split(a:comment['diff_hunk'], '\n')
+        call WriteLine(diff_line)
+    endfor
+
+    call WriteLine('|------')
+    for review_comment in a:comment['review_comments']
+        let commenter = review_comment['login']
+        if has_key(review_comment, 'author_association') && review_comment['author_association'] !=? 'none'
+            let commenter = '(' . tolower(review_comment['author_association']) . ') ' . commenter
+        endif
+        call WriteLine('| ' . FormatTime(review_comment['created_at']))
+        call WriteLine('| ' . commenter . ': ')
+        for body_line in split(review_comment['comment'], '\n')
+            call WriteLine('| ' . body_line)
         endfor
 
-        call WriteLine('')
+        let l:reactions_str = s:strings.no_reactions
+        if has_key(review_comment, 'reactions')
+            let l:reactions_str = GenerateReactionsStr(review_comment['reactions'])
+            if !empty(l:reactions_str)
+                call WriteLine('| ')
+                call WriteLine('| ' . l:reactions_str)
+            endif
+        endif
+
+        call WriteLine('|------')
     endfor
 endfunction
 
@@ -529,6 +591,7 @@ function! CloseBuffer() abort
     normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
+    call vimgmt#utils#LoadSyntaxColoring()
 endfunction
 
 " Writes a line to the buffer
@@ -552,6 +615,10 @@ function! ResetState() abort
     let s:vimgmt = {
         \'token_pw': s:vimgmt.token_pw,
         \'current_issue': s:vimgmt.current_issue,
-        \'in_pr': s:vimgmt.in_pr
+        \'in_pr': s:vimgmt.in_pr,
+        \'github_token': s:vimgmt.github_token,
+        \'gitlab_token': s:vimgmt.gitlab_token
     \}
 endfunction
+
+
