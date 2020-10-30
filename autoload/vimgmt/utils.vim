@@ -1,6 +1,6 @@
 let s:end_str = '```'
 let s:syntax_types = [
-            \'c', 'cpp', 'python', 'javascript', 'vim', 'ruby', 'bash', 'sh'
+            \'c', 'cpp', 'python', 'javascript', 'vim', 'ruby', 'sh'
             \]
 
 " From https://vim.fandom.com/wiki/Different_syntax_highlighting_within_regions_of_a_file
