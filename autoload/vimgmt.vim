@@ -350,19 +350,19 @@ function! CreateIssueBuffer(contents) abort
     call WriteLine(s:vimgmt_spacer_small)
 
     " Add reactions to issue (important)
-    let l:reactions_str = s:strings.no_reactions
-    if has_key(a:contents, 'reactions')
-        let l:reactions_str = GenerateReactionsStr(a:contents['reactions'])
-        if !empty(l:reactions_str)
-            call WriteLine(l:reactions_str)
-        endif
+    let l:reactions_str = GenerateReactionsStr(a:contents)
+    if !empty(l:reactions_str)
+        call WriteLine(l:reactions_str)
     endif
 
     call WriteLine(s:vimgmt_spacer_small)
     call WriteLine('')
 
     let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents['comments']) . ')')
-    call InsertComments(a:contents['comments'])
+
+    for comment in a:contents['comments']
+        call InsertComment(comment)
+    endfor
 
     " Store issue number for interacting with the issue (commenting, closing,
     " etc)
@@ -481,61 +481,63 @@ function! InsertBodyText(body) abort
     return l:chunk_num
 endfunction
 
-" Inserts comments into the buffer.
-"
-" Returns a cursor position for the next line draw
-function! InsertComments(comments) abort
-    for comment in a:comments
-        let commenter = comment['user']['login']
-        if has_key(comment, 'author_association') && comment['author_association'] !=? 'none'
-            let commenter = '(' . tolower(comment['author_association']) . ') ' . commenter
-        endif
+" Inserts comments into the buffer
+function! InsertComment(comment) abort
+    let commenter = a:comment['user']['login']
+    if has_key(a:comment, 'author_association') && a:comment['author_association'] !=? 'none'
+        let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
+    endif
 
-        call WriteLine(s:vimgmt_spacer)
+    call WriteLine(s:vimgmt_spacer)
 
-        if has_key(comment, 'pull_request_review_id')
-            set syntax=diff
-            call InsertReviewComment(comment)
-        else
-            let l:reactions_str = s:strings.no_reactions
-            if has_key(comment, 'reactions')
-                let l:reactions_str = GenerateReactionsStr(comment['reactions'])
-            endif
-            call WriteLine(FormatTime(comment['created_at']))
-            call WriteLine(commenter . ': ')
-            call WriteLine('')
-            call InsertIssueComment(comment)
-            if !empty(l:reactions_str)
-                call WriteLine('')
-                call WriteLine(l:reactions_str)
-            endif
-        endif
-
+    " If this is a review comment, it needs different formatting/coloring
+    if has_key(a:comment, 'pull_request_review_id')
+        set syntax=diff
+        call InsertReviewComment(a:comment)
+    else
+        call WriteLine(FormatTime(a:comment['created_at']))
+        call WriteLine(commenter . ': ')
         call WriteLine('')
-    endfor
+
+        " Split comment body on line breaks for proper formatting
+        for comment_line in split(a:comment['body'], '\n')
+            call WriteLine(comment_line)
+        endfor
+
+        let l:reactions_str = GenerateReactionsStr(a:comment)
+        if !empty(l:reactions_str)
+            call WriteLine('')
+            call WriteLine(l:reactions_str)
+        endif
+    endif
+
+    call WriteLine('')
 endfunction
 
-function! InsertIssueComment(comment) abort
-    " Split comment body on line breaks for proper formatting
-    for comment_line in split(a:comment['body'], '\n')
-        call WriteLine(comment_line)
-    endfor
-endfunction
-
+" Inserts a comment for a Pull Request review
 function! InsertReviewComment(comment) abort
-    let l:padding = ''
+    " The 'position' element indicates if this comment is still relevant
+    " in the current state of the pull request
     if !a:comment['position']
         if exists('g:vimgmt_show_outdated') && g:vimgmt_show_outdated
-            call WriteLine('!!! OUTDATED')
+            call WriteLine(s:strings.outdated)
         else
+            call WriteLine(s:strings.outdated . ' ' . s:strings.hidden)
             return
         endif
     endif
+
+    " Write out the file name and 'diff hunk' (the snippet of the
+    " diff that is relevant for the comment)
+    call WriteLine('[' . a:comment['path'] . ']')
     for diff_line in split(a:comment['diff_hunk'], '\n')
         call WriteLine(diff_line)
     endfor
 
     call WriteLine('|------')
+
+    " Each individual review comment can have its own subdiscussion, which
+    " is tracked in the 'review_comments' array
     for review_comment in a:comment['review_comments']
         let commenter = review_comment['login']
         if has_key(review_comment, 'author_association') && review_comment['author_association'] !=? 'none'
@@ -544,16 +546,20 @@ function! InsertReviewComment(comment) abort
         call WriteLine('| ' . FormatTime(review_comment['created_at']))
         call WriteLine('| ' . commenter . ': ')
         for body_line in split(review_comment['comment'], '\n')
+            " If there's a suggestion, replace w/ relevant syntax highlighting
+            " for the file
+            if body_line =~ 'suggestion'
+                call WriteLine('| ' . s:strings.suggestion)
+                let extension = fnamemodify(a:comment['path'], ':e')
+                let body_line = substitute(body_line, 'suggestion', extension, '')
+            endif
             call WriteLine('| ' . body_line)
         endfor
 
-        let l:reactions_str = s:strings.no_reactions
-        if has_key(review_comment, 'reactions')
-            let l:reactions_str = GenerateReactionsStr(review_comment['reactions'])
-            if !empty(l:reactions_str)
-                call WriteLine('| ')
-                call WriteLine('| ' . l:reactions_str)
-            endif
+        let l:reactions_str = GenerateReactionsStr(review_comment)
+        if !empty(l:reactions_str)
+            call WriteLine('| ')
+            call WriteLine('| ' . l:reactions_str)
         endif
 
         call WriteLine('|------')
@@ -563,16 +569,22 @@ endfunction
 " Generates a string from a set of reactions
 "
 " Returns a string
-function! GenerateReactionsStr(reactions) abort
-    let l:reactions = ''
+function! GenerateReactionsStr(item) abort
+    if !has_key(a:item, 'reactions')
+        return s:strings.no_reactions
+    endif
+
+    let l:reactions = a:item['reactions']
+    let l:reaction_str = ''
+
     for key in keys(s:reactions)
-        if has_key(a:reactions, key) && a:reactions[key] > 0
-            let l:reactions = l:reactions .
-                \s:reactions[key] . ' x' . a:reactions[key] . ' '
+        if has_key(l:reactions, key) && l:reactions[key] > 0
+            let l:reaction_str = l:reaction_str .
+                \s:reactions[key] . ' x' . l:reactions[key] . ' '
         endif
     endfor
 
-    return (len(l:reactions) > 0 ? l:reactions : s:strings.no_reactions)
+    return (len(l:reaction_str) > 0 ? l:reaction_str : s:strings.no_reactions)
 endfunction
 
 " Removes alphabetical characters from time string.
@@ -620,5 +632,4 @@ function! ResetState() abort
         \'gitlab_token': s:vimgmt.gitlab_token
     \}
 endfunction
-
 
