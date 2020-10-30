@@ -1,0 +1,2 @@
+# Ignore encrypted token files
+*.enc

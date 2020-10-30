@@ -30,23 +30,8 @@ ___
   - GitLab
     - Settings > Access Tokens
     - Generate new token with the "api", "read_repository" and "write_repository" boxes checked
-2. Encrypt this token on your machine with the following command:
-  - `echo "<paste token here>" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out <output file name>`
-    - You'll be prompted for a password to encrypt this token
-  - Example: `echo "abcdefghij123456789" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out /home/ben/.vimgmt-token-gh`
-3. Copy your token path into your .bashrc, .zshrc, etc
-    ```bash
-    # For github repos
-    export VIMGMT_TOKEN_GH="<github token location>"
-
-    # For gitlab repos
-    export VIMGMT_TOKEN_GL="<gitlab token location>"
-    ```
-    - Example:
-      ```bash
-      export VIMGMT_TOKEN_GH="/home/benbusby/.vimgmt-token-gh"
-      export VIMGMT_TOKEN_GL="/home/benbusby/.vimgmt-token-gl"
-      ```
+2. After installing Vimgmt, run `:VimgmtInit`
+  - You will be prompted for your token(s) and a password to encrypt them
 
 ### Configuration
 #### Global Variables

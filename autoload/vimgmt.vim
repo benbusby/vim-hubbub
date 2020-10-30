@@ -43,10 +43,41 @@ let s:reactions = {
 let lang_dict = json_decode(readfile(s:dir . '/assets/strings.json'))
 let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
 let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
+let s:gh_token_path = s:dir . '/.github.vimgmt.enc'
+let s:gl_token_path = s:dir . '/.gitlab.vimgmt.enc'
 
 " ============================================================================
 " Commands
 " ============================================================================
+
+" --------------------------------------------------------------
+" Init ---------------------------------------------------------
+" --------------------------------------------------------------
+" :VimgmtInit allows the user to set up using their tokens to
+" access the GitHub and/or GitLab API
+function! vimgmt#VimgmtInit() abort
+    let l:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
+    call inputsave()
+    let l:token_gh = input('GitHub Token (leave empty to skip): ')
+    let l:token_gl = input('GitLab Token (leave empty to skip): ')
+    let l:token_pw = inputsecret('Enter a password to encrypt your token(s): ')
+    call inputrestore()
+
+    if empty(l:token_pw)
+        echo 'Error: Password must be > 0 characters long'
+        return
+    endif
+
+    if !empty(l:token_gh)
+        call system('echo "' . l:token_gh . '" | ' .
+                    \l:encrypt_cmd . s:gh_token_path . ' -k ' . l:token_pw)
+    endif
+
+    if !empty(l:token_gl)
+        call system('echo "' . l:token_gl . '" | ' .
+                    \l:encrypt_cmd . s:gh_token_path . ' -k ' . l:token_pw)
+    endif
+endfunction
 
 " --------------------------------------------------------------
 " Navigation ---------------------------------------------------
@@ -56,6 +87,12 @@ let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
 "     there's already a Vimgmt buffer open, it will:
 "   - Refresh the currently active Vimgmt buffer(s)
 function! vimgmt#Vimgmt() abort
+    " Check to make sure at least one token exists
+    if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
+        echo 'No tokens found -- have you run :VimgmtInit?'
+        return
+    endif
+
     if len(s:vimgmt.token_pw) > 0
         set cmdheight=4
         echo s:strings.refresh

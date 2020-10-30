@@ -6,6 +6,9 @@
 " Version:     1.0
 " ============================================================================
 
+" Init
+command! -nargs=0 VimgmtInit call vimgmt#VimgmtInit()
+
 " Navigation
 command! -nargs=0 Vimgmt     call vimgmt#Vimgmt()
 command! -nargs=0 VimgmtBack call vimgmt#VimgmtBack()

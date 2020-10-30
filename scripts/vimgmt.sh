@@ -4,6 +4,8 @@
 # Usage: ./vimgmt.sh <json>
 
 SCRIPT_DIR="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+GITHUB_TOKEN="$SCRIPT_DIR/../.github.vimgmt.enc"
+GITLAB_TOKEN="$SCRIPT_DIR/../.gitlab.vimgmt.enc"
 
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR"/vimgmt_utils.sh
@@ -23,12 +25,12 @@ export API_KEY
 case $(git ls-remote --get-url) in
     *"github"*)
         API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in \
-            "$VIMGMT_TOKEN_GH" -k "$(jq_read "$JSON_ARG" token_pw)")"
+            "$GITHUB_TOKEN" -k "$(jq_read "$JSON_ARG" token_pw)")"
         "$SCRIPT_DIR"/vimgmt_github.sh
         ;;
     *"gitlab"*)
         API_KEY="$(openssl aes-256-cbc -d -a -pbkdf2 -in \
-            "$VIMGMT_TOKEN_GL" -k "$(jq_read "$JSON_ARG" token_pw)")"
+            "$GITLAB_TOKEN" -k "$(jq_read "$JSON_ARG" token_pw)")"
         "$SCRIPT_DIR"/vimgmt_gitlab.sh
         ;;
     *)
