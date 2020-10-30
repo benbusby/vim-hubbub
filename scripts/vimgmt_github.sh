@@ -42,9 +42,11 @@ case $(jq_read "$JSON_ARG" command) in
 
         # Also need issue comments if in a pull request
         if [[ "$(jq_read "$JSON_ARG" type)" == "pulls" ]]; then
-            #echo "$COMMENTS_RESULT" | jq 'GROUPS_BY(.[]; [.diff_hunk]) | (.[0]|del(.body)) + { members: (map(.body)) }'
             COMMENTS_RESULT=$(echo "$COMMENTS_RESULT" | jq 'group_by( [.diff_hunk]) | map((.[0]|del(.body)) +
-                { review_comments: (map(.user + { comment: .body } +
+                { review_comments: (map(
+                { comment_id: .id } +
+                { login: .user.login } +
+                { comment: .body } +
                 { created_at: .created_at } +
                 { author_association: .author_association} +
                 { reactions: .reactions })) })')
