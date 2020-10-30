@@ -10,7 +10,7 @@ case $(jq_read "$JSON_ARG" command) in
     *"view_all"*)
         # View list of github issues / pull requests
         RESULT=$(curl -o /dev/null -s \
-            -A "$VIMGMT_USERNAME_GH" \
+            -A "$VIMGMT_UA" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             "$GITHUB_API/$REPO_PATH/issues?state=open")
@@ -27,14 +27,14 @@ case $(jq_read "$JSON_ARG" command) in
 
         # View issue details and comments
         ISSUE_RESULT=$(curl -o /dev/null -s \
-            -A "$VIMGMT_USERNAME_GH" \
+            -A "$VIMGMT_UA" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             -H "Accept: $GITHUB_REACTIONS" \
             "$GITHUB_API/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)")
 
         COMMENTS_RESULT=$(curl -o /dev/null -s \
-            -A "$VIMGMT_USERNAME_GH" \
+            -A "$VIMGMT_UA" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             -H "Accept: $GITHUB_REACTIONS" \
@@ -52,7 +52,7 @@ case $(jq_read "$JSON_ARG" command) in
                 { reactions: .reactions })) })')
 
             ISSUE_COMMENTS=$(curl -o /dev/null -s \
-                -A "$VIMGMT_USERNAME_GH" \
+                -A "$VIMGMT_UA" \
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
                 -H "Accept: $GITHUB_REACTIONS" \
@@ -69,7 +69,7 @@ case $(jq_read "$JSON_ARG" command) in
         # Post a comment on the current issue
         RESULT=$(curl -o /dev/null -s \
             -w "%{http_code}" \
-            -A "$VIMGMT_USERNAME_GH" \
+            -A "$VIMGMT_UA" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
             --data "{\"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \
@@ -85,7 +85,7 @@ case $(jq_read "$JSON_ARG" command) in
         else
             RESULT=$(curl -o /dev/null -s \
                 -w "%{http_code}" \
-                -A "$VIMGMT_USERNAME_GH" \
+                -A "$VIMGMT_UA" \
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\", \"labels\": [\"$(jq_read "$JSON_ARG" labels)\"]}" \
@@ -101,7 +101,7 @@ case $(jq_read "$JSON_ARG" command) in
         else
             RESULT=$(curl -o /dev/null -s \
                 -w "%{http_code}" \
-                -A "$VIMGMT_USERNAME_GH" \
+                -A "$VIMGMT_UA" \
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"state\": \"closed\"}" \

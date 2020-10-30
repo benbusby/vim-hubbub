@@ -8,6 +8,9 @@ REPO_PATH=$(git ls-remote --get-url)
 export GITHUB_API="https://api.github.com/repos"
 export GITLAB_API="https://gitlab.com/api/v4/projects"
 
+# User Agent
+export VIMGMT_UA="benbusby/vimgmt"
+
 # Footers for issues/comments
 export FOOTER="<hr>\n\n<sub>_Posted with [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"
 

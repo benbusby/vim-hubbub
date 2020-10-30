@@ -9,7 +9,7 @@ source "$SCRIPT_DIR"/vimgmt_utils.sh
 REPO_PATH=${REPO_PATH//\//%2F}
 
 # Retrieve project id for subsequent api calls
-RESULT=$(curl -s -A "$VIMGMT_USERNAME_GL" \
+RESULT=$(curl -s -A "$VIMGMT_UA" \
     -H "PRIVATE-TOKEN: $API_KEY" \
     "$GITLAB_API/projects/$REPO_PATH")
 PROJECT_ID=$(echo "$RESULT" | jq -r .id)
@@ -19,10 +19,10 @@ case $(jq_read "$JSON_ARG" command) in
     *"view_all"*)
         # GitLab needs issues and merge requests combine to replicate
         # the combined issues/requests view from GitHub
-        ISSUE_RESULT=$(curl -s -A "$VIMGMT_USERNAME_GL" \
+        ISSUE_RESULT=$(curl -s -A "$VIMGMT_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/issues?state=opened")
-        MR_RESULT=$(curl -s -A "$VIMGMT_USERNAME_GL" \
+        MR_RESULT=$(curl -s -A "$VIMGMT_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/merge_requests?state=opened")
 
@@ -48,10 +48,10 @@ case $(jq_read "$JSON_ARG" command) in
 
     *"view"*)
         # Split requests for issue details and comments
-        ISSUE_RESULT=$(curl -s -A "$VIMGMT_USERNAME_GL" \
+        ISSUE_RESULT=$(curl -s -A "$VIMGMT_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/issues/$(jq_read "$JSON_ARG" number)")
-        COMMENTS_RESULT=$(curl -s -A "$VIMGMT_USERNAME_GL" \
+        COMMENTS_RESULT=$(curl -s -A "$VIMGMT_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/issues/$(jq_read "$JSON_ARG" number)/notes")
 
@@ -78,7 +78,7 @@ case $(jq_read "$JSON_ARG" command) in
     *"comment"*)
         # Create new comment on the current issue
         RESULT=$(curl -o /dev/null -s -w "%{http_code}" \
-            -A "$VIMGMT_USERNAME_GL" \
+            -A "$VIMGMT_UA" \
             -H "Content-Type: application/json" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             --data "{\"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \

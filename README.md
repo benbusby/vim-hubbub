@@ -34,22 +34,17 @@ ___
   - `echo "<paste token here>" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out <output file name>`
     - You'll be prompted for a password to encrypt this token
   - Example: `echo "abcdefghij123456789" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out /home/ben/.vimgmt-token-gh`
-3. Copy your username and token path into your .bashrc, .zshrc, etc
+3. Copy your token path into your .bashrc, .zshrc, etc
     ```bash
     # For github repos
-    export VIMGMT_USERNAME_GH="<github username>"
     export VIMGMT_TOKEN_GH="<github token location>"
 
     # For gitlab repos
-    export VIMGMT_USERNAME_GL="<gitlab username>"
     export VIMGMT_TOKEN_GL="<gitlab token location>"
     ```
     - Example:
       ```bash
-      export VIMGMT_USERNAME_GH="benbusby"
       export VIMGMT_TOKEN_GH="/home/benbusby/.vimgmt-token-gh"
-
-      export VIMGMT_USERNAME_GL="benbusby"
       export VIMGMT_TOKEN_GL="/home/benbusby/.vimgmt-token-gl"
       ```
 
