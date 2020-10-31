@@ -16,8 +16,7 @@ case $(jq_read "$JSON_ARG" command) in
             "$GITHUB_API/$REPO_PATH/issues?state=open")
 
         # Default sort by when it was updated
-        #echo "$RESULT" | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
-        echo $RESULT
+        echo "$RESULT" | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
         ;;
 
     *"view"*)

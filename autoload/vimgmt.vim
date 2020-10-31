@@ -31,11 +31,11 @@ let s:vimgmt = {
 let s:reactions = {
     \'+1': '👍',
     \'-1': '👎',
-    \'laugh': '🤣',
+    \'laugh': '😂',
     \'eyes': '👀',
     \'hooray': '🎉',
-    \'confused': '🤔',
-    \'heart': '🫀',
+    \'confused': '😕',
+    \'heart': '❤️',
     \'rocket': '🚀'
 \}
 
@@ -43,8 +43,8 @@ let s:reactions = {
 let lang_dict = json_decode(readfile(s:dir . '/assets/strings.json'))
 let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
 let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
-let s:gh_token_path = s:dir . '/.github.vimgmt.enc'
-let s:gl_token_path = s:dir . '/.gitlab.vimgmt.enc'
+let s:gh_token_path = s:dir . '/.github.vimgmt'
+let s:gl_token_path = s:dir . '/.gitlab.vimgmt'
 
 " ============================================================================
 " Commands

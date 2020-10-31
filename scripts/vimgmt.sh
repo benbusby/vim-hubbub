@@ -4,8 +4,8 @@
 # Usage: ./vimgmt.sh <json>
 
 SCRIPT_DIR="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-GITHUB_TOKEN="$SCRIPT_DIR/../.github.vimgmt.enc"
-GITLAB_TOKEN="$SCRIPT_DIR/../.gitlab.vimgmt.enc"
+GITHUB_TOKEN="$SCRIPT_DIR/../.github.vimgmt"
+GITLAB_TOKEN="$SCRIPT_DIR/../.gitlab.vimgmt"
 
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR"/vimgmt_utils.sh
