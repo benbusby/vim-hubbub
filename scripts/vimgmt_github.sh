@@ -19,6 +19,37 @@ case $(jq_read "$JSON_ARG" command) in
         echo "$RESULT" | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
         ;;
 
+    *"view_labels"*)
+        # Get current + all labels to compare
+        CURRENT_LABELS=$(curl -o /dev/null -s \
+            -A "$VIMGMT_UA" \
+            -bc /tmp/vimgmt-cookies \
+            -H "Authorization: token $API_KEY" \
+            "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/labels")
+        ALL_LABELS=$(curl -o /dev/null -s \
+            -A "$VIMGMT_UA" \
+            -bc /tmp/vimgmt-cookies \
+            -H "Authorization: token $API_KEY" \
+            "$GITHUB_API/$REPO_PATH/labels")
+
+        ACTIVE_LABELS=$(jq -n "$CURRENT_LABELS + $ALL_LABELS" | jq 'group_by(.) |
+            map(select(length>1)) | map(.[] + {active: "yes"}) | . |= unique_by(.id)')
+        REMAINING_LABELS=$(jq -n "$CURRENT_LABELS + $ALL_LABELS" | jq 'group_by(.) | map(select(length==1)[0])')
+
+        jq -n "$ACTIVE_LABELS + $REMAINING_LABELS"
+        ;;
+
+    *"update_labels"*)
+        UPDATE_LABELS=$(curl -o /dev/null -s \
+            -A "$VIMGMT_UA" \
+            -bc /tmp/vimgmt-cookies \
+            -H "Authorization: token $API_KEY" \
+            --data "{\"labels\": $(jq_read "$JSON_ARG" labels)}" \
+            -X PUT "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/labels")
+
+        echo "$UPDATE_LABELS"
+        ;;
+
     *"view"*)
         PATH_TYPE="$(jq_read "$JSON_ARG" type)"
         if [[ "$(jq_read "$JSON_ARG" pr)" == "1" ]]; then

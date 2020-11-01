@@ -17,15 +17,14 @@ let s:vimgmt_bufs = {
     \'main':      '/tmp/vimgmt.vimgmt',
     \'comment':   '/tmp/comment.vimgmt',
     \'new_issue': '/tmp/new_issue.vimgmt',
-    \'new_req':   '/tmp/new_req.vimgmt'
+    \'new_req':   '/tmp/new_req.vimgmt',
+    \'labels':    '/tmp/labels.vimgmt'
 \}
 
 let s:vimgmt = {
     \'token_pw': '',
     \'current_issue': -1,
-    \'in_pr': 0,
-    \'github_token': (exists('g:vimgmt_github') ? g:vimgmt_github : ''),
-    \'gitlab_token': (exists('g:vimgmt_gitlab') ? g:vimgmt_gitlab : ''),
+    \'in_pr': 0
 \}
 
 let s:reactions = {
@@ -40,7 +39,7 @@ let s:reactions = {
 \}
 
 " Set language, if available
-let lang_dict = json_decode(readfile(s:dir . '/assets/strings.json'))
+let lang_dict = json_decode(join(readfile(s:dir . '/assets/strings.json')))
 let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
 let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
 let s:gh_token_path = s:dir . '/.github.vimgmt'
@@ -151,6 +150,21 @@ function! vimgmt#VimgmtComment() abort
     call CreateCommentBuffer()
 endfunction
 
+function! vimgmt#VimgmtLabels() abort
+    if bufexists(bufnr(s:vimgmt_bufs.labels)) > 0
+        echo s:strings.error . 'Labels buffer already open'
+        return
+    elseif s:vimgmt.current_issue <= 0
+        echo s:strings.error . 'Must be on an issue/PR page to label'
+        return
+    endif
+
+    set cmdheight=4
+    echo s:strings.load
+
+    call CreateLabelsBuffer(LabelsQuery(s:vimgmt.current_issue))
+endfunction
+
 " :VimgmtPost posts the contents of the comment buffer to the
 " comment section for whichever issue/PR/MR is currently open.
 function! vimgmt#VimgmtPost() abort
@@ -184,11 +198,26 @@ function! vimgmt#VimgmtPost() abort
         let l:comment_text = join(getline(1, '$'), '\n')
         call PostComment(l:comment_text)
         execute 'bw! ' . fnameescape(s:vimgmt_bufs.comment)
+    elseif bufexists(bufnr(s:vimgmt_bufs.labels)) > 0
+        execute 'b ' . fnameescape(s:vimgmt_bufs.labels)
+
+        " Determine which labels are active
+        let active_labels = []
+        for label in getline(1, '$')
+            if stridx(label, '[x]') == 0
+                let label_name = substitute(label, '\[x\] ', '', '')
+                call add(active_labels, label_name)
+            endif
+        endfor
+
+        call PostLabels(s:vimgmt.current_issue, l:active_labels)
+        execute 'bw! ' . fnameescape(s:vimgmt_bufs.labels)
     else
         echo s:strings.error . 'No buffers open to post'
         return
     endif
 
+    set modifiable
     call vimgmt#Vimgmt()
 endfunction
 
@@ -241,6 +270,12 @@ function! HomePageQuery() abort
     return json_decode(VimgmtScript())
 endfunction
 
+function! LabelsQuery(number) abort
+    let s:vimgmt.command = 'view_labels'
+    let s:vimgmt.number = a:number
+    return json_decode(VimgmtScript())
+endfunction
+
 function! IssueQuery(number, pr) abort
     let s:vimgmt.command = 'view'
     let s:vimgmt.number = a:number
@@ -255,6 +290,13 @@ function! PostComment(comment) abort
     let s:vimgmt.number = s:vimgmt.current_issue
     let s:vimgmt.pr = s:vimgmt.in_pr
     call VimgmtScript()
+endfunction
+
+function! PostLabels(number, labels) abort
+    let s:vimgmt.command = 'update_labels'
+    let s:vimgmt.number = a:number
+    let s:vimgmt.labels = a:labels
+    call VimgmtScript(1)
 endfunction
 
 function! NewItem(type, title, body) abort
@@ -272,13 +314,18 @@ function! CloseItem(number, pr) abort
     call VimgmtScript()
 endfunction
 
-function! VimgmtScript() abort
+function! VimgmtScript(...) abort
+    let background = ''
+    if a:0 > 0
+        let background = '&'
+    endif
+
     " Use double quotes here to avoid unneccessary confusion when calling the
     " script with a single-quoted json body
     let l:response = system(
                 \s:dir . "/scripts/vimgmt.sh '" .
                 \substitute(json_encode(s:vimgmt), "'", "'\\\\''", "g")
-                \. "'")
+                \. "' " . background)
     call ResetState()
     return l:response
 endfunction
@@ -327,6 +374,39 @@ function! CreateCommentBuffer() abort
 
     " Re-enable modifiable so that we can write something
     set modifiable
+endfunction
+
+" Create a buffer to pick labels for an issue/pr/etc
+function! CreateLabelsBuffer(contents) abort
+    set splitbelow
+    new
+    execute 'file ' . fnameescape(s:vimgmt_bufs.labels)
+    for label in a:contents
+        let l:toggle = '[ ] '
+        if has_key(label, 'active')
+            let l:toggle = '[x] '
+        endif
+        call WriteLine(l:toggle . label['name'])
+        call WriteLine('    ' . label['description'])
+    endfor
+
+    nnoremap <buffer> <silent> <CR> :call ToggleLabel()<cr>
+
+    call CloseBuffer()
+endfunction
+
+function! ToggleLabel() abort
+    set modifiable
+
+    let l:line = getline(getcurpos()[1])
+    if stridx(l:line, '[x]') == 0
+        let l:line = substitute(l:line, '\[x\]', '\[ \]', '')
+    else
+        let l:line = substitute(l:line, '\[ \]', '\[x\]', '')
+    endif
+
+    call setline(getcurpos()[1], l:line)
+    set nomodifiable
 endfunction
 
 " Create a buffer for a new item (issue/pr/mr/etc)
@@ -384,6 +464,7 @@ function! CreateIssueBuffer(contents) abort
     call WriteLine(s:strings.created . FormatTime(a:contents['created_at']))
     call WriteLine(s:strings.updated . FormatTime(a:contents['updated_at']))
     call WriteLine(s:strings.author . a:contents['user']['login'])
+    call WriteLine(s:strings.labels . ParseLabels(a:contents['labels']))
     call WriteLine(s:vimgmt_spacer_small)
 
     " Add reactions to issue (important)
@@ -664,9 +745,7 @@ function! ResetState() abort
     let s:vimgmt = {
         \'token_pw': s:vimgmt.token_pw,
         \'current_issue': s:vimgmt.current_issue,
-        \'in_pr': s:vimgmt.in_pr,
-        \'github_token': s:vimgmt.github_token,
-        \'gitlab_token': s:vimgmt.gitlab_token
+        \'in_pr': s:vimgmt.in_pr
     \}
 endfunction
 
