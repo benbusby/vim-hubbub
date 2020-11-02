@@ -109,6 +109,10 @@ function! vimgmt#Vimgmt() abort
         call inputsave()
         let s:vimgmt.token_pw = inputsecret(s:strings.pw_prompt)
         call inputrestore()
+
+        if len(s:vimgmt.token_pw) == 0
+            return
+        endif
     endif
 
     " Recreate home buffer, and optionally the issue buffer
@@ -123,12 +127,43 @@ endfunction
 " in instances where the issue buffer was opened on top of it.
 function! vimgmt#VimgmtBack() abort
     " Reopen main 'vimgmt.tmp' buffer, and close the issue buffer
-    execute 'b ' . fnameescape(s:vimgmt_bufs.main)
+    if bufwinnr(s:vimgmt_bufs.main) < 0
+        execute 'b ' . fnameescape(s:vimgmt_bufs.main)
+    endif
     execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
 
     " Reset issue number
     let s:vimgmt.current_issue = -1
     let s:vimgmt.in_pr = 0
+endfunction
+
+" :VimgmtJump can be used on the home page buffer to jump between
+" issues by direction (1 for forwards, -1 for backwards)
+function! vimgmt#VimgmtJump(...) abort
+    let l:current_line = getcurpos()[1]
+    let l:direction = a:1
+
+    " If currently on a valid issue lookup line, move cursor
+    " to an empty position
+    if has_key(b:issue_lookup, l:current_line)
+        let l:current_issue = b:issue_lookup[l:current_line]['number']
+
+        while has_key(b:issue_lookup, l:current_line) &&
+                    \b:issue_lookup[l:current_line]['number'] == l:current_issue
+            let l:current_line += l:direction
+        endwhile
+    endif
+
+    " On an empty position line, move to the next valid entry in the
+    " issue lookup table
+    if !has_key(b:issue_lookup, l:current_line)
+        while !has_key(b:issue_lookup, l:current_line)
+                    \&& l:current_line >= 0 && l:current_line <= line('$')
+            let l:current_line += l:direction
+        endwhile
+    endif
+
+    call cursor(l:current_line, 0)
 endfunction
 
 " --------------------------------------------------------------
@@ -507,16 +542,12 @@ function! CreateHomeBuffer(results) abort
 
     " Write issue details to buffer
     for item in a:results
-        " Start index begins one line before content is written to allow
-        " selecting an issue starting at the '- - - -' separator
-        let start_idx = l:line_idx - 1
-
         " Set title and indicator for whether or not the item is a Pull
         " Request
         let l:item_name = (has_key(item, 'pull_request')
             \? s:strings.pr : s:strings.issue) .
             \'#' . item['number'] . ': ' . item['title']
-        call WriteLine(l:item_name)
+        let l:start_idx = WriteLine(l:item_name)
 
         " Draw boundary between title and body
         let l:line_idx = WriteLine(s:vimgmt_spacer_small)
@@ -525,18 +556,20 @@ function! CreateHomeBuffer(results) abort
         call WriteLine(s:strings.comments . item['comments'])
         call WriteLine(s:strings.labels . l:label_list)
         call WriteLine(s:strings.updated . FormatTime(item['updated_at']))
-        call WriteLine('')
-        call WriteLine(s:vimgmt_spacer)
+
+        " Mark line number where the issue interaction should stop
         let l:line_idx = WriteLine('')
+        call WriteLine(s:vimgmt_spacer)
+        call WriteLine('')
 
         " Store issue number and title to use for viewing issue details later
-        while start_idx <= l:line_idx
-            let b:issue_lookup[start_idx] = {
+        while l:start_idx <= l:line_idx
+            let b:issue_lookup[l:start_idx] = {
                 \'number': item['number'],
                 \'title': item['title'],
                 \'is_pr': has_key(item, 'pull_request')
             \}
-            let start_idx += 1
+            let l:start_idx += 1
         endwhile
     endfor
 
@@ -547,6 +580,9 @@ function! CreateHomeBuffer(results) abort
         \b:issue_lookup[getcurpos()[1]]['number'],
         \b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
+    " Allow gn shortcut for jumping to next issue in the list
+    nnoremap <buffer> <silent> gn :VimgmtJump 1<CR>
+    nnoremap <buffer> <silent> gp :VimgmtJump -1<CR>
     call CloseBuffer()
 endfunction
 
@@ -749,3 +785,4 @@ function! ResetState() abort
     \}
 endfunction
 
+nnoremap <script> <silent> gi :VimgmtBack<CR>

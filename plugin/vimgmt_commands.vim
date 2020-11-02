@@ -11,6 +11,7 @@ command! -nargs=0 VimgmtInit call vimgmt#VimgmtInit()
 
 " Navigation
 command! -nargs=0 Vimgmt     call vimgmt#Vimgmt()
+command! -nargs=1 VimgmtJump call vimgmt#VimgmtJump('<args>')
 command! -nargs=0 VimgmtBack call vimgmt#VimgmtBack()
 
 " Interactions

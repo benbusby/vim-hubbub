@@ -119,8 +119,8 @@ case $(jq_read "$JSON_ARG" command) in
                 -A "$VIMGMT_UA" \
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
-                --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\", \"labels\": [\"$(jq_read "$JSON_ARG" labels)\"]}" \
-                -X POST "https://api.github.com/$REPO_PATH/issues")
+                --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \
+                -X POST "$GITHUB_API/$REPO_PATH/issues")
         fi
 
         echo "$RESULT" | jq -r .
