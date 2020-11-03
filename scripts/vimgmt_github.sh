@@ -150,5 +150,5 @@ esac
 # Encrypt and write response to cache and echo back to vim
 echo "$RESPONSE" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt \
     -out "$CACHE_DIR/.$(jq_read "$JSON_ARG" command).vimgmt" \
-    -k $(jq_read "$JSON_ARG" token_pw)
+    -k "$(jq_read "$JSON_ARG" token_pw)"
 echo "$RESPONSE"
