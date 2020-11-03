@@ -136,7 +136,7 @@ case $(jq_read "$JSON_ARG" command) in
                 -bc /tmp/vimgmt-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"state\": \"closed\"}" \
-                -X PATCH "https://api.github.com/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
+                -X PATCH "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
         fi
 
         echo "$RESULT" | jq -r .
