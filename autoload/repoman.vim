@@ -20,10 +20,18 @@ let s:repoman_bufs = {
     \'labels':    '/tmp/labels.repoman'
 \}
 
+let s:post_bufs = [
+    \s:repoman_bufs.comment,
+    \s:repoman_bufs.new_issue,
+    \s:repoman_bufs.new_req,
+    \s:repoman_bufs.labels
+\]
+
 let s:repoman = {
     \'token_pw': '',
     \'current_issue': -1,
-    \'in_pr': 0
+    \'in_pr': 0,
+    \'page': 1
 \}
 
 let s:reactions = {
@@ -130,11 +138,29 @@ function! repoman#RepoManBack() abort
     if bufwinnr(s:repoman_bufs.main) < 0
         execute 'b ' . fnameescape(s:repoman_bufs.main)
     endif
-    execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
+    if bufwinnr(s:repoman_bufs.issue) > 0
+        for buffer in s:post_bufs
+            if bufwinnr(buffer) > 0
+                echo s:strings.error . ' Cannot close issue while updating'
+                return
+            endif
+        endfor
+        execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
+    endif
 
     " Reset issue number
     let s:repoman.current_issue = -1
     let s:repoman.in_pr = 0
+endfunction
+
+" :RepoManPage is used to navigate to fetch the next page
+" of results in the issues/requests list
+function! repoman#RepoManPage(...) abort
+    if bufexists(bufnr(s:repoman_bufs.main)) > 0
+        execute 'bw! ' . fnameescape(s:repoman_bufs.main)
+    endif
+    let s:repoman.page += a:1
+    call CreateHomeBuffer(HomePageQuery())
 endfunction
 
 " :RepoManJump can be used on the home page buffer to jump between
@@ -400,7 +426,7 @@ function! SetHeader() abort
             let l:repo_name = system(
                 \'source ' . g:repoman_dir . '/scripts/repoman_utils.sh && get_path'
             \)
-            let l:line_idx = WriteLine(line . ' ' . l:repo_name)
+            let l:line_idx = WriteLine(line . ' ' . l:repo_name . ' (page ' . s:repoman.page . ')')
         else
             let l:line_idx = WriteLine(line)
         endif
@@ -591,8 +617,10 @@ function! CreateHomeBuffer(results) abort
         \b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
     " Allow gn shortcut for jumping to next issue in the list
-    nnoremap <buffer> <silent> gn :RepoManJump 1<CR>
-    nnoremap <buffer> <silent> gp :RepoManJump -1<CR>
+    nnoremap <buffer> <silent> J :RepoManJump 1<CR>
+    nnoremap <buffer> <silent> K :RepoManJump -1<CR>
+    nnoremap <script> <silent> L :RepoManPage 1<CR>
+    nnoremap <script> <silent> H :RepoManPage -1<CR>
     call CloseBuffer()
 endfunction
 
@@ -791,7 +819,8 @@ function! ResetState() abort
     let s:repoman = {
         \'token_pw': s:repoman.token_pw,
         \'current_issue': s:repoman.current_issue,
-        \'in_pr': s:repoman.in_pr
+        \'in_pr': s:repoman.in_pr,
+        \'page': s:repoman.page
     \}
 endfunction
 
@@ -813,4 +842,4 @@ function! SoftReload() abort
     endif
 endfunction
 
-nnoremap <script> <silent> gi :RepoManBack<CR>
+nnoremap <script> <silent> <BS> :RepoManBack<CR>

@@ -13,7 +13,7 @@ case $(jq_read "$JSON_ARG" command) in
             -A "$REPOMAN_UA" \
             -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
-            "$GITHUB_API/$REPO_PATH/issues?state=open&per_page=10")
+            "$GITHUB_API/$REPO_PATH/issues?state=open&per_page=10&page=$(jq_read "$JSON_ARG" page)")
 
         # Default sort by when it was updated
         RESPONSE=$(echo "$RESULT" | jq -c -r '[. |= sort_by(.updated_at) | reverse[]]')
