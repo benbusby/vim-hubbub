@@ -42,6 +42,7 @@ let s:reactions = {
 let lang_dict = json_decode(join(readfile(s:dir . '/assets/strings.json')))
 let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
 let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
+
 let s:gh_token_path = s:dir . '/.github.vimgmt'
 let s:gl_token_path = s:dir . '/.gitlab.vimgmt'
 
@@ -232,6 +233,13 @@ function! vimgmt#VimgmtPost() abort
         " Condense buffer into a single line with line break chars
         let l:comment_text = join(getline(1, '$'), '\n')
         call PostComment(l:comment_text)
+        let l:temp_comment = {
+            \'created_at': strftime('%G-%m-%d %H:%M:%S'),
+            \'body': l:comment_text,
+            \'user': {'login': 'You'}
+            \}
+        call vimgmt#utils#AddLocalComment(
+            \l:temp_comment, s:vimgmt.current_issue, s:vimgmt.token_pw)
         execute 'bw! ' . fnameescape(s:vimgmt_bufs.comment)
     elseif bufexists(bufnr(s:vimgmt_bufs.labels)) > 0
         execute 'b ' . fnameescape(s:vimgmt_bufs.labels)
@@ -253,7 +261,7 @@ function! vimgmt#VimgmtPost() abort
     endif
 
     set modifiable
-    call vimgmt#Vimgmt()
+    call SoftReload()
 endfunction
 
 " :VimgmtNew creates a new issue/PR/MR.
@@ -302,12 +310,18 @@ endfunction
 
 function! HomePageQuery() abort
     let s:vimgmt.command = 'view_all'
-    return json_decode(VimgmtScript())
+    let response = VimgmtScript()
+    call vimgmt#utils#WriteFile(
+        \substitute(response, '"', '\\"', 'ge'), 'home', s:vimgmt.token_pw)
+    return json_decode(response)
 endfunction
 
 function! LabelsQuery(number) abort
     let s:vimgmt.command = 'view_labels'
     let s:vimgmt.number = a:number
+    let response = VimgmtScript()
+    call vimgmt#utils#WriteFile(
+        \substitute(response, '"', '\\"', 'ge'), 'labels', s:vimgmt.token_pw)
     return json_decode(VimgmtScript())
 endfunction
 
@@ -316,7 +330,10 @@ function! IssueQuery(number, pr) abort
     let s:vimgmt.number = a:number
     let s:vimgmt.type = (a:pr ? 'pulls' : 'issues')
     let s:vimgmt.pr = s:vimgmt.in_pr
-    return json_decode(VimgmtScript())
+    let response = VimgmtScript()
+    call vimgmt#utils#WriteFile(
+        \substitute(response, '"', '\\"', 'ge'), 'issue', s:vimgmt.token_pw)
+    return json_decode(response)
 endfunction
 
 function! PostComment(comment) abort
@@ -324,7 +341,7 @@ function! PostComment(comment) abort
     let s:vimgmt.body = a:comment
     let s:vimgmt.number = s:vimgmt.current_issue
     let s:vimgmt.pr = s:vimgmt.in_pr
-    call VimgmtScript()
+    call VimgmtScript(1)
 endfunction
 
 function! PostLabels(number, labels) abort
@@ -339,7 +356,7 @@ function! NewItem(type, title, body) abort
     let s:vimgmt.title = a:title
     let s:vimgmt.body = a:body
     let s:vimgmt.pr = (a:type ==? 'issue' ? 0 : 1)
-    call VimgmtScript()
+    call VimgmtScript(1)
 endfunction
 
 function! CloseItem(number, pr) abort
@@ -783,6 +800,24 @@ function! ResetState() abort
         \'current_issue': s:vimgmt.current_issue,
         \'in_pr': s:vimgmt.in_pr
     \}
+endfunction
+
+" Reloads the current view using locally updated content
+function! SoftReload() abort
+    " Remove existing buffers
+    if bufexists(bufnr(s:vimgmt_bufs.main)) > 0
+        execute 'bw! ' . fnameescape(s:vimgmt_bufs.main)
+    endif
+
+    if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
+        execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
+    endif
+
+    " Recreate home and issue buffer w/ locally updated files
+    call CreateHomeBuffer(vimgmt#utils#ReadFile('home', s:vimgmt.token_pw))
+    if s:vimgmt.current_issue != -1
+        call CreateIssueBuffer(vimgmt#utils#ReadFile('issue', s:vimgmt.token_pw))
+    endif
 endfunction
 
 nnoremap <script> <silent> gi :VimgmtBack<CR>

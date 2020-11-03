@@ -1,3 +1,8 @@
+let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+
+" ============================================================================
+" Syntax
+" ============================================================================
 let s:end_str = '```'
 let s:syntax_types = [
             \'c', 'cpp', 'python', 'javascript', 'vim', 'ruby', 'sh'
@@ -36,3 +41,46 @@ function! vimgmt#utils#LoadSyntaxColoring() abort
     endfor
 endfunction
 
+" ============================================================================
+" Local File Read/Write
+" ============================================================================
+
+let s:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
+let s:decrypt_cmd = 'openssl aes-256-cbc -d -a -pbkdf2 -in '
+let s:local_files = {
+    \'home':   s:dir . '/.home.vimgmt',
+    \'issue':  s:dir . '/.issue.vimgmt',
+    \'labels': s:dir . '/.labels.vimgmt'
+    \}
+
+function! vimgmt#utils#ReadFile(name, password) abort
+    return json_decode(system(
+        \s:decrypt_cmd . s:local_files[a:name] . ' -k ' . a:password))
+endfunction
+
+function! vimgmt#utils#WriteFile(contents, name, password) abort
+    call system('echo "' . a:contents . '" | ' .
+        \s:encrypt_cmd . s:local_files[a:name] . ' -k ' . a:password)
+endfunction
+
+function! vimgmt#utils#AddLocalComment(comment, number, password) abort
+    " Update comments count for current issue
+    let l:home_json = json_decode(system(
+        \s:decrypt_cmd . s:local_files['home'] . ' -k ' . a:password))
+    for issue in l:home_json
+        if issue['number'] == a:number
+            let issue['comments'] += 1
+            break
+        endif
+    endfor
+    call vimgmt#utils#WriteFile(
+        \substitute(json_encode(l:home_json), '"', '\\"', 'ge'), 'home', a:password)
+
+    " Update comments array with new comment
+    let l:issue_json = json_decode(system(
+        \s:decrypt_cmd . s:local_files['issue'] . ' -k ' . a:password))
+    call add(l:issue_json['comments'], a:comment)
+    call vimgmt#utils#WriteFile(
+        \substitute(json_encode(l:issue_json), '"', '\\"', 'ge'),
+        \'issue', a:password)
+endfunction
