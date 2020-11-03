@@ -1,27 +1,26 @@
 " ============================================================================
-" File:        vimgmt.vim
-" Author:      Ben Busby <contact@benbusby.com>
-" License:     MIT
-" Website:     https://github.com/benbusby/vimgmt
-" Version:     1.0
+" File:    autoload/repoman.vim
+" Author:  Ben Busby <https://benbusby.com>
+" License: MIT
+" Website: https://github.com/benbusby/vim-repoman
 " ============================================================================
 scriptencoding utf-8
 
-let g:vimgmt_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
-let s:vimgmt_spacer = repeat('─ ', 27)
-let s:vimgmt_spacer_small = repeat('─', 33)
+let s:repoman_spacer = repeat('─ ', 27)
+let s:repoman_spacer_small = repeat('─', 33)
 
-let s:vimgmt_bufs = {
-    \'issue':     '/tmp/issue.vimgmt.diff',
-    \'main':      '/tmp/vimgmt.vimgmt',
-    \'comment':   '/tmp/comment.vimgmt',
-    \'new_issue': '/tmp/new_issue.vimgmt',
-    \'new_req':   '/tmp/new_req.vimgmt',
-    \'labels':    '/tmp/labels.vimgmt'
+let s:repoman_bufs = {
+    \'issue':     '/tmp/issue.repoman.diff',
+    \'main':      '/tmp/home.repoman',
+    \'comment':   '/tmp/comment.repoman',
+    \'new_issue': '/tmp/new_issue.repoman',
+    \'new_req':   '/tmp/new_req.repoman',
+    \'labels':    '/tmp/labels.repoman'
 \}
 
-let s:vimgmt = {
+let s:repoman = {
     \'token_pw': '',
     \'current_issue': -1,
     \'in_pr': 0
@@ -39,12 +38,12 @@ let s:reactions = {
 \}
 
 " Set language, if available
-let lang_dict = json_decode(join(readfile(g:vimgmt_dir . '/assets/strings.json')))
-let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
-let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
+let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
+let s:strings = lang_dict[(exists('g:repoman_lang') ? g:repoman_lang : 'en')]
+let s:skip_pw = exists('g:repoman_github') || exists('g:repoman_gitlab')
 
-let s:gh_token_path = g:vimgmt_dir . '/.github.vimgmt'
-let s:gl_token_path = g:vimgmt_dir . '/.gitlab.vimgmt'
+let s:gh_token_path = g:repoman_dir . '/.github.repoman'
+let s:gl_token_path = g:repoman_dir . '/.gitlab.repoman'
 
 " ============================================================================
 " Commands
@@ -53,9 +52,9 @@ let s:gl_token_path = g:vimgmt_dir . '/.gitlab.vimgmt'
 " --------------------------------------------------------------
 " Init ---------------------------------------------------------
 " --------------------------------------------------------------
-" :VimgmtInit allows the user to set up using their tokens to
+" :RepoManInit allows the user to set up using their tokens to
 " access the GitHub and/or GitLab API
-function! vimgmt#VimgmtInit() abort
+function! repoman#RepoManInit() abort
     let l:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
     call inputsave()
     let l:token_gh = input('GitHub Token (leave empty to skip): ')
@@ -82,36 +81,36 @@ endfunction
 " --------------------------------------------------------------
 " Navigation ---------------------------------------------------
 " --------------------------------------------------------------
-" :Vimgmt can either:
-"   - Open a new instance of Vimgmt to the 'home' view. If
-"     there's already a Vimgmt buffer open, it will:
-"   - Refresh the currently active Vimgmt buffer(s)
-function! vimgmt#Vimgmt() abort
+" :RepoMan can either:
+"   - Open a new instance of RepoMan to the 'home' view. If
+"     there's already a RepoMan buffer open, it will:
+"   - Refresh the currently active RepoMan buffer(s)
+function! repoman#RepoMan() abort
     " Check to make sure at least one token exists
     if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
-        echo 'No tokens found -- have you run :VimgmtInit?'
+        echo 'No tokens found -- have you run :RepoManInit?'
         return
     endif
 
-    if len(s:vimgmt.token_pw) > 0
+    if len(s:repoman.token_pw) > 0
         set cmdheight=4
         echo s:strings.refresh
 
-        " User is already using Vimgmt, treat as a refresh
-        if bufexists(bufnr(s:vimgmt_bufs.main)) > 0
-            execute 'bw! ' . fnameescape(s:vimgmt_bufs.main)
+        " User is already using RepoMan, treat as a refresh
+        if bufexists(bufnr(s:repoman_bufs.main)) > 0
+            execute 'bw! ' . fnameescape(s:repoman_bufs.main)
         endif
 
-        if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
-            execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
+        if bufexists(bufnr(s:repoman_bufs.issue)) > 0
+            execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
         endif
     else
         " New session, prompt for token pw
         call inputsave()
-        let s:vimgmt.token_pw = inputsecret(s:strings.pw_prompt)
+        let s:repoman.token_pw = inputsecret(s:strings.pw_prompt)
         call inputrestore()
 
-        if len(s:vimgmt.token_pw) == 0
+        if len(s:repoman.token_pw) == 0
             return
         endif
     endif
@@ -119,28 +118,28 @@ function! vimgmt#Vimgmt() abort
     " Recreate home buffer, and optionally the issue buffer
     " as well
     call CreateHomeBuffer(HomePageQuery())
-    if s:vimgmt.current_issue != -1
-        call CreateIssueBuffer(IssueQuery(s:vimgmt.current_issue, s:vimgmt.in_pr))
+    if s:repoman.current_issue != -1
+        call CreateIssueBuffer(IssueQuery(s:repoman.current_issue, s:repoman.in_pr))
     endif
 endfunction
 
-" :VimgmtBack can be used to navigate back to the home page buffer
+" :RepoManBack can be used to navigate back to the home page buffer
 " in instances where the issue buffer was opened on top of it.
-function! vimgmt#VimgmtBack() abort
-    " Reopen main 'vimgmt.tmp' buffer, and close the issue buffer
-    if bufwinnr(s:vimgmt_bufs.main) < 0
-        execute 'b ' . fnameescape(s:vimgmt_bufs.main)
+function! repoman#RepoManBack() abort
+    " Reopen main 'repoman.tmp' buffer, and close the issue buffer
+    if bufwinnr(s:repoman_bufs.main) < 0
+        execute 'b ' . fnameescape(s:repoman_bufs.main)
     endif
-    execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
+    execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
 
     " Reset issue number
-    let s:vimgmt.current_issue = -1
-    let s:vimgmt.in_pr = 0
+    let s:repoman.current_issue = -1
+    let s:repoman.in_pr = 0
 endfunction
 
-" :VimgmtJump can be used on the home page buffer to jump between
+" :RepoManJump can be used on the home page buffer to jump between
 " issues by direction (1 for forwards, -1 for backwards)
-function! vimgmt#VimgmtJump(...) abort
+function! repoman#RepoManJump(...) abort
     let l:current_line = getcurpos()[1]
     let l:direction = a:1
 
@@ -170,15 +169,15 @@ endfunction
 " --------------------------------------------------------------
 " Interaction --------------------------------------------------
 " --------------------------------------------------------------
-" :VimgmtComment splits the issue buffer in half horizontally,
+" :RepoManComment splits the issue buffer in half horizontally,
 " and allows the user to enter a comment of any length.
 "
-" Used in conjunction with :VimgmtPost to post the comment.
-function! vimgmt#VimgmtComment() abort
-    if bufexists(bufnr(s:vimgmt_bufs.comment)) > 0
+" Used in conjunction with :RepoManPost to post the comment.
+function! repoman#RepoManComment() abort
+    if bufexists(bufnr(s:repoman_bufs.comment)) > 0
         echo s:strings.error . 'Post buffer already open'
         return
-    elseif s:vimgmt.current_issue <= 0
+    elseif s:repoman.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to comment!'
         return
     endif
@@ -186,11 +185,11 @@ function! vimgmt#VimgmtComment() abort
     call CreateCommentBuffer()
 endfunction
 
-function! vimgmt#VimgmtLabels() abort
-    if bufexists(bufnr(s:vimgmt_bufs.labels)) > 0
+function! repoman#RepoManLabels() abort
+    if bufexists(bufnr(s:repoman_bufs.labels)) > 0
         echo s:strings.error . 'Labels buffer already open'
         return
-    elseif s:vimgmt.current_issue <= 0
+    elseif s:repoman.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to label'
         return
     endif
@@ -198,18 +197,18 @@ function! vimgmt#VimgmtLabels() abort
     set cmdheight=4
     echo s:strings.load
 
-    call CreateLabelsBuffer(LabelsQuery(s:vimgmt.current_issue))
+    call CreateLabelsBuffer(LabelsQuery(s:repoman.current_issue))
 endfunction
 
-" :VimgmtPost posts the contents of the comment buffer to the
+" :RepoManPost posts the contents of the comment buffer to the
 " comment section for whichever issue/PR/MR is currently open.
-function! vimgmt#VimgmtPost() abort
-    if bufexists(bufnr(s:vimgmt_bufs.new_issue)) > 0 || bufexists(bufnr(s:vimgmt_bufs.new_req))
+function! repoman#RepoManPost() abort
+    if bufexists(bufnr(s:repoman_bufs.new_issue)) > 0 || bufexists(bufnr(s:repoman_bufs.new_req))
         " Determine which buffer to use for the post
-        let l:post_buf = s:vimgmt_bufs.new_issue
+        let l:post_buf = s:repoman_bufs.new_issue
         let l:pr = 0
-        if bufexists(bufnr(s:vimgmt_bufs.new_req))
-            let l:post_buf = s:vimgmt_bufs.new_req
+        if bufexists(bufnr(s:repoman_bufs.new_req))
+            let l:post_buf = s:repoman_bufs.new_req
             let l:pr = 1
         endif
 
@@ -224,8 +223,8 @@ function! vimgmt#VimgmtPost() abort
         let l:body = join(getline(3, '$'), '\n')
         call NewItem(l:pr, l:title, l:body)
         execute 'bw! ' . fnameescape(l:post_buf)
-    elseif bufexists(bufnr(s:vimgmt_bufs.comment)) > 0
-        execute 'b ' . fnameescape(s:vimgmt_bufs.comment)
+    elseif bufexists(bufnr(s:repoman_bufs.comment)) > 0
+        execute 'b ' . fnameescape(s:repoman_bufs.comment)
 
         " Format double quotes
         silent %s/\"/\\\\\\"/ge
@@ -238,11 +237,11 @@ function! vimgmt#VimgmtPost() abort
             \'body': l:comment_text,
             \'user': {'login': 'You'}
             \}
-        call vimgmt#utils#AddLocalComment(
-            \l:temp_comment, s:vimgmt.current_issue, s:vimgmt.token_pw)
-        execute 'bw! ' . fnameescape(s:vimgmt_bufs.comment)
-    elseif bufexists(bufnr(s:vimgmt_bufs.labels)) > 0
-        execute 'b ' . fnameescape(s:vimgmt_bufs.labels)
+        call repoman#utils#AddLocalComment(
+            \l:temp_comment, s:repoman.current_issue, s:repoman.token_pw)
+        execute 'bw! ' . fnameescape(s:repoman_bufs.comment)
+    elseif bufexists(bufnr(s:repoman_bufs.labels)) > 0
+        execute 'b ' . fnameescape(s:repoman_bufs.labels)
 
         " Determine which labels are active
         let active_labels = []
@@ -253,8 +252,8 @@ function! vimgmt#VimgmtPost() abort
             endif
         endfor
 
-        call PostLabels(s:vimgmt.current_issue, l:active_labels)
-        execute 'bw! ' . fnameescape(s:vimgmt_bufs.labels)
+        call PostLabels(s:repoman.current_issue, l:active_labels)
+        execute 'bw! ' . fnameescape(s:repoman_bufs.labels)
     else
         echo s:strings.error . 'No buffers open to post'
         return
@@ -264,11 +263,11 @@ function! vimgmt#VimgmtPost() abort
     call SoftReload()
 endfunction
 
-" :VimgmtNew creates a new issue/PR/MR.
+" :RepoManNew creates a new issue/PR/MR.
 " - a:1: Either 'issue' or 'pr'/'mr'
-function! vimgmt#VimgmtNew(...) abort
+function! repoman#RepoManNew(...) abort
     let l:item_type = a:1
-    if bufexists(bufnr(s:vimgmt_bufs.new_issue)) > 0 || bufexists(bufnr(s:vimgmt_bufs.new_req))
+    if bufexists(bufnr(s:repoman_bufs.new_issue)) > 0 || bufexists(bufnr(s:repoman_bufs.new_req))
         echo s:strings.error . 'New item buffer already open'
         return
     endif
@@ -276,16 +275,16 @@ function! vimgmt#VimgmtNew(...) abort
     call NewItemBuffer(l:item_type)
 endfunction
 
-" :VimgmtClose closes the currently selected issue/PR/MR, depending
+" :RepoManClose closes the currently selected issue/PR/MR, depending
 " on the current active buffer.
-function! vimgmt#VimgmtClose() abort
-    let l:number_to_close = s:vimgmt.current_issue
-    let l:pr = s:vimgmt.in_pr
+function! repoman#RepoManClose() abort
+    let l:number_to_close = s:repoman.current_issue
+    let l:pr = s:repoman.in_pr
     let l:reset_current = 1
 
     " Check to see if the user is not in an issue buffer, and
     " if not, close the issue under their cursor
-    if expand('%:p') =~ s:vimgmt_bufs.main
+    if expand('%:p') =~ s:repoman_bufs.main
         let l:number_to_close = b:issue_lookup[getcurpos()[1]]['number']
         let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
         let l:reset_current = 0
@@ -298,9 +297,9 @@ function! vimgmt#VimgmtClose() abort
     if s:answer ==? 'y'
         call CloseItem(l:number_to_close, l:pr)
         if l:reset_current
-            let s:vimgmt.current_issue = -1
+            let s:repoman.current_issue = -1
         endif
-        call vimgmt#Vimgmt()
+        call repoman#RepoMan()
     endif
 endfunction
 
@@ -309,58 +308,58 @@ endfunction
 " ============================================================================
 
 function! HomePageQuery() abort
-    let s:vimgmt.command = 'view_all'
-    let response = VimgmtScript()
+    let s:repoman.command = 'view_all'
+    let response = RepoManScript()
     return json_decode(response)
 endfunction
 
 function! LabelsQuery(number) abort
-    let s:vimgmt.command = 'view_labels'
-    let s:vimgmt.number = a:number
-    let response = VimgmtScript()
-    return json_decode(VimgmtScript())
+    let s:repoman.command = 'view_labels'
+    let s:repoman.number = a:number
+    let response = RepoManScript()
+    return json_decode(RepoManScript())
 endfunction
 
 function! IssueQuery(number, pr) abort
-    let s:vimgmt.command = 'view'
-    let s:vimgmt.number = a:number
-    let s:vimgmt.type = (a:pr ? 'pulls' : 'issues')
-    let s:vimgmt.pr = s:vimgmt.in_pr
-    let response = VimgmtScript()
+    let s:repoman.command = 'view'
+    let s:repoman.number = a:number
+    let s:repoman.type = (a:pr ? 'pulls' : 'issues')
+    let s:repoman.pr = s:repoman.in_pr
+    let response = RepoManScript()
     return json_decode(response)
 endfunction
 
 function! PostComment(comment) abort
-    let s:vimgmt.command = 'comment'
-    let s:vimgmt.body = a:comment
-    let s:vimgmt.number = s:vimgmt.current_issue
-    let s:vimgmt.pr = s:vimgmt.in_pr
-    call VimgmtScript(1)
+    let s:repoman.command = 'comment'
+    let s:repoman.body = a:comment
+    let s:repoman.number = s:repoman.current_issue
+    let s:repoman.pr = s:repoman.in_pr
+    call RepoManScript(1)
 endfunction
 
 function! PostLabels(number, labels) abort
-    let s:vimgmt.command = 'update_labels'
-    let s:vimgmt.number = a:number
-    let s:vimgmt.labels = a:labels
-    call VimgmtScript(1)
+    let s:repoman.command = 'update_labels'
+    let s:repoman.number = a:number
+    let s:repoman.labels = a:labels
+    call RepoManScript(1)
 endfunction
 
 function! NewItem(type, title, body) abort
-    let s:vimgmt.command = 'new'
-    let s:vimgmt.title = a:title
-    let s:vimgmt.body = a:body
-    let s:vimgmt.pr = (a:type ==? 'issue' ? 0 : 1)
-    call VimgmtScript(1)
+    let s:repoman.command = 'new'
+    let s:repoman.title = a:title
+    let s:repoman.body = a:body
+    let s:repoman.pr = (a:type ==? 'issue' ? 0 : 1)
+    call RepoManScript(1)
 endfunction
 
 function! CloseItem(number, pr) abort
-    let s:vimgmt.command = 'close'
-    let s:vimgmt.number = a:number
-    let s:vimgmt.pr = a:pr
-    call VimgmtScript()
+    let s:repoman.command = 'close'
+    let s:repoman.number = a:number
+    let s:repoman.pr = a:pr
+    call RepoManScript()
 endfunction
 
-function! VimgmtScript(...) abort
+function! RepoManScript(...) abort
     let background = ''
     if a:0 > 0
         let background = '&'
@@ -369,8 +368,8 @@ function! VimgmtScript(...) abort
     " Use double quotes here to avoid unneccessary confusion when calling the
     " script with a single-quoted json body
     let l:response = system(
-                \g:vimgmt_dir . "/scripts/vimgmt.sh '" .
-                \substitute(json_encode(s:vimgmt), "'", "'\\\\''", "g")
+                \g:repoman_dir . "/scripts/repoman.sh '" .
+                \substitute(json_encode(s:repoman), "'", "'\\\\''", "g")
                 \. "' " . background)
     call ResetState()
     return l:response
@@ -382,7 +381,7 @@ endfunction
 
 " Open issue based on the provided issue number
 function! ViewIssue(issue_number, in_pr) abort
-    let s:vimgmt.in_pr = a:in_pr
+    let s:repoman.in_pr = a:in_pr
     set cmdheight=4
     echo s:strings.load
 
@@ -396,10 +395,10 @@ endfunction
 " Write out header to buffer, including the name of the repo.
 function! SetHeader() abort
     let l:line_idx = 1
-    for line in readfile(g:vimgmt_dir . '/assets/header.txt')
+    for line in readfile(g:repoman_dir . '/assets/header.txt')
         if l:line_idx == 1
             let l:repo_name = system(
-                \'source ' . g:vimgmt_dir . '/scripts/vimgmt_utils.sh && get_path'
+                \'source ' . g:repoman_dir . '/scripts/repoman_utils.sh && get_path'
             \)
             let l:line_idx = WriteLine(line . ' ' . l:repo_name)
         else
@@ -414,7 +413,7 @@ endfunction
 function! CreateCommentBuffer() abort
     set splitbelow
     new
-    execute "file " . fnameescape(s:vimgmt_bufs.comment)
+    execute "file " . fnameescape(s:repoman_bufs.comment)
     call WriteLine(s:strings.comment_help)
     call CloseBuffer()
 
@@ -426,7 +425,7 @@ endfunction
 function! CreateLabelsBuffer(contents) abort
     set splitbelow
     new
-    execute 'file ' . fnameescape(s:vimgmt_bufs.labels)
+    execute 'file ' . fnameescape(s:repoman_bufs.labels)
     for label in a:contents
         let l:toggle = '[ ] '
         if has_key(label, 'active')
@@ -463,9 +462,9 @@ function! NewItemBuffer(type) abort
     let l:descriptor = 'Issue'
 
     if a:type ==? 'issue'
-        execute "file " . fnameescape(s:vimgmt_bufs.new_issue)
+        execute "file " . fnameescape(s:repoman_bufs.new_issue)
     else
-        execute "file " . fnameescape(s:vimgmt_bufs.new_req)
+        execute "file " . fnameescape(s:repoman_bufs.new_req)
         let l:descriptor = 'Request'
     endif
 
@@ -481,8 +480,8 @@ endfunction
 " Create issue/(pull|merge) request buffer
 function! CreateIssueBuffer(contents) abort
     " Clear buffer if it already exists
-    if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
-        execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
+    if bufexists(bufnr(s:repoman_bufs.issue)) > 0
+        execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
     endif
 
     if winwidth(0) > winheight(0) * 2
@@ -491,7 +490,7 @@ function! CreateIssueBuffer(contents) abort
         enew   " Window is too narrow, use new buffer
     endif
 
-    execute "file " . fnameescape(s:vimgmt_bufs.issue)
+    execute "file " . fnameescape(s:repoman_bufs.issue)
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
@@ -499,19 +498,19 @@ function! CreateIssueBuffer(contents) abort
     let s:results_line = l:line_idx
 
     " Write issue and comments to buffer
-    let l:type = (s:vimgmt.in_pr ? s:strings.pr : s:strings.issue)
+    let l:type = (s:repoman.in_pr ? s:strings.pr : s:strings.issue)
     call WriteLine(l:type . '#' . a:contents['number'] . ': ' . a:contents['title'])
-    let l:line_idx = WriteLine(s:vimgmt_spacer_small)
+    let l:line_idx = WriteLine(s:repoman_spacer_small)
 
     " Split body on line breaks for proper formatting
     let l:line_idx += InsertBodyText(a:contents['body'])
 
-    call WriteLine(s:vimgmt_spacer_small)
+    call WriteLine(s:repoman_spacer_small)
     call WriteLine(s:strings.created . FormatTime(a:contents['created_at']))
     call WriteLine(s:strings.updated . FormatTime(a:contents['updated_at']))
     call WriteLine(s:strings.author . a:contents['user']['login'])
     call WriteLine(s:strings.labels . ParseLabels(a:contents['labels']))
-    call WriteLine(s:vimgmt_spacer_small)
+    call WriteLine(s:repoman_spacer_small)
 
     " Add reactions to issue (important)
     let l:reactions_str = GenerateReactionsStr(a:contents)
@@ -519,7 +518,7 @@ function! CreateIssueBuffer(contents) abort
         call WriteLine(l:reactions_str)
     endif
 
-    call WriteLine(s:vimgmt_spacer_small)
+    call WriteLine(s:repoman_spacer_small)
     call WriteLine('')
 
     let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents['comments']) . ')')
@@ -530,7 +529,7 @@ function! CreateIssueBuffer(contents) abort
 
     " Store issue number for interacting with the issue (commenting, closing,
     " etc)
-    let s:vimgmt.current_issue = a:contents['number']
+    let s:repoman.current_issue = a:contents['number']
 
     call CloseBuffer()
 endfunction
@@ -544,7 +543,7 @@ function! CreateHomeBuffer(results) abort
     else
         new   " Window is too narrow, use horizontal split
     endif
-    execute "file " . fnameescape(s:vimgmt_bufs.main)
+    execute "file " . fnameescape(s:repoman_bufs.main)
     setlocal bufhidden=hide noswapfile wrap
 
     let l:line_idx = SetHeader()
@@ -561,7 +560,7 @@ function! CreateHomeBuffer(results) abort
         let l:start_idx = WriteLine(l:item_name)
 
         " Draw boundary between title and body
-        let l:line_idx = WriteLine(s:vimgmt_spacer_small)
+        let l:line_idx = WriteLine(s:repoman_spacer_small)
 
         let l:label_list = ParseLabels(item['labels'])
         call WriteLine(s:strings.comments . item['comments'])
@@ -570,7 +569,7 @@ function! CreateHomeBuffer(results) abort
 
         " Mark line number where the issue interaction should stop
         let l:line_idx = WriteLine('')
-        call WriteLine(s:vimgmt_spacer)
+        call WriteLine(s:repoman_spacer)
         call WriteLine('')
 
         " Store issue number and title to use for viewing issue details later
@@ -592,8 +591,8 @@ function! CreateHomeBuffer(results) abort
         \b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
     " Allow gn shortcut for jumping to next issue in the list
-    nnoremap <buffer> <silent> gn :VimgmtJump 1<CR>
-    nnoremap <buffer> <silent> gp :VimgmtJump -1<CR>
+    nnoremap <buffer> <silent> gn :RepoManJump 1<CR>
+    nnoremap <buffer> <silent> gp :RepoManJump -1<CR>
     call CloseBuffer()
 endfunction
 
@@ -653,7 +652,7 @@ function! InsertComment(comment) abort
         let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
     endif
 
-    call WriteLine(s:vimgmt_spacer)
+    call WriteLine(s:repoman_spacer)
 
     " If this is a review comment, it needs different formatting/coloring
     if has_key(a:comment, 'pull_request_review_id')
@@ -684,7 +683,7 @@ function! InsertReviewComment(comment) abort
     " The 'position' element indicates if this comment is still relevant
     " in the current state of the pull request
     if !a:comment['position']
-        if exists('g:vimgmt_show_outdated') && g:vimgmt_show_outdated
+        if exists('g:repoman_show_outdated') && g:repoman_show_outdated
             call WriteLine(s:strings.outdated)
         else
             call WriteLine(s:strings.outdated . ' ' . s:strings.hidden)
@@ -768,7 +767,7 @@ function! CloseBuffer() abort
     normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
-    call vimgmt#utils#LoadSyntaxColoring()
+    call repoman#utils#LoadSyntaxColoring()
 endfunction
 
 " Writes a line to the buffer
@@ -787,31 +786,31 @@ function! WriteLine(line) abort
     return l:pos
 endfunction
 
-" Resets the Vimgmt script dictionary
+" Resets the RepoMan script dictionary
 function! ResetState() abort
-    let s:vimgmt = {
-        \'token_pw': s:vimgmt.token_pw,
-        \'current_issue': s:vimgmt.current_issue,
-        \'in_pr': s:vimgmt.in_pr
+    let s:repoman = {
+        \'token_pw': s:repoman.token_pw,
+        \'current_issue': s:repoman.current_issue,
+        \'in_pr': s:repoman.in_pr
     \}
 endfunction
 
 " Reloads the current view using locally updated content
 function! SoftReload() abort
     " Remove existing buffers
-    if bufexists(bufnr(s:vimgmt_bufs.main)) > 0
-        execute 'bw! ' . fnameescape(s:vimgmt_bufs.main)
+    if bufexists(bufnr(s:repoman_bufs.main)) > 0
+        execute 'bw! ' . fnameescape(s:repoman_bufs.main)
     endif
 
-    if bufexists(bufnr(s:vimgmt_bufs.issue)) > 0
-        execute 'bw! ' . fnameescape(s:vimgmt_bufs.issue)
+    if bufexists(bufnr(s:repoman_bufs.issue)) > 0
+        execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
     endif
 
     " Recreate home and issue buffer w/ locally updated files
-    call CreateHomeBuffer(vimgmt#utils#ReadFile('home', s:vimgmt.token_pw))
-    if s:vimgmt.current_issue != -1
-        call CreateIssueBuffer(vimgmt#utils#ReadFile('issue', s:vimgmt.token_pw))
+    call CreateHomeBuffer(repoman#utils#ReadFile('home', s:repoman.token_pw))
+    if s:repoman.current_issue != -1
+        call CreateIssueBuffer(repoman#utils#ReadFile('issue', s:repoman.token_pw))
     endif
 endfunction
 
-nnoremap <script> <silent> gi :VimgmtBack<CR>
+nnoremap <script> <silent> gi :RepoManBack<CR>

@@ -9,10 +9,10 @@ export GITHUB_API="https://api.github.com/repos"
 export GITLAB_API="https://gitlab.com/api/v4/projects"
 
 # User Agent
-export VIMGMT_UA="benbusby/vimgmt"
+export REPOMAN_UA="benbusby/repoman"
 
 # Footers for issues/comments
-export FOOTER="<hr>\n\n<sub>_Posted with [vimgmt](https://github.com/benbusby/vimgmt)!_</sub>"
+export FOOTER="<hr>\n\n<sub>_Posted with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>"
 
 # GitHub extra media types (enables receiving reactions, multi-line review comments, etc)
 # application/vnd.github.squirrel-girl-preview -- reactions

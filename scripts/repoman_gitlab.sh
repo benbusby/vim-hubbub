@@ -3,13 +3,13 @@
 SCRIPT_DIR="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # shellcheck source=/dev/null
-source "$SCRIPT_DIR"/vimgmt_utils.sh
+source "$SCRIPT_DIR"/repoman_utils.sh
 
 # GitLab requires the repo path to be url encoded
 REPO_PATH=${REPO_PATH//\//%2F}
 
 # Retrieve project id for subsequent api calls
-RESULT=$(curl -s -A "$VIMGMT_UA" \
+RESULT=$(curl -s -A "$REPOMAN_UA" \
     -H "PRIVATE-TOKEN: $API_KEY" \
     "$GITLAB_API/projects/$REPO_PATH")
 PROJECT_ID=$(echo "$RESULT" | jq -r .id)
@@ -19,10 +19,10 @@ case $(jq_read "$JSON_ARG" command) in
     *"view_all"*)
         # GitLab needs issues and merge requests combine to replicate
         # the combined issues/requests view from GitHub
-        ISSUE_RESULT=$(curl -s -A "$VIMGMT_UA" \
+        ISSUE_RESULT=$(curl -s -A "$REPOMAN_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/issues?state=opened")
-        MR_RESULT=$(curl -s -A "$VIMGMT_UA" \
+        MR_RESULT=$(curl -s -A "$REPOMAN_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/merge_requests?state=opened")
 
@@ -31,27 +31,27 @@ case $(jq_read "$JSON_ARG" command) in
             .["body"] = .description |
             .["comments"] = .user_notes_count |
             del(.iid, .description, .user_notes_count) |
-            .labels |= [{"name": .[]}]]' > /tmp/.vimgmt.issue.json
+            .labels |= [{"name": .[]}]]' > /tmp/.repoman.issue.json
         echo "$MR_RESULT" | jq '[.[] |
             .["number"] = .iid |
             .["body"] = .description |
             .["comments"] = .user_notes_count |
             .["pull_request"] = 1 |
             del(.iid, .description, .user_notes_count) |
-            .labels |= [{"name": .[]}]]' > /tmp/.vimgmt.mr.json
+            .labels |= [{"name": .[]}]]' > /tmp/.repoman.mr.json
 
-        jq -s '[.[][]]' /tmp/.vimgmt.issue.json /tmp/.vimgmt.mr.json > /tmp/.vimgmt.group.json
-        jq -r '[. |= sort_by(.updated_at) | reverse[]]' /tmp/.vimgmt.group.json
+        jq -s '[.[][]]' /tmp/.repoman.issue.json /tmp/.repoman.mr.json > /tmp/.repoman.group.json
+        jq -r '[. |= sort_by(.updated_at) | reverse[]]' /tmp/.repoman.group.json
 
-        rm -f /tmp/.vimgmt.*
+        rm -f /tmp/.repoman.*
         ;;
 
     *"view"*)
         # Split requests for issue details and comments
-        ISSUE_RESULT=$(curl -s -A "$VIMGMT_UA" \
+        ISSUE_RESULT=$(curl -s -A "$REPOMAN_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/issues/$(jq_read "$JSON_ARG" number)")
-        COMMENTS_RESULT=$(curl -s -A "$VIMGMT_UA" \
+        COMMENTS_RESULT=$(curl -s -A "$REPOMAN_UA" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             "$GITLAB_API/projects/$PROJECT_ID/issues/$(jq_read "$JSON_ARG" number)/notes")
 
@@ -61,24 +61,24 @@ case $(jq_read "$JSON_ARG" command) in
             .body = .description |
             .author.login = .author.username |
             .user = .author |
-            del(.iid, .description, .author)' > /tmp/.vimgmt.issue.json
+            del(.iid, .description, .author)' > /tmp/.repoman.issue.json
 
         # Retrieve and format comments for the issue, removing system messages
         echo "$COMMENTS_RESULT" | jq '[.[] |
             .author.login = .author.username |
             .user = .author |
             del(.author) ] |
-            map(select(.system != true))' > /tmp/.vimgmt.comments.json
+            map(select(.system != true))' > /tmp/.repoman.comments.json
 
-        jq -r -s '.[0] + {comments: .[1]}' /tmp/.vimgmt.issue.json /tmp/.vimgmt.comments.json
+        jq -r -s '.[0] + {comments: .[1]}' /tmp/.repoman.issue.json /tmp/.repoman.comments.json
 
-        rm -f /tmp/.vimgmt.*
+        rm -f /tmp/.repoman.*
         ;;
 
     *"comment"*)
         # Create new comment on the current issue
         RESULT=$(curl -o /dev/null -s -w "%{http_code}" \
-            -A "$VIMGMT_UA" \
+            -A "$REPOMAN_UA" \
             -H "Content-Type: application/json" \
             -H "PRIVATE-TOKEN: $API_KEY" \
             --data "{\"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \

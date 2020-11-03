@@ -3,15 +3,15 @@
 SCRIPT_DIR="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # shellcheck source=/dev/null
-source "$SCRIPT_DIR"/vimgmt_utils.sh
+source "$SCRIPT_DIR"/repoman_utils.sh
 
 case $(jq_read "$JSON_ARG" command) in
 
     *"view_all"*)
         # View list of github issues / pull requests
         RESULT=$(curl -o /dev/null -s \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             "$GITHUB_API/$REPO_PATH/issues?state=open&per_page=10")
 
@@ -22,13 +22,13 @@ case $(jq_read "$JSON_ARG" command) in
     *"view_labels"*)
         # Get current + all labels to compare
         CURRENT_LABELS=$(curl -o /dev/null -s \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/labels")
         ALL_LABELS=$(curl -o /dev/null -s \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             "$GITHUB_API/$REPO_PATH/labels")
 
@@ -41,8 +41,8 @@ case $(jq_read "$JSON_ARG" command) in
 
     *"update_labels"*)
         UPDATE_LABELS=$(curl -o /dev/null -s \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             --data "{\"labels\": $(jq_read "$JSON_ARG" labels)}" \
             -X PUT "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/labels")
@@ -58,15 +58,15 @@ case $(jq_read "$JSON_ARG" command) in
 
         # View issue details and comments
         ISSUE_RESULT=$(curl -o /dev/null -s \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             -H "Accept: $GITHUB_REACTIONS" \
             "$GITHUB_API/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)")
 
         COMMENTS_RESULT=$(curl -o /dev/null -s \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             -H "Accept: $GITHUB_REACTIONS" \
             "$GITHUB_API/$REPO_PATH/$PATH_TYPE/$(jq_read "$JSON_ARG" number)/comments")
@@ -83,8 +83,8 @@ case $(jq_read "$JSON_ARG" command) in
                 { reactions: .reactions })) })')
 
             ISSUE_COMMENTS=$(curl -o /dev/null -s \
-                -A "$VIMGMT_UA" \
-                -bc /tmp/vimgmt-cookies \
+                -A "$REPOMAN_UA" \
+                -bc /tmp/repoman-cookies \
                 -H "Authorization: token $API_KEY" \
                 -H "Accept: $GITHUB_REACTIONS" \
                 "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
@@ -100,8 +100,8 @@ case $(jq_read "$JSON_ARG" command) in
         # Post a comment on the current issue
         RESULT=$(curl -o /dev/null -s \
             -w "%{http_code}" \
-            -A "$VIMGMT_UA" \
-            -bc /tmp/vimgmt-cookies \
+            -A "$REPOMAN_UA" \
+            -bc /tmp/repoman-cookies \
             -H "Authorization: token $API_KEY" \
             --data "{\"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \
             -X POST "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
@@ -116,8 +116,8 @@ case $(jq_read "$JSON_ARG" command) in
         else
             RESULT=$(curl -o /dev/null -s \
                 -w "%{http_code}" \
-                -A "$VIMGMT_UA" \
-                -bc /tmp/vimgmt-cookies \
+                -A "$REPOMAN_UA" \
+                -bc /tmp/repoman-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"title\": \"$(jq_read "$JSON_ARG" title)\", \"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \
                 -X POST "$GITHUB_API/$REPO_PATH/issues")
@@ -132,8 +132,8 @@ case $(jq_read "$JSON_ARG" command) in
         else
             RESULT=$(curl -o /dev/null -s \
                 -w "%{http_code}" \
-                -A "$VIMGMT_UA" \
-                -bc /tmp/vimgmt-cookies \
+                -A "$REPOMAN_UA" \
+                -bc /tmp/repoman-cookies \
                 -H "Authorization: token $API_KEY" \
                 --data "{\"state\": \"closed\"}" \
                 -X PATCH "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
@@ -149,6 +149,6 @@ esac
 
 # Encrypt and write response to cache and echo back to vim
 echo "$RESPONSE" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt \
-    -out "$CACHE_DIR/.$(jq_read "$JSON_ARG" command).vimgmt" \
+    -out "$CACHE_DIR/.$(jq_read "$JSON_ARG" command).repoman" \
     -k "$(jq_read "$JSON_ARG" token_pw)"
 echo "$RESPONSE"
