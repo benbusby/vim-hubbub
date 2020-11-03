@@ -7,7 +7,7 @@
 " ============================================================================
 scriptencoding utf-8
 
-let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+let g:vimgmt_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
 let s:vimgmt_spacer = repeat('─ ', 27)
 let s:vimgmt_spacer_small = repeat('─', 33)
@@ -39,12 +39,12 @@ let s:reactions = {
 \}
 
 " Set language, if available
-let lang_dict = json_decode(join(readfile(s:dir . '/assets/strings.json')))
+let lang_dict = json_decode(join(readfile(g:vimgmt_dir . '/assets/strings.json')))
 let s:strings = lang_dict[(exists('g:vimgmt_lang') ? g:vimgmt_lang : 'en')]
 let s:skip_pw = exists('g:vimgmt_github') || exists('g:vimgmt_gitlab')
 
-let s:gh_token_path = s:dir . '/.github.vimgmt'
-let s:gl_token_path = s:dir . '/.gitlab.vimgmt'
+let s:gh_token_path = g:vimgmt_dir . '/.github.vimgmt'
+let s:gl_token_path = g:vimgmt_dir . '/.gitlab.vimgmt'
 
 " ============================================================================
 " Commands
@@ -311,8 +311,6 @@ endfunction
 function! HomePageQuery() abort
     let s:vimgmt.command = 'view_all'
     let response = VimgmtScript()
-    call vimgmt#utils#WriteFile(
-        \substitute(response, '"', '\\"', 'ge'), 'home', s:vimgmt.token_pw)
     return json_decode(response)
 endfunction
 
@@ -320,8 +318,6 @@ function! LabelsQuery(number) abort
     let s:vimgmt.command = 'view_labels'
     let s:vimgmt.number = a:number
     let response = VimgmtScript()
-    call vimgmt#utils#WriteFile(
-        \substitute(response, '"', '\\"', 'ge'), 'labels', s:vimgmt.token_pw)
     return json_decode(VimgmtScript())
 endfunction
 
@@ -331,8 +327,6 @@ function! IssueQuery(number, pr) abort
     let s:vimgmt.type = (a:pr ? 'pulls' : 'issues')
     let s:vimgmt.pr = s:vimgmt.in_pr
     let response = VimgmtScript()
-    call vimgmt#utils#WriteFile(
-        \substitute(response, '"', '\\"', 'ge'), 'issue', s:vimgmt.token_pw)
     return json_decode(response)
 endfunction
 
@@ -375,7 +369,7 @@ function! VimgmtScript(...) abort
     " Use double quotes here to avoid unneccessary confusion when calling the
     " script with a single-quoted json body
     let l:response = system(
-                \s:dir . "/scripts/vimgmt.sh '" .
+                \g:vimgmt_dir . "/scripts/vimgmt.sh '" .
                 \substitute(json_encode(s:vimgmt), "'", "'\\\\''", "g")
                 \. "' " . background)
     call ResetState()
@@ -402,10 +396,10 @@ endfunction
 " Write out header to buffer, including the name of the repo.
 function! SetHeader() abort
     let l:line_idx = 1
-    for line in readfile(s:dir . '/assets/header.txt')
+    for line in readfile(g:vimgmt_dir . '/assets/header.txt')
         if l:line_idx == 1
             let l:repo_name = system(
-                \'source ' . s:dir . '/scripts/vimgmt_utils.sh && get_path'
+                \'source ' . g:vimgmt_dir . '/scripts/vimgmt_utils.sh && get_path'
             \)
             let l:line_idx = WriteLine(line . ' ' . l:repo_name)
         else

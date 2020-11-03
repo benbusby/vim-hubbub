@@ -20,6 +20,10 @@ export FOOTER="<hr>\n\n<sub>_Posted with [vimgmt](https://github.com/benbusby/vi
 export GITHUB_REACTIONS="application/vnd.github.squirrel-girl-preview"
 export GITHUB_MULTILINE="application/vnd.github.comfort-fade-preview+json"
 
+# Setup path for encrypting responses into the local cache
+SCRIPT_DIR="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+export CACHE_DIR="$SCRIPT_DIR/.."
+
 # -------------------------------------------------
 # Initialization
 # -------------------------------------------------

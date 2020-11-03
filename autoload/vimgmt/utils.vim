@@ -1,5 +1,3 @@
-let s:dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
-
 " ============================================================================
 " Syntax
 " ============================================================================
@@ -44,13 +42,12 @@ endfunction
 " ============================================================================
 " Local File Read/Write
 " ============================================================================
-
 let s:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
 let s:decrypt_cmd = 'openssl aes-256-cbc -d -a -pbkdf2 -in '
 let s:local_files = {
-    \'home':   s:dir . '/.home.vimgmt',
-    \'issue':  s:dir . '/.issue.vimgmt',
-    \'labels': s:dir . '/.labels.vimgmt'
+    \'home':   g:vimgmt_dir . '/.view_all.vimgmt',
+    \'issue':  g:vimgmt_dir . '/.view.vimgmt',
+    \'labels': g:vimgmt_dir . '/.view_labels.vimgmt'
     \}
 
 function! vimgmt#utils#ReadFile(name, password) abort

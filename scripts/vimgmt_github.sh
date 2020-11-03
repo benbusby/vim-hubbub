@@ -13,10 +13,10 @@ case $(jq_read "$JSON_ARG" command) in
             -A "$VIMGMT_UA" \
             -bc /tmp/vimgmt-cookies \
             -H "Authorization: token $API_KEY" \
-            "$GITHUB_API/$REPO_PATH/issues?state=open")
+            "$GITHUB_API/$REPO_PATH/issues?state=open&per_page=10")
 
         # Default sort by when it was updated
-        echo "$RESULT" | jq -r '[. |= sort_by(.updated_at) | reverse[]]'
+        RESPONSE=$(echo "$RESULT" | jq -c -r '[. |= sort_by(.updated_at) | reverse[]]')
         ;;
 
     *"view_labels"*)
@@ -36,7 +36,7 @@ case $(jq_read "$JSON_ARG" command) in
             map(select(length>1)) | map(.[] + {active: "yes"}) | . |= unique_by(.id)')
         REMAINING_LABELS=$(jq -n "$CURRENT_LABELS + $ALL_LABELS" | jq 'group_by(.) | map(select(length==1)[0])')
 
-        jq -n "$ACTIVE_LABELS + $REMAINING_LABELS"
+        RESPONSE=$(jq -n "$ACTIVE_LABELS + $REMAINING_LABELS")
         ;;
 
     *"update_labels"*)
@@ -47,7 +47,7 @@ case $(jq_read "$JSON_ARG" command) in
             --data "{\"labels\": $(jq_read "$JSON_ARG" labels)}" \
             -X PUT "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/labels")
 
-        echo "$UPDATE_LABELS"
+        RESPONSE=$("$UPDATE_LABELS")
         ;;
 
     *"view"*)
@@ -93,7 +93,7 @@ case $(jq_read "$JSON_ARG" command) in
         fi
 
         # Combine comments and issue info into one json object
-        jq -n "$ISSUE_RESULT + {comments: $COMMENTS_RESULT}"
+        RESPONSE=$(jq -n "$ISSUE_RESULT + {comments: $COMMENTS_RESULT}")
         ;;
 
     *"comment"*)
@@ -106,7 +106,7 @@ case $(jq_read "$JSON_ARG" command) in
             --data "{\"body\": \"$(jq_read "$JSON_ARG" body)\n\n$FOOTER\"}" \
             -X POST "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)/comments")
 
-        echo "$RESULT" | jq .
+        RESPONSE=$("$RESULT" | jq .)
         ;;
 
     *"new"*)
@@ -123,7 +123,7 @@ case $(jq_read "$JSON_ARG" command) in
                 -X POST "$GITHUB_API/$REPO_PATH/issues")
         fi
 
-        echo "$RESULT" | jq -r .
+        RESPONSE=$("$RESULT" | jq -r .)
         ;;
     *"close"*)
         # Close issue/PR/MR
@@ -139,10 +139,16 @@ case $(jq_read "$JSON_ARG" command) in
                 -X PATCH "$GITHUB_API/$REPO_PATH/issues/$(jq_read "$JSON_ARG" number)")
         fi
 
-        echo "$RESULT" | jq -r .
+        RESPONSE=$("$RESULT" | jq -r .)
         ;;
     *)
         echo "ERROR: Unrecognized command"
         exit 1
         ;;
 esac
+
+# Encrypt and write response to cache and echo back to vim
+echo "$RESPONSE" | openssl enc -e -aes-256-cbc -a -pbkdf2 -salt \
+    -out "$CACHE_DIR/.$(jq_read "$JSON_ARG" command).vimgmt" \
+    -k $(jq_read "$JSON_ARG" token_pw)
+echo "$RESPONSE"
