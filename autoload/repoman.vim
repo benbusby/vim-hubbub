@@ -164,7 +164,7 @@ endfunction
 function! repoman#RepoManPage(...) abort
     if a:1 < 1 && s:repoman.page == 1
         return
-    elseif s:repoman.page == s:repoman_max_page
+    elseif s:repoman.page == s:repoman_max_page && a:1 > 0
         echo 'Max page reached'
         return
     endif
