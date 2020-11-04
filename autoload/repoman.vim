@@ -45,6 +45,8 @@ let s:reactions = {
     \'rocket': '🚀'
 \}
 
+let s:repoman_max_page = -1
+
 " Set language, if available
 let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
 let s:strings = lang_dict[(exists('g:repoman_lang') ? g:repoman_lang : 'en')]
@@ -125,7 +127,11 @@ function! repoman#RepoMan() abort
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
-    call CreateHomeBuffer(HomePageQuery())
+    let l:home_page = HomePageQuery()
+    if len(l:home_page) < 10
+        let s:repoman_max_page = 1
+    endif
+    call CreateHomeBuffer(l:home_page)
     if s:repoman.current_issue != -1
         call CreateIssueBuffer(IssueQuery(s:repoman.current_issue, s:repoman.in_pr))
     endif
@@ -156,11 +162,24 @@ endfunction
 " :RepoManPage is used to navigate to fetch the next page
 " of results in the issues/requests list
 function! repoman#RepoManPage(...) abort
+    if a:1 < 1 && s:repoman.page == 1
+        return
+    elseif s:repoman.page == s:repoman_max_page
+        echo 'Max page reached'
+        return
+    endif
+
     if bufexists(bufnr(s:repoman_bufs.main)) > 0
         execute 'bw! ' . fnameescape(s:repoman_bufs.main)
     endif
+
     let s:repoman.page += a:1
-    call CreateHomeBuffer(HomePageQuery())
+    let l:response = HomePageQuery()
+
+    if len(l:response) < 10
+        let s:repoman_max_page = s:repoman.page
+    endif
+    call CreateHomeBuffer(l:response)
 endfunction
 
 " :RepoManJump can be used on the home page buffer to jump between
@@ -342,7 +361,6 @@ endfunction
 function! LabelsQuery(number) abort
     let s:repoman.command = 'view_labels'
     let s:repoman.number = a:number
-    let response = RepoManScript()
     return json_decode(RepoManScript())
 endfunction
 
