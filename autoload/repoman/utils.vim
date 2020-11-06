@@ -49,8 +49,8 @@ endfunction
 " ============================================================================
 " Local File Read/Write
 " ============================================================================
-let s:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
-let s:decrypt_cmd = 'openssl aes-256-cbc -d -a -pbkdf2 -in '
+let s:encrypt_cmd = 'openssl enc -aes-256-cbc -salt -pbkdf2 -out '
+let s:decrypt_cmd = 'openssl aes-256-cbc -d -salt -pbkdf2 -in '
 let s:local_files = {
     \'github': g:repoman_dir . '/.github.repoman',
     \'gitlab': g:repoman_dir . '/.gitlab.repoman',
@@ -58,6 +58,10 @@ let s:local_files = {
     \'issue':  g:repoman_dir . '/.view.repoman',
     \'labels': g:repoman_dir . '/.view_labels.repoman'
 \}
+
+function! repoman#utils#GetCacheFile(name) abort
+    return s:local_files[a:name]
+endfunction
 
 function! repoman#utils#SanitizeText(text) abort
     let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"]]
@@ -70,46 +74,34 @@ function! repoman#utils#SanitizeText(text) abort
 endfunction
 
 function! repoman#utils#ReadFile(name, password) abort
-    return json_decode(system(
-        \s:decrypt_cmd . s:local_files[a:name] . ' -k ' . a:password))
+    return json_decode(repoman#crypto#Decrypt(s:local_files[a:name], a:password))
 endfunction
 
-function! repoman#utils#ReadGitHubToken(password) abort
+function! repoman#utils#ReadToken(password) abort
     return substitute(
-        \system(s:decrypt_cmd . s:local_files['github'] . ' -k ' . a:password),
+        \repoman#crypto#Decrypt(s:local_files[repoman#utils#GetRepoHost()], a:password),
         \'[[:cntrl:]]', '', 'ge')
-endfunction
-
-function! repoman#utils#ReadGitLabToken(password) abort
-    return substitute(
-        \system(s:decrypt_cmd . s:local_files['gitlab'] . ' -k ' . a:password),
-        \'[[:cntrl:]]', '', 'ge')
-endfunction
-
-function! repoman#utils#WriteFile(contents, name, password) abort
-    call system("echo '" . a:contents . "' | " .
-        \s:encrypt_cmd . s:local_files[a:name] . " -k ". a:password)
 endfunction
 
 function! repoman#utils#AddLocalComment(comment, number, password) abort
     " Update comments count for current issue
     let l:home_json = json_decode(system(
-        \s:decrypt_cmd . s:local_files['home'] . ' -k ' . a:password))
+        \s:decrypt_cmd . s:local_files['home'] . ' -pass pass:' . a:password))
     for issue in l:home_json
         if issue['number'] == a:number
             let issue['comments'] += 1
             break
         endif
     endfor
-    call repoman#utils#WriteFile(
+    call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:home_json)),
         \'home', a:password)
 
     " Update comments array with new comment
     let l:issue_json = json_decode(system(
-        \s:decrypt_cmd . s:local_files['issue'] . ' -k ' . a:password))
+        \s:decrypt_cmd . s:local_files['issue'] . ' -pass pass:' . a:password))
     call add(l:issue_json['comments'], a:comment)
-    call repoman#utils#WriteFile(
+    call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:issue_json)),
         \'issue', a:password)
 endfunction
@@ -148,5 +140,5 @@ function repoman#utils#GetRepoHost() abort
 endfunction
 
 function repoman#utils#InGitRepo() abort
-    return len(system('git -C . rev-parse')) == 0 
+    return len(system('git -C . rev-parse')) == 0
 endfunction

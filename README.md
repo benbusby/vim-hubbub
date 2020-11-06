@@ -1,6 +1,6 @@
 # vim-repoman [![CI](https://github.com/benbusby/vim-repoman/workflows/CI/badge.svg?branch=main)](https://github.com/benbusby/vim-repoman/actions)
 
-repo(sitory) man(ager) -- Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
+repo(sitory) man(ager) - Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
 
 ## Table of Contents
 - [Dependencies](#dependencies)
@@ -11,9 +11,9 @@ repo(sitory) man(ager) -- Create and manage GitHub issues, pull requests, code r
 ___
 
 ### Dependencies
-- [jq](https://stedolan.github.io/jq/download/)
 - curl
 - openssl
+  - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `g:repoman_openssl_old` must be added to your .vimrc*
 
 ### Install
 - Vundle: `Plugin 'benbusby/vim-repoman'`

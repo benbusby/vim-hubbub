@@ -12,14 +12,14 @@ let s:github_api = 'https://api.github.com/repos/' . repoman#utils#GetRepoPath()
 
 function repoman#github#ViewAll(repoman) abort
     return json_decode(system(repoman#request#Send(
-        \repoman#utils#ReadGitHubToken(a:repoman.token_pw),
+        \repoman#utils#ReadToken(a:repoman.token_pw),
         \s:github_api . '/issues?state=open&per_page=10&page=' . a:repoman.page,
         \{}, '')))
 endfunction
 
 function repoman#github#View(repoman) abort
     let l:path_type = (a:repoman.pr ? 'pulls' : 'issues')
-    let l:token = repoman#utils#ReadGitHubToken(a:repoman.token_pw)
+    let l:token = repoman#utils#ReadToken(a:repoman.token_pw)
 
     let l:issue_result = json_decode(system(repoman#request#Send(
         \l:token, s:github_api . '/' . l:path_type . '/' . a:repoman.number,
@@ -55,7 +55,7 @@ endfunction
 function repoman#github#PostComment(repoman) abort
     let comment_data = '{"body": "' . repoman#utils#SanitizeText(a:repoman.body) . '"}'
     call system(repoman#request#BackgroundSend(
-        \repoman#utils#ReadGitHubToken(a:repoman.token_pw),
+        \repoman#utils#ReadToken(a:repoman.token_pw),
         \s:github_api . '/issues/' . a:repoman.number . '/comments',
         \comment_data, 'POST'))
 endfunction

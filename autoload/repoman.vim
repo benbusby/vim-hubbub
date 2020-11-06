@@ -12,8 +12,8 @@ let s:repoman_spacer = repeat('─ ', 27)
 let s:repoman_spacer_small = repeat('─', 33)
 
 let s:repoman_bufs = {
-    \'issue':     '/tmp/issue.repoman.diff',
-    \'main':      '/tmp/home.repoman',
+    \'issue':     '/dev/null/issue.repoman.diff',
+    \'main':      '/dev/null/home.repoman',
     \'comment':   '/tmp/comment.repoman',
     \'new_issue': '/tmp/new_issue.repoman',
     \'new_req':   '/tmp/new_req.repoman',
@@ -66,7 +66,6 @@ let s:gl_token_path = g:repoman_dir . '/.gitlab.repoman'
 " :RepoManInit allows the user to set up using their tokens to
 " access the GitHub and/or GitLab API
 function! repoman#RepoManInit() abort
-    let l:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
     call inputsave()
     let l:token_gh = input('GitHub Token (leave empty to skip): ')
     let l:token_gl = input('GitLab Token (leave empty to skip): ')
@@ -79,14 +78,19 @@ function! repoman#RepoManInit() abort
     endif
 
     if !empty(l:token_gh)
-        call system('echo "' . l:token_gh . '" | ' .
-                    \l:encrypt_cmd . s:gh_token_path . ' -k ' . l:token_pw)
+        call repoman#crypto#Encrypt(l:token_gh, s:gh_token_path, l:token_pw)
     endif
 
     if !empty(l:token_gl)
-        call system('echo "' . l:token_gl . '" | ' .
-                    \l:encrypt_cmd . s:gh_token_path . ' -k ' . l:token_pw)
+        call repoman#crypto#Encrypt(l:token_gl, s:gl_token_path, l:token_pw)
     endif
+
+    if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
+        echo s:strings.error . ' Unable to encrypt token ' .
+            \'-- do you have OpenSSL or LibreSSL installed?'
+    endif
+
+    echo ''
 endfunction
 
 " --------------------------------------------------------------
@@ -364,9 +368,9 @@ let s:PostComment = function('repoman#' . repoman#utils#GetRepoHost() . '#PostCo
 
 function! HomePageQuery() abort
     let l:response = s:ViewAll(s:repoman)
-    call repoman#utils#WriteFile(
+    call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
-        \'home', s:repoman.token_pw)
+        \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)
     return l:response
 endfunction
 
@@ -375,9 +379,9 @@ function! IssueQuery(number, pr) abort
     let s:repoman.number = a:number
     let s:repoman.pr = s:repoman.in_pr
     let l:response = s:View(s:repoman)
-    call repoman#utils#WriteFile(
+    call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
-        \'issue', s:repoman.token_pw)
+        \repoman#utils#GetCacheFile('issue'), s:repoman.token_pw)
     return l:response
 endfunction
 
@@ -867,9 +871,13 @@ function! SoftReload() abort
     endif
 
     " Recreate home and issue buffer w/ locally updated files
-    call CreateHomeBuffer(repoman#utils#ReadFile('home', s:repoman.token_pw))
+    call CreateHomeBuffer(json_encode(
+        \repoman#crypto#Decrypt(
+        \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)))
     if s:repoman.current_issue != -1
-        call CreateIssueBuffer(repoman#utils#ReadFile('issue', s:repoman.token_pw))
+        call CreateIssueBuffer(json_encode(
+            \repoman#crypto#Decrypt(
+            \repoman#utils#GetCacheFile('issue'), s:repoman.token_pw)))
     endif
 endfunction
 
