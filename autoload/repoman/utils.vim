@@ -1,4 +1,11 @@
 " ============================================================================
+" File:    autoload/repoman/utils.vim
+" Author:  Ben Busby <https://benbusby.com>
+" License: MIT
+" Website: https://github.com/benbusby/vim-repoman
+" ============================================================================
+
+" ============================================================================
 " Syntax
 " ============================================================================
 let s:end_str = '```'
@@ -45,19 +52,43 @@ endfunction
 let s:encrypt_cmd = 'openssl enc -e -aes-256-cbc -a -pbkdf2 -salt -out '
 let s:decrypt_cmd = 'openssl aes-256-cbc -d -a -pbkdf2 -in '
 let s:local_files = {
+    \'github': g:repoman_dir . '/.github.repoman',
+    \'gitlab': g:repoman_dir . '/.gitlab.repoman',
     \'home':   g:repoman_dir . '/.view_all.repoman',
     \'issue':  g:repoman_dir . '/.view.repoman',
     \'labels': g:repoman_dir . '/.view_labels.repoman'
-    \}
+\}
+
+function! repoman#utils#SanitizeText(text) abort
+    let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"]]
+    let l:text = a:text
+
+    for item in l:replacements
+        let l:text = substitute(l:text, item[0], item[1], 'ge')
+    endfor
+    return l:text
+endfunction
 
 function! repoman#utils#ReadFile(name, password) abort
     return json_decode(system(
         \s:decrypt_cmd . s:local_files[a:name] . ' -k ' . a:password))
 endfunction
 
+function! repoman#utils#ReadGitHubToken(password) abort
+    return substitute(
+        \system(s:decrypt_cmd . s:local_files['github'] . ' -k ' . a:password),
+        \'[[:cntrl:]]', '', 'ge')
+endfunction
+
+function! repoman#utils#ReadGitLabToken(password) abort
+    return substitute(
+        \system(s:decrypt_cmd . s:local_files['gitlab'] . ' -k ' . a:password),
+        \'[[:cntrl:]]', '', 'ge')
+endfunction
+
 function! repoman#utils#WriteFile(contents, name, password) abort
-    call system('echo "' . a:contents . '" | ' .
-        \s:encrypt_cmd . s:local_files[a:name] . ' -k ' . a:password)
+    call system("echo '" . a:contents . "' | " .
+        \s:encrypt_cmd . s:local_files[a:name] . " -k ". a:password)
 endfunction
 
 function! repoman#utils#AddLocalComment(comment, number, password) abort
@@ -71,13 +102,51 @@ function! repoman#utils#AddLocalComment(comment, number, password) abort
         endif
     endfor
     call repoman#utils#WriteFile(
-        \substitute(json_encode(l:home_json), '"', '\\"', 'ge'), 'home', a:password)
+        \repoman#utils#SanitizeText(json_encode(l:home_json)),
+        \'home', a:password)
 
     " Update comments array with new comment
     let l:issue_json = json_decode(system(
         \s:decrypt_cmd . s:local_files['issue'] . ' -k ' . a:password))
     call add(l:issue_json['comments'], a:comment)
     call repoman#utils#WriteFile(
-        \substitute(json_encode(l:issue_json), '"', '\\"', 'ge'),
+        \repoman#utils#SanitizeText(json_encode(l:issue_json)),
         \'issue', a:password)
+endfunction
+
+" ============================================================================
+" Git Specific Functions
+" ============================================================================
+let s:github_prefixes = ['https://github.com', 'git@github.com:']
+let s:gitlab_prefixes = ['https://gitlab.com', 'git@gitlab.com:']
+
+function repoman#utils#GetRepoPath() abort
+    let l:prefixes = s:github_prefixes + s:gitlab_prefixes
+    let l:repo_path = substitute(system('git ls-remote --get-url'), '[[:cntrl:]]', '', 'ge')
+
+    for prefix in l:prefixes
+        let l:repo_path = substitute(l:repo_path, prefix, '', 'ge')
+    endfor
+
+    if l:repo_path[len(l:repo_path) - 4:] ==# '.git'
+        return l:repo_path[:len(l:repo_path) - 5]
+    endif
+
+    return l:repo_path
+endfunction
+
+function repoman#utils#GetRepoHost() abort
+    let l:full_path = substitute(system('git ls-remote --get-url'), '[[:cntrl:]]', '', 'ge')
+
+    for prefix in s:gitlab_prefixes
+        if match(l:full_path, prefix) == 0
+            return 'gitlab'
+        endif
+    endfor
+
+    return 'github'
+endfunction
+
+function repoman#utils#InGitRepo() abort
+    return len(system('git -C . rev-parse')) == 0 
 endfunction

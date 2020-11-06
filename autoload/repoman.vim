@@ -31,7 +31,8 @@ let s:repoman = {
     \'token_pw': '',
     \'current_issue': -1,
     \'in_pr': 0,
-    \'page': 1
+    \'page': 1,
+    \'repo': repoman#utils#GetRepoPath()
 \}
 
 let s:reactions = {
@@ -96,6 +97,12 @@ endfunction
 "     there's already a RepoMan buffer open, it will:
 "   - Refresh the currently active RepoMan buffer(s)
 function! repoman#RepoMan() abort
+    " Check to make sure user is in a git repo
+    if !repoman#utils#InGitRepo()
+        echo 'Not in git repo'
+        return
+    endif
+
     " Check to make sure at least one token exists
     if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
         echo 'No tokens found -- have you run :RepoManInit?'
@@ -275,13 +282,13 @@ function! repoman#RepoManPost() abort
         silent %s/\"/\\\\\\"/ge
 
         " Condense buffer into a single line with line break chars
-        let l:comment_text = join(getline(1, '$'), '\n')
+        let l:comment_text = join(getline(1, '$'), "\n")
         call PostComment(l:comment_text)
         let l:temp_comment = {
             \'created_at': strftime('%G-%m-%d %H:%M:%S'),
             \'body': l:comment_text,
             \'user': {'login': 'You'}
-            \}
+        \}
         call repoman#utils#AddLocalComment(
             \l:temp_comment, s:repoman.current_issue, s:repoman.token_pw)
         execute 'bw! ' . fnameescape(s:repoman_bufs.comment)
@@ -351,11 +358,27 @@ endfunction
 " ============================================================================
 " External Script Calls
 " ============================================================================
+let s:ViewAll = function('repoman#' . repoman#utils#GetRepoHost() . '#ViewAll')
+let s:View = function('repoman#' . repoman#utils#GetRepoHost() . '#View')
+let s:PostComment = function('repoman#' . repoman#utils#GetRepoHost() . '#PostComment')
 
 function! HomePageQuery() abort
-    let s:repoman.command = 'view_all'
-    let response = RepoManScript()
-    return json_decode(response)
+    let l:response = s:ViewAll(s:repoman)
+    call repoman#utils#WriteFile(
+        \repoman#utils#SanitizeText(json_encode(l:response)),
+        \'home', s:repoman.token_pw)
+    return l:response
+endfunction
+
+function! IssueQuery(number, pr) abort
+    let s:repoman.command = 'view'
+    let s:repoman.number = a:number
+    let s:repoman.pr = s:repoman.in_pr
+    let l:response = s:View(s:repoman)
+    call repoman#utils#WriteFile(
+        \repoman#utils#SanitizeText(json_encode(l:response)),
+        \'issue', s:repoman.token_pw)
+    return l:response
 endfunction
 
 function! LabelsQuery(number) abort
@@ -364,21 +387,12 @@ function! LabelsQuery(number) abort
     return json_decode(RepoManScript())
 endfunction
 
-function! IssueQuery(number, pr) abort
-    let s:repoman.command = 'view'
-    let s:repoman.number = a:number
-    let s:repoman.type = (a:pr ? 'pulls' : 'issues')
-    let s:repoman.pr = s:repoman.in_pr
-    let response = RepoManScript()
-    return json_decode(response)
-endfunction
-
 function! PostComment(comment) abort
     let s:repoman.command = 'comment'
     let s:repoman.body = a:comment
     let s:repoman.number = s:repoman.current_issue
     let s:repoman.pr = s:repoman.in_pr
-    call RepoManScript(1)
+    call s:PostComment(s:repoman)
 endfunction
 
 function! PostLabels(number, labels) abort
@@ -437,14 +451,12 @@ endfunction
 " ============================================================================
 
 " Write out header to buffer, including the name of the repo.
-function! SetHeader() abort
+function! SetHeader(...) abort
     let l:line_idx = 1
     for line in readfile(g:repoman_dir . '/assets/header.txt')
+        let l:page_id = a:0 > 0 ? ' (page ' . s:repoman.page . ')' : ''
         if l:line_idx == 1
-            let l:repo_name = system(
-                \'source ' . g:repoman_dir . '/scripts/repoman_utils.sh && get_path'
-            \)
-            let l:line_idx = WriteLine(line . ' ' . l:repo_name . ' (page ' . s:repoman.page . ')')
+            let l:line_idx = WriteLine(line . ' ' . s:repoman.repo . l:page_id)
         else
             let l:line_idx = WriteLine(line)
         endif
@@ -590,7 +602,7 @@ function! CreateHomeBuffer(results) abort
     execute "file " . fnameescape(s:repoman_bufs.main)
     setlocal bufhidden=hide noswapfile wrap
 
-    let l:line_idx = SetHeader()
+    let l:line_idx = SetHeader(1)
     let s:results_line = l:line_idx
     let b:issue_lookup = {}
 
@@ -838,7 +850,8 @@ function! ResetState() abort
         \'token_pw': s:repoman.token_pw,
         \'current_issue': s:repoman.current_issue,
         \'in_pr': s:repoman.in_pr,
-        \'page': s:repoman.page
+        \'page': s:repoman.page,
+        \'repo': s:repoman.repo
     \}
 endfunction
 
