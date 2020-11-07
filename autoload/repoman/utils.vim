@@ -112,7 +112,7 @@ endfunction
 let s:github_prefixes = ['https://github.com', 'git@github.com:']
 let s:gitlab_prefixes = ['https://gitlab.com', 'git@gitlab.com:']
 
-function repoman#utils#GetRepoPath() abort
+function! repoman#utils#GetRepoPath() abort
     let l:prefixes = s:github_prefixes + s:gitlab_prefixes
     let l:repo_path = substitute(system('git ls-remote --get-url'), '[[:cntrl:]]', '', 'ge')
 
@@ -127,7 +127,7 @@ function repoman#utils#GetRepoPath() abort
     return l:repo_path
 endfunction
 
-function repoman#utils#GetRepoHost() abort
+function! repoman#utils#GetRepoHost() abort
     let l:full_path = substitute(system('git ls-remote --get-url'), '[[:cntrl:]]', '', 'ge')
 
     for prefix in s:gitlab_prefixes
@@ -139,6 +139,6 @@ function repoman#utils#GetRepoHost() abort
     return 'github'
 endfunction
 
-function repoman#utils#InGitRepo() abort
+function! repoman#utils#InGitRepo() abort
     return len(system('git -C . rev-parse')) == 0
 endfunction

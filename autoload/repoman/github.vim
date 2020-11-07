@@ -17,14 +17,14 @@ let s:github_multiline_type = 'application/vnd.github.comfort-fade-preview+json'
 " Views --------------------------------------------------------
 " --------------------------------------------------------------
 
-function repoman#github#ViewAll(repoman) abort
+function! repoman#github#ViewAll(repoman) abort
     return json_decode(system(repoman#request#Curl().Send(
         \repoman#utils#ReadToken(a:repoman.token_pw),
         \s:github_api . '/issues?state=open&per_page=10&page=' . a:repoman.page,
         \{}, '')))
 endfunction
 
-function repoman#github#View(repoman) abort
+function! repoman#github#View(repoman) abort
     let l:path_type = (a:repoman.pr ? 'pulls' : 'issues')
     let l:token = repoman#utils#ReadToken(a:repoman.token_pw)
 
@@ -48,12 +48,12 @@ function repoman#github#View(repoman) abort
             if l:comment_index > 0
                 call add(l:rev_comments[l:comment_index]['review_comments'], formatted_comment)
             else
-                comment['review_comments'] = l:formatted_comment
+                let comment['review_comments'] = l:formatted_comment
                 call add(l:rev_comments, comment)
             endif
         endfor
 
-        let l:comments_result = l:rev_commments + json_decode(system(repoman#request#Send(
+        let l:comments_result = l:rev_comments + json_decode(system(repoman#request#Send(
             \l:token, s:github_api . '/issues/' . a:repoman.number . '/comments')))
     endif
 
@@ -65,14 +65,14 @@ endfunction
 " Comments -----------------------------------------------------
 " --------------------------------------------------------------
 
-function repoman#github#PostComment(repoman) abort
+function! repoman#github#PostComment(repoman) abort
     let l:footer = ''
-    if !exists('g:repoman_footer') or g:repoman_footer
+    if !exists('g:repoman_footer') || g:repoman_footer
         let l:footer = printf(s:footer, 'Posted')
     endif
 
     let l:comment_data = '{"body": "' .
-        \repoman#utils#SanitizeText(a:repoman.body) . l:footer,
+        \repoman#utils#SanitizeText(a:repoman.body) . l:footer .
         \'"}'
 
     call system(repoman#request#Curl().BackgroundSend(
@@ -82,12 +82,12 @@ function repoman#github#PostComment(repoman) abort
 endfunction
 
 " --------------------------------------------------------------
-" Issues -------------------------------------------------------
+" Issues/PRs ---------------------------------------------------
 " --------------------------------------------------------------
 
-function repoman#github#CreateIssue(repoman) abort
+function! repoman#github#NewItem(repoman) abort
     let l:footer = ''
-    if !exists('g:repoman_footer') or g:repoman_footer
+    if !exists('g:repoman_footer') || g:repoman_footer
         let l:footer = printf(s:footer, 'Created')
     endif
 
@@ -102,7 +102,7 @@ function repoman#github#CreateIssue(repoman) abort
         \l:issue_data, 'POST'))
 endfunction
 
-function repoman#github#CloseIssue(repoman) abort
+function! repoman#github#CloseItem(repoman) abort
     call system(repoman#request#Curl().Send(
         \repoman#utils#ReadToken(a:repoman.token_pw),
         \s:github_api . '/issues/' . a:repoman.number,
@@ -113,7 +113,7 @@ endfunction
 " Labels -------------------------------------------------------
 " --------------------------------------------------------------
 
-function repoman#github#ViewLabels(repoman) abort
+function! repoman#github#ViewLabels(repoman) abort
     " Need to fetch all labels, then cross check against issue labels
     let l:current_labels = json_decode(system(
         \repoman#request#Curl().Send(
@@ -133,7 +133,7 @@ function repoman#github#ViewLabels(repoman) abort
     return l:all_labels
 endfunction
 
-function repoman#github#UpdateLabels(repoman) abort
+function! repoman#github#UpdateLabels(repoman) abort
     call system(repoman#request#Curl().Send(
         \repoman#utils#ReadToken(a:repoman.token_pw),
         \s:github_api . '/issues/' . a:repoman.number . '/labels',
@@ -156,8 +156,8 @@ endfunction
 
 function! FindItemIndex(list, key, value) abort
     let l:index = 0
-    while l:index < len(list)
-        if item[l:index][key] == value
+    while l:index < len(a:list)
+        if a:list[l:index][a:key] == a:value
             return l:index
         endif
     endwhile

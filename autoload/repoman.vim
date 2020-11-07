@@ -271,9 +271,6 @@ function! repoman#RepoManPost() abort
         " Focus on active buffer for issue/request creation
         execute 'b ' . fnameescape(l:post_buf)
 
-        " Format double quotes
-        silent %s/\"/\\\\\\"/ge
-
         " Extract title and body segments
         let l:title = getline(1)
         let l:body = join(getline(3, '$'), '\n')
@@ -281,9 +278,6 @@ function! repoman#RepoManPost() abort
         execute 'bw! ' . fnameescape(l:post_buf)
     elseif bufexists(bufnr(s:repoman_bufs.comment)) > 0
         execute 'b ' . fnameescape(s:repoman_bufs.comment)
-
-        " Format double quotes
-        silent %s/\"/\\\\\\"/ge
 
         " Condense buffer into a single line with line break chars
         let l:comment_text = join(getline(1, '$'), "\n")
@@ -365,11 +359,11 @@ endfunction
 let s:repo_host = repoman#utils#GetRepoHost()
 let s:ViewAll = function('repoman#' . s:repo_host . '#ViewAll')
 let s:View = function('repoman#' . s:repo_host . '#View')
-
 let s:PostComment = function('repoman#' . s:repo_host . '#PostComment')
-
 let s:ViewLabels = function('repoman#' . s:repo_host . '#ViewLabels')
 let s:UpdateLabels = function('repoman#' . s:repo_host . '#UpdateLabels')
+let s:NewItem = function('repoman#' . s:repo_host . '#NewItem')
+let s:CloseItem = function('repoman#' . s:repo_host . '#CloseItem')
 
 function! HomePageQuery() abort
     let l:response = s:ViewAll(s:repoman)
@@ -414,34 +408,16 @@ function! UpdateLabels(number, labels) abort
 endfunction
 
 function! NewItem(type, title, body) abort
-    let s:repoman.command = 'new'
     let s:repoman.title = a:title
     let s:repoman.body = a:body
     let s:repoman.pr = (a:type ==? 'issue' ? 0 : 1)
-    call RepoManScript(1)
+    call s:NewItem(s:repoman)
 endfunction
 
 function! CloseItem(number, pr) abort
-    let s:repoman.command = 'close'
     let s:repoman.number = a:number
     let s:repoman.pr = a:pr
-    call RepoManScript()
-endfunction
-
-function! RepoManScript(...) abort
-    let background = ''
-    if a:0 > 0
-        let background = '&'
-    endif
-
-    " Use double quotes here to avoid unneccessary confusion when calling the
-    " script with a single-quoted json body
-    let l:response = system(
-                \g:repoman_dir . "/scripts/repoman.sh '" .
-                \substitute(json_encode(s:repoman), "'", "'\\\\''", "g")
-                \. "' " . background)
-    call ResetState()
-    return l:response
+    call s:CloseItem(s:repoman)
 endfunction
 
 " ============================================================================
@@ -480,7 +456,7 @@ endfunction
 function! CreateCommentBuffer() abort
     set splitbelow
     new
-    execute "file " . fnameescape(s:repoman_bufs.comment)
+    execute 'file ' . fnameescape(s:repoman_bufs.comment)
     call WriteLine(s:strings.comment_help)
     call CloseBuffer()
 
@@ -529,9 +505,9 @@ function! NewItemBuffer(type) abort
     let l:descriptor = 'Issue'
 
     if a:type ==? 'issue'
-        execute "file " . fnameescape(s:repoman_bufs.new_issue)
+        execute 'file ' . fnameescape(s:repoman_bufs.new_issue)
     else
-        execute "file " . fnameescape(s:repoman_bufs.new_req)
+        execute 'file ' . fnameescape(s:repoman_bufs.new_req)
         let l:descriptor = 'Request'
     endif
 
@@ -557,7 +533,7 @@ function! CreateIssueBuffer(contents) abort
         enew   " Window is too narrow, use new buffer
     endif
 
-    execute "file " . fnameescape(s:repoman_bufs.issue)
+    execute 'file ' . fnameescape(s:repoman_bufs.issue)
     set hidden ignorecase
     setlocal bufhidden=hide noswapfile wrap
 
@@ -610,7 +586,7 @@ function! CreateHomeBuffer(results) abort
     else
         new   " Window is too narrow, use horizontal split
     endif
-    execute "file " . fnameescape(s:repoman_bufs.main)
+    execute 'file ' . fnameescape(s:repoman_bufs.main)
     setlocal bufhidden=hide noswapfile wrap
 
     let l:line_idx = SetHeader(1)
@@ -781,7 +757,7 @@ function! InsertReviewComment(comment) abort
         for body_line in split(review_comment['comment'], '\n')
             " If there's a suggestion, replace w/ relevant syntax highlighting
             " for the file
-            if body_line =~ 'suggestion'
+            if body_line =~# 'suggestion'
                 call WriteLine('| ' . s:strings.suggestion)
                 let extension = fnamemodify(a:comment['path'], ':e')
                 let body_line = substitute(body_line, 'suggestion', extension, '')
@@ -830,10 +806,6 @@ endfunction
 " buffer, and sets the buffer as not modifiable
 function! CloseBuffer() abort
     set cmdheight=4
-    silent %s///ge
-    silent %s/\\"/"/ge
-    silent %s/\%x00//ge
-    normal gg
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
     call repoman#utils#LoadSyntaxColoring()
