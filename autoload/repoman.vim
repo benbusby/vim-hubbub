@@ -36,14 +36,14 @@ let s:repoman = {
 \}
 
 let s:reactions = {
-    \'+1': '👍',
-    \'-1': '👎',
-    \'laugh': '😂',
-    \'eyes': '👀',
-    \'hooray': '🎉',
-    \'confused': '😕',
-    \'heart': '❤️',
-    \'rocket': '🚀'
+    \'+1': '👍 ',
+    \'-1': '👎 ',
+    \'laugh': '😂 ',
+    \'eyes': '👀 ',
+    \'hooray': '🎉 ',
+    \'confused': '😕 ',
+    \'heart': '❤️ ',
+    \'rocket': '🚀 '
 \}
 
 let s:repoman_max_page = -1
@@ -308,7 +308,7 @@ function! repoman#RepoManPost() abort
             endif
         endfor
 
-        call PostLabels(s:repoman.current_issue, l:active_labels)
+        call UpdateLabels(s:repoman.current_issue, l:active_labels)
         execute 'bw! ' . fnameescape(s:repoman_bufs.labels)
     else
         echo s:strings.error . 'No buffers open to post'
@@ -362,9 +362,14 @@ endfunction
 " ============================================================================
 " External Script Calls
 " ============================================================================
-let s:ViewAll = function('repoman#' . repoman#utils#GetRepoHost() . '#ViewAll')
-let s:View = function('repoman#' . repoman#utils#GetRepoHost() . '#View')
-let s:PostComment = function('repoman#' . repoman#utils#GetRepoHost() . '#PostComment')
+let s:repo_host = repoman#utils#GetRepoHost()
+let s:ViewAll = function('repoman#' . s:repo_host . '#ViewAll')
+let s:View = function('repoman#' . s:repo_host . '#View')
+
+let s:PostComment = function('repoman#' . s:repo_host . '#PostComment')
+
+let s:ViewLabels = function('repoman#' . s:repo_host . '#ViewLabels')
+let s:UpdateLabels = function('repoman#' . s:repo_host . '#UpdateLabels')
 
 function! HomePageQuery() abort
     let l:response = s:ViewAll(s:repoman)
@@ -375,7 +380,6 @@ function! HomePageQuery() abort
 endfunction
 
 function! IssueQuery(number, pr) abort
-    let s:repoman.command = 'view'
     let s:repoman.number = a:number
     let s:repoman.pr = s:repoman.in_pr
     let l:response = s:View(s:repoman)
@@ -386,24 +390,27 @@ function! IssueQuery(number, pr) abort
 endfunction
 
 function! LabelsQuery(number) abort
-    let s:repoman.command = 'view_labels'
     let s:repoman.number = a:number
-    return json_decode(RepoManScript())
+    let l:response = s:ViewLabels(s:repoman)
+    call repoman#crypto#Encrypt(
+        \repoman#utils#SanitizeText(json_encode(l:response)),
+        \repoman#utils#GetCacheFile('labels'), s:repoman.token_pw)
+    return l:response
 endfunction
 
 function! PostComment(comment) abort
-    let s:repoman.command = 'comment'
     let s:repoman.body = a:comment
     let s:repoman.number = s:repoman.current_issue
     let s:repoman.pr = s:repoman.in_pr
     call s:PostComment(s:repoman)
 endfunction
 
-function! PostLabels(number, labels) abort
-    let s:repoman.command = 'update_labels'
+function! UpdateLabels(number, labels) abort
     let s:repoman.number = a:number
     let s:repoman.labels = a:labels
-    call RepoManScript(1)
+    let l:response = s:UpdateLabels(s:repoman)
+    call repoman#utils#UpdateLocalLabels(s:repoman)
+    return l:response
 endfunction
 
 function! NewItem(type, title, body) abort
@@ -806,7 +813,7 @@ function! GenerateReactionsStr(item) abort
     for key in keys(s:reactions)
         if has_key(l:reactions, key) && l:reactions[key] > 0
             let l:reaction_str = l:reaction_str .
-                \s:reactions[key] . ' x' . l:reactions[key] . ' '
+                \s:reactions[key] . 'x' . l:reactions[key] . ' '
         endif
     endfor
 
