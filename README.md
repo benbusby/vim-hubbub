@@ -1,4 +1,4 @@
-# vim-repoman [![CI](https://github.com/benbusby/vim-repoman/workflows/CI/badge.svg?branch=main)](https://github.com/benbusby/vim-repoman/actions)
+# vim-repoman [![Build Status](https://travis-ci.com/benbusby/vim-repoman.svg?token=JgVbn8LSCz5Mmr9h5qq7&branch=main)](https://travis-ci.com/benbusby/vim-repoman)
 
 repo(sitory) man(ager) -- Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
 
