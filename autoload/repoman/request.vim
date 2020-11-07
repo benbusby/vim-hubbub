@@ -4,7 +4,7 @@
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
 " ============================================================================
-function repoman#request#Curl(...) abort
+function! repoman#request#Curl(...) abort
     let request = {'type': (a:0 > 0 ? a:1 : 'application/json')}
 
     function! request.Send(token, url, ...) abort
