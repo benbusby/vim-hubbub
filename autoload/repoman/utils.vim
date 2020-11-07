@@ -109,8 +109,8 @@ endfunction
 " ============================================================================
 " Git Specific Functions
 " ============================================================================
-let s:github_prefixes = ['https://github.com', 'git@github.com:']
-let s:gitlab_prefixes = ['https://gitlab.com', 'git@gitlab.com:']
+let s:github_prefixes = ['https://github.com/', 'git@github.com:']
+let s:gitlab_prefixes = ['https://gitlab.com/', 'git@gitlab.com:']
 
 function! repoman#utils#GetRepoPath() abort
     let l:prefixes = s:github_prefixes + s:gitlab_prefixes

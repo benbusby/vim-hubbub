@@ -12,5 +12,6 @@ function! repoman#crypto#Decrypt(file, password) abort
 endfunction
 
 function! GetCommand(command) abort
-   return printf(a:command, exists('g:repoman_openssl_old') ? '' : '-salt -pbkdf2')
+    let l:openssl_old = exists('g:repoman_openssl_old') && g:repoman_openssl_old
+    return printf(a:command, l:openssl_old ? '' : '-salt -pbkdf2')
 endfunction

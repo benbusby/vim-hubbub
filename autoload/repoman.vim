@@ -817,13 +817,13 @@ endfunction
 function! WriteLine(line) abort
     if empty(getline(1))
         " Write over line 1 if empty
-        call setline(1, a:line)
+        call setline(1, substitute(a:line, '', '', 'ge'))
         return 2
     endif
 
     " Write to the next line
     let l:pos = line('$') + 1
-    call setline(l:pos, a:line)
+    call setline(l:pos, substitute(a:line, '', '', 'ge'))
     return l:pos
 endfunction
 
