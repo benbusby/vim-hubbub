@@ -5,7 +5,11 @@
 " Website: https://github.com/benbusby/vim-repoman
 " ============================================================================
 function! repoman#request#Curl(...) abort
-    let request = {'type': (a:0 > 0 ? a:1 : 'application/json')}
+    let request = {
+        \'type': (a:0 > 0 ? a:1 : 'application/json'),
+        \'auth': (repoman#utils#GetRepoHost() ==# 'github'
+            \? '-H ''Authorization: token '
+            \: '-H ''PRIVATE-TOKEN: ')}
 
     function! request.Send(token, url, ...) abort
         let l:body = ''
@@ -19,21 +23,20 @@ function! repoman#request#Curl(...) abort
         let l:request = 'curl -s ' .
             \'-A ''vim-repoman'' ' .
             \'-H ''Accept: ' . self.type . ''' ' .
-            \'-H ''Authorization: token '. a:token . ''' '
+            \self.auth . a:token . ''' '
 
         if !empty(l:body) && !empty(l:method)
             let l:request = l:request .
                 \'--data ''' . l:body . ''' ' .
                 \'-X '. l:method . ' '
 
-            echom l:request . ' ''' . a:url . ''''
         endif
 
         return l:request . ' ''' . a:url . ''''
     endfunction
 
     function! request.BackgroundSend(token, url, ...) abort
-        return repoman#request#Send(
+        return self.Send(
             \a:token, a:url,
             \a:0 > 0 ? a:1 : '',
             \a:0 > 1 ? a:2 : '') . ' &'
