@@ -1,0 +1,26 @@
+{
+    "github": {
+        "number": "number",
+        "body": "body",
+        "desc": "body",
+        "comments": "comments",
+        "user": "user",
+        "login": "login",
+        "created_at": "created_at",
+        "updated_at": "updated_at",
+        "title": "title",
+        "labels": "labels"
+    },
+    "gitlab": {
+        "number": "iid",
+        "body": "body",
+        "desc": "description",
+        "comments": "user_notes_count",
+        "user": "author",
+        "login": "username",
+        "created_at": "created_at",
+        "updated_at": "updated_at",
+        "title": "title",
+        "labels": "labels"
+    }
+}

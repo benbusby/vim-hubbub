@@ -14,18 +14,11 @@ let s:repoman_spacer_small = repeat('─', 33)
 let s:repoman_bufs = {
     \'issue':     '/dev/null/issue.repoman.diff',
     \'main':      '/dev/null/home.repoman',
-    \'comment':   '/tmp/comment.repoman',
-    \'new_issue': '/tmp/new_issue.repoman',
-    \'new_req':   '/tmp/new_req.repoman',
-    \'labels':    '/tmp/labels.repoman'
+    \'comment':   '/dev/null/comment.repoman',
+    \'new_issue': '/dev/null/new_issue.repoman',
+    \'new_req':   '/dev/null/new_req.repoman',
+    \'labels':    '/dev/null/labels.repoman'
 \}
-
-let s:post_bufs = [
-    \s:repoman_bufs.comment,
-    \s:repoman_bufs.new_issue,
-    \s:repoman_bufs.new_req,
-    \s:repoman_bufs.labels
-\]
 
 let s:repoman = {
     \'token_pw': '',
@@ -35,26 +28,18 @@ let s:repoman = {
     \'repo': repoman#utils#GetRepoPath()
 \}
 
-let s:reactions = {
-    \'+1': '👍 ',
-    \'-1': '👎 ',
-    \'laugh': '😂 ',
-    \'eyes': '👀 ',
-    \'hooray': '🎉 ',
-    \'confused': '😕 ',
-    \'heart': '❤️ ',
-    \'rocket': '🚀 '
-\}
-
 let s:repoman_max_page = -1
 
-" Set language, if available
+" Set language and response keys
+let response_keys = json_decode(join(readfile(g:repoman_dir . '/assets/response_keys.json')))
+let s:r_keys = response_keys[repoman#utils#GetRepoHost()]
+
 let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
 let s:strings = lang_dict[(exists('g:repoman_lang') ? g:repoman_lang : 'en')]
-let s:skip_pw = exists('g:repoman_github') || exists('g:repoman_gitlab')
 
 let s:gh_token_path = g:repoman_dir . '/.github.repoman'
 let s:gl_token_path = g:repoman_dir . '/.gitlab.repoman'
+let s:api = {}
 
 " ============================================================================
 " Commands
@@ -136,6 +121,9 @@ function! repoman#RepoMan() abort
         endif
     endif
 
+    " Initialize script API object
+    let s:api = function('repoman#' . repoman#utils#GetRepoHost() . '#API')(s:repoman.token_pw)
+
     " Recreate home buffer, and optionally the issue buffer
     " as well
     let l:home_page = HomePageQuery()
@@ -151,12 +139,19 @@ endfunction
 " :RepoManBack can be used to navigate back to the home page buffer
 " in instances where the issue buffer was opened on top of it.
 function! repoman#RepoManBack() abort
+    let l:post_bufs = [
+        \s:repoman_bufs.comment,
+        \s:repoman_bufs.new_issue,
+        \s:repoman_bufs.new_req,
+        \s:repoman_bufs.labels
+    \]
+
     " Reopen main 'repoman.tmp' buffer, and close the issue buffer
     if bufwinnr(s:repoman_bufs.main) < 0
         execute 'b ' . fnameescape(s:repoman_bufs.main)
     endif
     if bufwinnr(s:repoman_bufs.issue) > 0
-        for buffer in s:post_bufs
+        for buffer in l:post_bufs
             if bufwinnr(buffer) > 0
                 echo s:strings.error . ' Cannot close issue while updating'
                 return
@@ -280,15 +275,9 @@ function! repoman#RepoManPost() abort
         execute 'b ' . fnameescape(s:repoman_bufs.comment)
 
         " Condense buffer into a single line with line break chars
-        let l:comment_text = join(getline(1, '$'), "\n")
+        let l:comment_text = join(getline(1, '$'), '\n')
+
         call PostComment(l:comment_text)
-        let l:temp_comment = {
-            \'created_at': strftime('%G-%m-%d %H:%M:%S'),
-            \'body': l:comment_text,
-            \'user': {'login': 'You'}
-        \}
-        call repoman#utils#AddLocalComment(
-            \l:temp_comment, s:repoman.current_issue, s:repoman.token_pw)
         execute 'bw! ' . fnameescape(s:repoman_bufs.comment)
     elseif bufexists(bufnr(s:repoman_bufs.labels)) > 0
         execute 'b ' . fnameescape(s:repoman_bufs.labels)
@@ -335,7 +324,7 @@ function! repoman#RepoManClose() abort
     " Check to see if the user is not in an issue buffer, and
     " if not, close the issue under their cursor
     if expand('%:p') =~ s:repoman_bufs.main
-        let l:number_to_close = b:issue_lookup[getcurpos()[1]]['number']
+        let l:number_to_close = b:issue_lookup[getcurpos()[1]][s:r_keys.number]
         let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
         let l:reset_current = 0
     endif
@@ -356,17 +345,9 @@ endfunction
 " ============================================================================
 " External Script Calls
 " ============================================================================
-let s:repo_host = repoman#utils#GetRepoHost()
-let s:ViewAll = function('repoman#' . s:repo_host . '#ViewAll')
-let s:View = function('repoman#' . s:repo_host . '#View')
-let s:PostComment = function('repoman#' . s:repo_host . '#PostComment')
-let s:ViewLabels = function('repoman#' . s:repo_host . '#ViewLabels')
-let s:UpdateLabels = function('repoman#' . s:repo_host . '#UpdateLabels')
-let s:NewItem = function('repoman#' . s:repo_host . '#NewItem')
-let s:CloseItem = function('repoman#' . s:repo_host . '#CloseItem')
 
 function! HomePageQuery() abort
-    let l:response = s:ViewAll(s:repoman)
+    let l:response = s:api.ViewAll(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
         \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)
@@ -376,7 +357,7 @@ endfunction
 function! IssueQuery(number, pr) abort
     let s:repoman.number = a:number
     let s:repoman.pr = s:repoman.in_pr
-    let l:response = s:View(s:repoman)
+    let l:response = s:api.View(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
         \repoman#utils#GetCacheFile('issue'), s:repoman.token_pw)
@@ -385,7 +366,7 @@ endfunction
 
 function! LabelsQuery(number) abort
     let s:repoman.number = a:number
-    let l:response = s:ViewLabels(s:repoman)
+    let l:response = s:api.ViewLabels(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
         \repoman#utils#GetCacheFile('labels'), s:repoman.token_pw)
@@ -396,13 +377,13 @@ function! PostComment(comment) abort
     let s:repoman.body = a:comment
     let s:repoman.number = s:repoman.current_issue
     let s:repoman.pr = s:repoman.in_pr
-    call s:PostComment(s:repoman)
+    call s:api.PostComment(s:repoman)
 endfunction
 
 function! UpdateLabels(number, labels) abort
     let s:repoman.number = a:number
     let s:repoman.labels = a:labels
-    let l:response = s:UpdateLabels(s:repoman)
+    let l:response = s:api.UpdateLabels(s:repoman)
     call repoman#utils#UpdateLocalLabels(s:repoman)
     return l:response
 endfunction
@@ -411,13 +392,13 @@ function! NewItem(type, title, body) abort
     let s:repoman.title = a:title
     let s:repoman.body = a:body
     let s:repoman.pr = (a:type ==? 'issue' ? 0 : 1)
-    call s:NewItem(s:repoman)
+    call s:api.NewItem(s:repoman)
 endfunction
 
 function! CloseItem(number, pr) abort
     let s:repoman.number = a:number
     let s:repoman.pr = a:pr
-    call s:CloseItem(s:repoman)
+    call s:api().CloseItem(s:repoman)
 endfunction
 
 " ============================================================================
@@ -542,17 +523,17 @@ function! CreateIssueBuffer(contents) abort
 
     " Write issue and comments to buffer
     let l:type = (s:repoman.in_pr ? s:strings.pr : s:strings.issue)
-    call WriteLine(l:type . '#' . a:contents['number'] . ': ' . a:contents['title'])
+    call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
     let l:line_idx = WriteLine(s:repoman_spacer_small)
 
     " Split body on line breaks for proper formatting
-    let l:line_idx += InsertBodyText(a:contents['body'])
+    let l:line_idx += InsertBodyText(a:contents[s:r_keys.desc])
 
     call WriteLine(s:repoman_spacer_small)
-    call WriteLine(s:strings.created . FormatTime(a:contents['created_at']))
-    call WriteLine(s:strings.updated . FormatTime(a:contents['updated_at']))
-    call WriteLine(s:strings.author . a:contents['user']['login'])
-    call WriteLine(s:strings.labels . ParseLabels(a:contents['labels']))
+    call WriteLine(s:strings.created . FormatTime(a:contents[s:r_keys.created_at]))
+    call WriteLine(s:strings.updated . FormatTime(a:contents[s:r_keys.updated_at]))
+    call WriteLine(s:strings.author . a:contents[s:r_keys.user][s:r_keys.login])
+    call WriteLine(s:strings.labels . ParseLabels(a:contents[s:r_keys.labels]))
     call WriteLine(s:repoman_spacer_small)
 
     " Add reactions to issue (important)
@@ -564,15 +545,15 @@ function! CreateIssueBuffer(contents) abort
     call WriteLine(s:repoman_spacer_small)
     call WriteLine('')
 
-    let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents['comments']) . ')')
+    let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents[s:r_keys.comments]) . ')')
 
-    for comment in a:contents['comments']
+    for comment in a:contents[s:r_keys.comments]
         call InsertComment(comment)
     endfor
 
     " Store issue number for interacting with the issue (commenting, closing,
     " etc)
-    let s:repoman.current_issue = a:contents['number']
+    let s:repoman.current_issue = a:contents[s:r_keys.number]
 
     call CloseBuffer()
 endfunction
@@ -599,16 +580,16 @@ function! CreateHomeBuffer(results) abort
         " Request
         let l:item_name = (has_key(item, 'pull_request')
             \? s:strings.pr : s:strings.issue) .
-            \'#' . item['number'] . ': ' . item['title']
+            \'#' . item[s:r_keys.number] . ': ' . item[s:r_keys.title]
         let l:start_idx = WriteLine(l:item_name)
 
         " Draw boundary between title and body
         let l:line_idx = WriteLine(s:repoman_spacer_small)
 
-        let l:label_list = ParseLabels(item['labels'])
-        call WriteLine(s:strings.comments . item['comments'])
+        let l:label_list = ParseLabels(item[s:r_keys.labels])
+        call WriteLine(s:strings.comments . item[s:r_keys.comments])
         call WriteLine(s:strings.labels . l:label_list)
-        call WriteLine(s:strings.updated . FormatTime(item['updated_at']))
+        call WriteLine(s:strings.updated . FormatTime(item[s:r_keys.updated_at]))
 
         " Mark line number where the issue interaction should stop
         let l:line_idx = WriteLine('')
@@ -618,8 +599,8 @@ function! CreateHomeBuffer(results) abort
         " Store issue number and title to use for viewing issue details later
         while l:start_idx <= l:line_idx
             let b:issue_lookup[l:start_idx] = {
-                \'number': item['number'],
-                \'title': item['title'],
+                \'number': item[s:r_keys.number],
+                \'title': item[s:r_keys.title],
                 \'is_pr': has_key(item, 'pull_request')
             \}
             let l:start_idx += 1
@@ -692,7 +673,7 @@ endfunction
 
 " Inserts comments into the buffer
 function! InsertComment(comment) abort
-    let commenter = a:comment['user']['login']
+    let commenter = a:comment[s:r_keys.user][s:r_keys.login]
     if has_key(a:comment, 'author_association') && a:comment['author_association'] !=? 'none'
         let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
     endif
@@ -704,12 +685,12 @@ function! InsertComment(comment) abort
         set syntax=diff
         call InsertReviewComment(a:comment)
     else
-        call WriteLine(FormatTime(a:comment['created_at']))
+        call WriteLine(FormatTime(a:comment[s:r_keys.created_at]))
         call WriteLine(commenter . ': ')
         call WriteLine('')
 
         " Split comment body on line breaks for proper formatting
-        for comment_line in split(a:comment['body'], '\n')
+        for comment_line in split(a:comment[s:r_keys.body], '\n')
             call WriteLine(comment_line)
         endfor
 
@@ -748,11 +729,11 @@ function! InsertReviewComment(comment) abort
     " Each individual review comment can have its own subdiscussion, which
     " is tracked in the 'review_comments' array
     for review_comment in a:comment['review_comments']
-        let commenter = review_comment['login']
+        let commenter = review_comment[s:r_keys.login]
         if has_key(review_comment, 'author_association') && review_comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(review_comment['author_association']) . ') ' . commenter
         endif
-        call WriteLine('| ' . FormatTime(review_comment['created_at']))
+        call WriteLine('| ' . FormatTime(review_comment[s:r_keys.created_at]))
         call WriteLine('| ' . commenter . ': ')
         for body_line in split(review_comment['comment'], '\n')
             " If there's a suggestion, replace w/ relevant syntax highlighting
@@ -779,6 +760,17 @@ endfunction
 "
 " Returns a string
 function! GenerateReactionsStr(item) abort
+    let l:reaction_map = {
+        \'+1': '👍 ',
+        \'-1': '👎 ',
+        \'laugh': '😂 ',
+        \'eyes': '👀 ',
+        \'hooray': '🎉 ',
+        \'confused': '😕 ',
+        \'heart': '❤️ ',
+        \'rocket': '🚀 '
+    \}
+
     if !has_key(a:item, 'reactions')
         return s:strings.no_reactions
     endif
@@ -786,10 +778,10 @@ function! GenerateReactionsStr(item) abort
     let l:reactions = a:item['reactions']
     let l:reaction_str = ''
 
-    for key in keys(s:reactions)
+    for key in keys(l:reaction_map)
         if has_key(l:reactions, key) && l:reactions[key] > 0
             let l:reaction_str = l:reaction_str .
-                \s:reactions[key] . 'x' . l:reactions[key] . ' '
+                \l:reaction_map[key] . 'x' . l:reactions[key] . ' '
         endif
     endfor
 
