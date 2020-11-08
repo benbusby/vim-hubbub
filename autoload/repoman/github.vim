@@ -88,7 +88,7 @@ function! repoman#github#API(token_pw) abort
             \'user': {'login': 'You'}
         \}
         call repoman#utils#AddLocalComment(
-            \l:temp_comment, s:repoman.current_issue, s:repoman.token_pw)
+            \l:temp_comment, a:repoman.current_issue, a:repoman.token_pw)
     endfunction
 
     " --------------------------------------------------------------
