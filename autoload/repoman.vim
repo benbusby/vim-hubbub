@@ -12,12 +12,12 @@ let s:repoman_spacer = repeat('─ ', 27)
 let s:repoman_spacer_small = repeat('─', 33)
 
 let s:repoman_bufs = {
-    \'issue':     '/dev/null/issue.repoman.diff',
-    \'main':      '/dev/null/home.repoman',
-    \'comment':   '/dev/null/comment.repoman',
-    \'new_issue': '/dev/null/new_issue.repoman',
-    \'new_req':   '/dev/null/new_req.repoman',
-    \'labels':    '/dev/null/labels.repoman'
+    \'issue':      '/dev/null/issue.repoman.diff',
+    \'issue_list': '/dev/null/issue_list.repoman',
+    \'comment':    '/dev/null/comment.repoman',
+    \'new_issue':  '/dev/null/new_issue.repoman',
+    \'new_req':    '/dev/null/new_req.repoman',
+    \'labels':     '/dev/null/labels.repoman'
 \}
 
 let s:repoman = {
@@ -86,15 +86,16 @@ endfunction
 "     there's already a RepoMan buffer open, it will:
 "   - Refresh the currently active RepoMan buffer(s)
 function! repoman#RepoMan() abort
-    " Check to make sure user is in a git repo
-    if !repoman#utils#InGitRepo()
-        echo 'Not in git repo'
-        return
-    endif
+    let l:repo_host = repoman#utils#GetRepoHost()
+    let s:in_repo = repoman#utils#InGitRepo()
 
-    " Check to make sure at least one token exists
     if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
+        " At least one token should exist
         echo 'No tokens found -- have you run :RepoManInit?'
+        return
+    elseif !s:in_repo && !exists('g:repoman_default_host')
+        " If user hasn't set their default host, there's nothing else to do
+        echo 'Not in git repo -- run :RepoMan from within a repository, or set g:repoman_default_host'
         return
     endif
 
@@ -103,8 +104,8 @@ function! repoman#RepoMan() abort
         echo s:strings.refresh
 
         " User is already using RepoMan, treat as a refresh
-        if bufexists(bufnr(s:repoman_bufs.main)) > 0
-            execute 'bw! ' . fnameescape(s:repoman_bufs.main)
+        if bufexists(bufnr(s:repoman_bufs.issue_list)) > 0
+            execute 'bw! ' . fnameescape(s:repoman_bufs.issue_list)
         endif
 
         if bufexists(bufnr(s:repoman_bufs.issue)) > 0
@@ -121,18 +122,27 @@ function! repoman#RepoMan() abort
         endif
     endif
 
+    if !s:in_repo && g:repoman_default_host
+        let l:repo_host = g:repoman_default_host
+    endif
+
     " Initialize script API object
-    let s:api = function('repoman#' . repoman#utils#GetRepoHost() . '#API')(s:repoman.token_pw)
+    let s:api = function('repoman#' . l:repo_host . '#API')(s:repoman.token_pw)
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
-    let l:home_page = HomePageQuery()
-    if len(l:home_page) < 10
+    let l:results = s:in_repo ? IssueListQuery() : RepoListQuery()
+    if len(l:results) < 10
         let s:repoman_max_page = 1
     endif
-    call CreateHomeBuffer(l:home_page)
-    if s:repoman.current_issue != -1
-        call CreateIssueBuffer(IssueQuery(s:repoman.current_issue, s:repoman.in_pr))
+
+    if !s:in_repo
+        call CreateRepoListBuffer(l:results)
+    else
+        call CreateIssueListBuffer(l:results)
+        if s:repoman.current_issue != -1
+            call CreateIssueBuffer(IssueQuery(s:repoman.current_issue, s:repoman.in_pr))
+        endif
     endif
 endfunction
 
@@ -146,10 +156,11 @@ function! repoman#RepoManBack() abort
         \s:repoman_bufs.labels
     \]
 
-    " Reopen main 'repoman.tmp' buffer, and close the issue buffer
-    if bufwinnr(s:repoman_bufs.main) < 0
-        execute 'b ' . fnameescape(s:repoman_bufs.main)
+    " Reopen listview buffer, and close the issue buffer
+    if bufwinnr(s:repoman_bufs.issue_list) < 0
+        execute 'b ' . fnameescape(s:repoman_bufs.issue_list)
     endif
+
     if bufwinnr(s:repoman_bufs.issue) > 0
         for buffer in l:post_bufs
             if bufwinnr(buffer) > 0
@@ -158,6 +169,13 @@ function! repoman#RepoManBack() abort
             endif
         endfor
         execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
+    elseif bufwinnr(s:repoman_bufs.issue_list) > 0 && !s:in_repo
+        " Reset view to repo list
+        set modifiable
+        let s:repoman.repo = ''
+        let s:repoman.page = 1
+        let s:repoman_max_page = -1
+        call repoman#RepoMan()
     endif
 
     " Reset issue number
@@ -175,17 +193,19 @@ function! repoman#RepoManPage(...) abort
         return
     endif
 
-    if bufexists(bufnr(s:repoman_bufs.main)) > 0
-        execute 'bw! ' . fnameescape(s:repoman_bufs.main)
+    if bufexists(bufnr(s:repoman_bufs.issue_list)) > 0
+        execute 'bw! ' . fnameescape(s:repoman_bufs.issue_list)
     endif
 
     let s:repoman.page += a:1
-    let l:response = HomePageQuery()
+    let l:page_issues = s:in_repo || !empty(s:repoman.repo)
+    let l:response = l:page_issues ? IssueListQuery() : RepoListQuery()
 
     if len(l:response) < 10
         let s:repoman_max_page = s:repoman.page
     endif
-    call CreateHomeBuffer(l:response)
+    let s:buf_create = l:page_issues ? function('CreateIssueListBuffer') : function('CreateRepoListBuffer')
+    call s:buf_create(l:response)
 endfunction
 
 " :RepoManJump can be used on the home page buffer to jump between
@@ -193,25 +213,27 @@ endfunction
 function! repoman#RepoManJump(...) abort
     let l:current_line = getcurpos()[1]
     let l:direction = a:1
+    let l:idx = 0
+    let l:has_new_pos = 0
 
-    " If currently on a valid issue lookup line, move cursor
-    " to an empty position
-    if has_key(b:issue_lookup, l:current_line)
-        let l:current_issue = b:issue_lookup[l:current_line]['number']
+    while l:idx < len(b:jump_guide)
+        let l:jump_idx = b:jump_guide[l:idx]
+        if l:direction > 0 && l:jump_idx > l:current_line
+            let l:has_new_pos = 1
+            let l:current_line = l:jump_idx
+            break
+        elseif l:direction < 0 && l:jump_idx >= l:current_line
+            let l:has_new_pos = 1
+            let l:current_line = b:jump_guide[l:idx - 1]
+            break
+        endif
 
-        while has_key(b:issue_lookup, l:current_line) &&
-                    \b:issue_lookup[l:current_line]['number'] == l:current_issue
-            let l:current_line += l:direction
-        endwhile
-    endif
+        let l:idx += 1
+    endwhile
 
-    " On an empty position line, move to the next valid entry in the
-    " issue lookup table
-    if !has_key(b:issue_lookup, l:current_line)
-        while !has_key(b:issue_lookup, l:current_line)
-                    \&& l:current_line >= 0 && l:current_line <= line('$')
-            let l:current_line += l:direction
-        endwhile
+    if !l:has_new_pos
+        " Cycle back to beginning/end
+        let l:current_line = l:direction
     endif
 
     call cursor(l:current_line, 0)
@@ -323,7 +345,7 @@ function! repoman#RepoManClose() abort
 
     " Check to see if the user is not in an issue buffer, and
     " if not, close the issue under their cursor
-    if expand('%:p') =~ s:repoman_bufs.main
+    if expand('%:p') =~ s:repoman_bufs.issue_list
         let l:number_to_close = b:issue_lookup[getcurpos()[1]][s:r_keys.number]
         let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
         let l:reset_current = 0
@@ -345,8 +367,18 @@ endfunction
 " ============================================================================
 " External Script Calls
 " ============================================================================
+function! RepoListQuery() abort
+    return s:api.ViewRepos(s:repoman)
+endfunction
 
-function! HomePageQuery() abort
+function! IssueListQuery(...) abort
+    if a:0 > 0
+        let s:repoman.page = 1
+        let s:repoman_max_page = -1
+        let s:repoman.repo = a:1
+        let s:api.api_path = s:api.api_path . a:1
+    endif
+        
     let l:response = s:api.ViewAll(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
@@ -356,7 +388,7 @@ endfunction
 
 function! IssueQuery(number, pr) abort
     let s:repoman.number = a:number
-    let s:repoman.pr = s:repoman.in_pr
+    let s:repoman.pr = a:pr
     let l:response = s:api.View(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
@@ -419,12 +451,16 @@ endfunction
 " ============================================================================
 
 " Write out header to buffer, including the name of the repo.
-function! SetHeader(...) abort
+function! SetHeader(show_page_num) abort
     let l:line_idx = 1
     for line in readfile(g:repoman_dir . '/assets/header.txt')
-        let l:page_id = a:0 > 0 ? ' (page ' . s:repoman.page . ')' : ''
+        let l:page_id = a:show_page_num ? ' (page ' . s:repoman.page . ')' : ''
         if l:line_idx == 1
-            let l:line_idx = WriteLine(line . ' ' . s:repoman.repo . l:page_id)
+            if empty(s:repoman.repo)
+                let l:line_idx = WriteLine(line[:-3] . l:page_id)
+            else
+                let l:line_idx = WriteLine(line . ' ' . s:repoman.repo . l:page_id)
+            endif
         else
             let l:line_idx = WriteLine(line)
         endif
@@ -439,7 +475,7 @@ function! CreateCommentBuffer() abort
     new
     execute 'file ' . fnameescape(s:repoman_bufs.comment)
     call WriteLine(s:strings.comment_help)
-    call CloseBuffer()
+    call FinishOutput()
 
     " Re-enable modifiable so that we can write something
     set modifiable
@@ -461,7 +497,7 @@ function! CreateLabelsBuffer(contents) abort
 
     nnoremap <buffer> <silent> <CR> :call ToggleLabel()<cr>
 
-    call CloseBuffer()
+    call FinishOutput()
 endfunction
 
 function! ToggleLabel() abort
@@ -495,7 +531,7 @@ function! NewItemBuffer(type) abort
     call WriteLine(l:descriptor . ' ' . s:strings.title)
     call WriteLine(repeat('-', 20))
     call WriteLine(l:descriptor . ' ' . s:strings.desc)
-    call CloseBuffer()
+    call FinishOutput()
 
     " Re-enable modifiable so that we can write something
     set modifiable
@@ -503,22 +539,7 @@ endfunction
 
 " Create issue/(pull|merge) request buffer
 function! CreateIssueBuffer(contents) abort
-    " Clear buffer if it already exists
-    if bufexists(bufnr(s:repoman_bufs.issue)) > 0
-        execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
-    endif
-
-    if winwidth(0) > winheight(0) * 2
-        vnew   " Window is wide enough for vertical split
-    else
-        enew   " Window is too narrow, use new buffer
-    endif
-
-    execute 'file ' . fnameescape(s:repoman_bufs.issue)
-    set hidden ignorecase
-    setlocal bufhidden=hide noswapfile wrap
-
-    let l:line_idx = SetHeader()
+    let l:line_idx = OpenBuffer(s:repoman_bufs.issue, 0)
     let s:results_line = l:line_idx
 
     " Write issue and comments to buffer
@@ -555,24 +576,15 @@ function! CreateIssueBuffer(contents) abort
     " etc)
     let s:repoman.current_issue = a:contents[s:r_keys.number]
 
-    call CloseBuffer()
+    call FinishOutput()
 endfunction
 
 " Creates a buffer for the list of issues or PRs.
-function! CreateHomeBuffer(results) abort
-    if line('$') ==? 1 && getline(1) ==? ''
-        enew  " Use whole window for results
-    elseif winwidth(0) > winheight(0) * 2
-        vnew  " Window is wide enough for vertical split
-    else
-        new   " Window is too narrow, use horizontal split
-    endif
-    execute 'file ' . fnameescape(s:repoman_bufs.main)
-    setlocal bufhidden=hide noswapfile wrap
-
-    let l:line_idx = SetHeader(1)
+function! CreateIssueListBuffer(results) abort
+    let l:line_idx = OpenBuffer(s:repoman_bufs.issue_list, 1)
     let s:results_line = l:line_idx
     let b:issue_lookup = {}
+    let b:jump_guide = []
 
     " Write issue details to buffer
     for item in a:results
@@ -582,6 +594,7 @@ function! CreateHomeBuffer(results) abort
             \? s:strings.pr : s:strings.issue) .
             \'#' . item[s:r_keys.number] . ': ' . item[s:r_keys.title]
         let l:start_idx = WriteLine(l:item_name)
+        call add(b:jump_guide, l:start_idx)
 
         " Draw boundary between title and body
         let l:line_idx = WriteLine(s:repoman_spacer_small)
@@ -619,7 +632,46 @@ function! CreateHomeBuffer(results) abort
     nnoremap <buffer> <silent> K :RepoManJump -1<CR>
     nnoremap <script> <silent> L :RepoManPage 1<CR>
     nnoremap <script> <silent> H :RepoManPage -1<CR>
-    call CloseBuffer()
+    call FinishOutput()
+endfunction
+
+function! CreateRepoListBuffer(repos) abort
+    let l:line_idx = OpenBuffer(s:repoman_bufs.issue_list, 1)
+    let s:results_line = l:line_idx
+    let b:repo_lookup = {}
+    let b:jump_guide = []
+
+    " Write repo details to buffer
+    for item in a:repos
+        let l:start_idx = WriteLine(item['full_name'] . (item['private'] ? ' (Private)' : ''))
+        call add(b:jump_guide, l:start_idx)
+
+        call WriteLine(s:repoman_spacer_small)
+        call WriteLine(item['description'])
+        call WriteLine(s:strings.updated . FormatTime(item[s:r_keys.updated_at]))
+        call WriteLine('Issues:   ' . item['open_issues_count'])
+        call WriteLine('★ ' . item['stargazers_count'])
+        call WriteLine(s:repoman_spacer_small)
+
+        let l:line_idx = WriteLine('')
+        call WriteLine(s:repoman_spacer)
+        call WriteLine('')
+
+        while l:start_idx <= l:line_idx
+            let b:repo_lookup[l:start_idx] = {
+                \'path': item['full_name']
+            \}
+            let l:start_idx += 1
+        endwhile
+    endfor
+
+    " Set up the ability to hit Enter on any issue section to open an issue
+    " buffer
+    call cursor(s:results_line, 1)
+    nnoremap <buffer> <silent> <CR> :call CreateIssueListBuffer(
+        \IssueListQuery(b:repo_lookup[getcurpos()[1]]['path']))<cr>
+
+    call FinishOutput()
 endfunction
 
 " ============================================================================
@@ -794,13 +846,46 @@ function! FormatTime(time_str) abort
     return substitute(a:time_str, '[a-zA-Z]', ' ', 'g')
 endfunction
 
+function! OpenBuffer(buf_name, show_page_num) abort
+    if bufexists(bufnr(a:buf_name)) > 0
+        execute 'bw! ' . fnameescape(a:buf_name)
+    endif
+
+    if line('$') ==? 1 && getline(1) ==? ''
+        enew  " Use whole window for results
+    elseif winwidth(0) > winheight(0) * 2
+        vnew  " Window is wide enough for vertical split
+    else
+        new   " Window is too narrow, use horizontal split
+    endif
+
+    execute 'file ' . fnameescape(a:buf_name)
+    setlocal bufhidden=hide noswapfile wrap
+
+    let l:line_idx = SetHeader(a:show_page_num)
+    return l:line_idx
+endfunction
+
 " Filters out bad characters, brings the cursor to the top of the
 " buffer, and sets the buffer as not modifiable
-function! CloseBuffer() abort
-    set cmdheight=4
+function! FinishOutput() abort
+    exe 'hi repoman_spacer gui=bold guifg=#719872'
+    exe 'syn match repoman_spacer /' . s:repoman_spacer . '/'
+    exe 'syn match repoman_spacer /' . s:repoman_spacer_small . '/'
+    exe 'hi star_color guifg=#ffff00'
+    exe 'syn match star_color /★/'
+
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
     call repoman#utils#LoadSyntaxColoring()
+
+    " Add HJKL shortcuts if in the buffer supports it
+    if exists('b:jump_guide')
+        nnoremap <buffer> <silent> J :RepoManJump 1<CR>
+        nnoremap <buffer> <silent> K :RepoManJump -1<CR>
+        nnoremap <buffer> <silent> L :RepoManPage 1<CR>
+        nnoremap <buffer> <silent> H :RepoManPage -1<CR>
+    endif
 endfunction
 
 " Writes a line to the buffer
@@ -833,8 +918,8 @@ endfunction
 " Reloads the current view using locally updated content
 function! SoftReload() abort
     " Remove existing buffers
-    if bufexists(bufnr(s:repoman_bufs.main)) > 0
-        execute 'bw! ' . fnameescape(s:repoman_bufs.main)
+    if bufexists(bufnr(s:repoman_bufs.issue_list)) > 0
+        execute 'bw! ' . fnameescape(s:repoman_bufs.issue_list)
     endif
 
     if bufexists(bufnr(s:repoman_bufs.issue)) > 0
@@ -842,7 +927,7 @@ function! SoftReload() abort
     endif
 
     " Recreate home and issue buffer w/ locally updated files
-    call CreateHomeBuffer(json_encode(
+    call CreateIssueListBuffer(json_encode(
         \repoman#crypto#Decrypt(
         \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)))
     if s:repoman.current_issue != -1
@@ -853,3 +938,4 @@ function! SoftReload() abort
 endfunction
 
 nnoremap <script> <silent> <BS> :RepoManBack<CR>
+

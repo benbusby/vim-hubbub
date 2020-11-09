@@ -8,7 +8,6 @@
 " ============================================================================
 " Syntax
 " ============================================================================
-let s:end_str = '```'
 let s:syntax_types = [
             \'c', 'cpp', 'python', 'javascript', 'vim', 'ruby', 'sh'
             \]
@@ -111,6 +110,10 @@ let s:gitlab_prefixes = ['https://gitlab.com/', 'git@gitlab.com:']
 function! repoman#utils#GetRepoPath() abort
     let l:prefixes = s:github_prefixes + s:gitlab_prefixes
     let l:repo_path = substitute(system('git ls-remote --get-url'), '[[:cntrl:]]', '', 'ge')
+
+    if l:repo_path =~? 'fatal:'
+        return ''
+    endif
 
     for prefix in l:prefixes
         let l:repo_path = substitute(l:repo_path, prefix, '', 'ge')

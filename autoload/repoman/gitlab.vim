@@ -24,7 +24,7 @@ function! repoman#gitlab#API(token_pw) abort
     " --------------------------------------------------------------
     " Views --------------------------------------------------------
     " --------------------------------------------------------------
-    function! request.ViewAll(repoman) abort
+    function! request.ViewAll(...) abort
         let l:issues = json_decode(system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues?state=opened',
