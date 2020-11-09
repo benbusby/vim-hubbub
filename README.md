@@ -40,10 +40,11 @@ ___
 #### Vim Commands
 Vim Command | Action | Notes
 --- | --- | --- |
+`:RepoManInit` | Initializes the plugin, prompts for GitHub/GitLab token and a token password | 
 `:RepoMan` | **If in a git repo:**<br>Opens a list of issues/PRs if in a git repo.<br>**If not in a git repo:**<br>Opens a list of repositories for the user | *Will prompt for token password*
 `:RepoManComment` | Open a comment buffer for the current issue |
-`:RepoManLabels` | View/update labels for the current issue |
-`:RepoManPost` | Posts an update to the issue | *Works for <br>`:RepoManComment` and <br>`:RepoManLabels` buffers*
+`:RepoManLabel` | View/update labels for the current issue |
+`:RepoManPost` | Posts an update to the issue | *Works for <br>`:RepoManComment` and <br>`:RepoManLabel` buffers*
 `:RepoManNew <type>` | Create a new issue or PR | *`type` can be "issue" or "pr"*
 `:RepoManClose` | Closes the current issue | 
 
@@ -69,5 +70,31 @@ There are a few additional variables you can include in your `.vimrc` file to tw
   - `cn_sm`: Chinese (Simplified)
   - `cn_tr`: Chinese (Traditional)
 - `g:repoman_default_host` - Set the default host to prefer if outside of a git repo
-  - `"github"`: Use GitHub as primary
-  - `"gitlab"`: Use GitLab as primary
+  - `'github'`: Use GitHub as primary
+  - `'gitlab'`: Use GitLab as primary
+  - *Note: Required for viewing list of repositories from outside git repos*
+- `g:repoman_openssl_old` - Rely on commands that work with older versions of OpenSSL / LibreSSL
+  - `0`: (Default) Disabled
+  - `1`: Enabled
+  
+Example `.vimrc` settings:
+```vim
+" English, use GitHub by default
+let g:repoman_language = 'en'
+let g:repoman_default_host = 'github'
+```
+
+```vim
+" French, show outdated, use GitLab by default
+let g:repoman_show_outdated = 1
+let g:repoman_language = 'fr'
+let g:repoman_default_host = 'gitlab'
+```
+
+```vim
+" Spanish, use older OpenSSL, with *no* primary repo host
+" Note: Will not be able to view a list of repositories, but can
+" still manage a repo if :RepoMan is called from within a git repo 
+let g:repoman_language = 'es'
+let g:repoman_openssl_old = 1
+```
