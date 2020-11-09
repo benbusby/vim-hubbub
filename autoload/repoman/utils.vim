@@ -49,8 +49,6 @@ endfunction
 " ============================================================================
 " Local File Read/Write
 " ============================================================================
-let s:encrypt_cmd = 'openssl enc -aes-256-cbc -salt -pbkdf2 -out '
-let s:decrypt_cmd = 'openssl aes-256-cbc -d -salt -pbkdf2 -in '
 let s:local_files = {
     \'github': g:repoman_dir . '/.github.repoman',
     \'gitlab': g:repoman_dir . '/.gitlab.repoman',
@@ -85,8 +83,7 @@ endfunction
 
 function! repoman#utils#AddLocalComment(comment, number, password) abort
     " Update comments count for current issue
-    let l:home_json = json_decode(system(
-        \s:decrypt_cmd . s:local_files['home'] . ' -pass pass:' . a:password))
+    let l:home_json = json_decode(repoman#crypto#Decrypt(s:local_files['home'], a:password))
     for issue in l:home_json
         if issue['number'] == a:number
             let issue['comments'] += 1
@@ -98,8 +95,7 @@ function! repoman#utils#AddLocalComment(comment, number, password) abort
         \'home', a:password)
 
     " Update comments array with new comment
-    let l:issue_json = json_decode(system(
-        \s:decrypt_cmd . s:local_files['issue'] . ' -pass pass:' . a:password))
+    let l:issue_json = json_decode(repoman#crypto#Decrypt(s:local_files['home'], a:password))
     call add(l:issue_json['comments'], a:comment)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:issue_json)),
