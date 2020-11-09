@@ -42,20 +42,22 @@ function! repoman#github#API(token_pw) abort
         " If this is a pull request, we have to format the comments so that
         " comments on the same code changes appear grouped together
         if a:repoman.pr
-            let l:rev_comments = []
-            for comment in l:comments_result
-                let l:formatted_comment = FormatReviewComment(comment)
-                let l:comment_index = FindItemIndex(l:rev_comments, 'diff_hunk', comment['diff_hunk'])
-
-                if l:comment_index > 0
-                    call add(l:rev_comments[l:comment_index]['review_comments'], formatted_comment)
+            let l:idx = 0
+            while l:idx < len(l:comments_result)
+                let l:comment = l:comments_result[l:idx]
+                let l:formatted_comment = FormatReviewComment(l:comment)
+                if has_key(l:comment, 'in_reply_to_id')
+                    let l:comment_index = FindItemIndex(l:comments_result, 'id', l:comment['in_reply_to_id'])
+                    call add(l:comments_result[l:comment_index]['review_comments'], l:formatted_comment)
+                    call remove(l:comments_result, l:idx)
                 else
-                    let comment['review_comments'] = l:formatted_comment
-                    call add(l:rev_comments, comment)
+                    let comment['review_comments'] = [l:formatted_comment]
                 endif
-            endfor
 
-            let l:comments_result = l:rev_comments + json_decode(system(repoman#request#Curl().Send(
+                let l:idx += 1
+            endwhile
+
+            let l:comments_result = l:comments_result + json_decode(system(repoman#request#Curl().Send(
                 \l:token, s:github_api . '/issues/' . a:repoman.number . '/comments')))
         endif
 
@@ -170,6 +172,7 @@ function! repoman#github#API(token_pw) abort
             if a:list[l:index][a:key] == a:value
                 return l:index
             endif
+            let l:index += 1
         endwhile
 
         return -1
