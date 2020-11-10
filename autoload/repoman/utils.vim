@@ -54,7 +54,7 @@ function! repoman#utils#LoadSyntaxColoring() abort
 
     " Color UI decorations as comments
     let l:spacer_color = '#cccccc'
-    let l:comment_colors = filter(split(execute(':hi Comment')), 'v:val =~ "guifg="')
+    let l:comment_colors = filter(split(execute(':hi Comment')), 'v:val =~? "guifg="')
     if len(l:comment_colors) > 0
         let l:spacer_color = l:comment_colors[0]
     endif

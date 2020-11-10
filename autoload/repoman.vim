@@ -104,6 +104,7 @@ function! repoman#RepoMan() abort
         endif
     endif
 
+    let l:issue_open = 0
     if len(s:repoman.token_pw) > 0
         set cmdheight=4
         echo s:strings.refresh
@@ -115,6 +116,7 @@ function! repoman#RepoMan() abort
 
         if bufexists(bufnr(s:repoman_bufs.issue)) > 0
             execute 'bw! ' . fnameescape(s:repoman_bufs.issue)
+            let l:issue_open = 1
         endif
     else
         " New session, prompt for token pw
@@ -145,8 +147,10 @@ function! repoman#RepoMan() abort
         call CreateRepoListBuffer(l:results)
     else
         call CreateIssueListBuffer(l:results)
-        if s:repoman.current_issue != -1
+        if s:repoman.current_issue > 0 && l:issue_open
             call CreateIssueBuffer(IssueQuery(s:repoman.current_issue, s:repoman.in_pr))
+        else
+            let s:repoman.current_issue = -1
         endif
     endif
 endfunction
@@ -213,22 +217,19 @@ function! repoman#RepoManPage(...) abort
     call s:buf_create(l:response)
 endfunction
 
-" :RepoManJump can be used on the home page buffer to jump between
-" issues by direction (1 for forwards, -1 for backwards)
+" :RepoManJump can be used on buffers to jump between
+" items by direction (1 for forwards, -1 for backwards)
 function! repoman#RepoManJump(...) abort
     let l:current_line = getcurpos()[1]
     let l:direction = a:1
     let l:idx = 0
-    let l:has_new_pos = 0
 
     while l:idx < len(b:jump_guide)
         let l:jump_idx = b:jump_guide[l:idx]
         if l:direction > 0 && l:jump_idx > l:current_line
-            let l:has_new_pos = 1
             let l:current_line = l:jump_idx
             break
         elseif l:direction < 0 && l:jump_idx >= l:current_line
-            let l:has_new_pos = 1
             let l:current_line = b:jump_guide[l:idx - 1]
             break
         endif
@@ -236,8 +237,8 @@ function! repoman#RepoManJump(...) abort
         let l:idx += 1
     endwhile
 
-    if !l:has_new_pos
-        " Cycle back to beginning/end
+    if l:current_line == getcurpos()[1]
+        " Line hasn't changed, cycle to beginning/end
         let l:current_line = b:jump_guide[l:direction ? 0 : -1]
     endif
 
@@ -264,6 +265,10 @@ function! repoman#RepoManComment() abort
 endfunction
 
 function! repoman#RepoManLabel() abort
+    if exists('b:issue_lookup') && has_key(b:issue_lookup, getcurpos()[1])
+        let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]][s:r_keys.number]
+    endif
+
     if bufexists(bufnr(s:repoman_bufs.labels)) > 0
         echo s:strings.error . 'Labels buffer already open'
         return
@@ -326,7 +331,10 @@ function! repoman#RepoManPost() abort
     endif
 
     set modifiable
-    call SoftReload()
+    call repoman#RepoMan()
+    " TODO: Not sure if this feature should be supported
+    " until there are reasonable error messages when it fails
+    "call SoftReload() 
 endfunction
 
 " :RepoManNew creates a new issue/PR/MR.
@@ -421,7 +429,7 @@ function! UpdateLabels(number, labels) abort
     let s:repoman.number = a:number
     let s:repoman.labels = a:labels
     let l:response = s:api.UpdateLabels(s:repoman)
-    call repoman#utils#UpdateLocalLabels(s:repoman)
+    "call repoman#utils#UpdateLocalLabels(s:repoman)
     return l:response
 endfunction
 
@@ -490,13 +498,17 @@ endfunction
 function! CreateLabelsBuffer(contents) abort
     set splitbelow
     new
+    let b:jump_guide = [1]
     execute 'file ' . fnameescape(s:repoman_bufs.labels)
     for label in a:contents
         let l:toggle = '[ ] '
         if has_key(label, 'active')
             let l:toggle = '[x] '
         endif
-        call WriteLine(l:toggle . label['name'])
+        let l:label_idx = WriteLine(l:toggle . label['name'])
+        if l:label_idx % 2
+            call add(b:jump_guide, l:label_idx)
+        endif
         call WriteLine('    ' . label['description'])
     endfor
 
