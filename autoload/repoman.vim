@@ -35,7 +35,7 @@ let response_keys = json_decode(join(readfile(g:repoman_dir . '/assets/response_
 let s:r_keys = response_keys[repoman#utils#GetRepoHost()]
 
 let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
-let s:strings = lang_dict[(exists('g:repoman_lang') ? g:repoman_lang : 'en')]
+let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
 
 let s:gh_token_path = g:repoman_dir . '/.github.repoman'
 let s:gl_token_path = g:repoman_dir . '/.gitlab.repoman'
@@ -258,7 +258,7 @@ function! repoman#RepoManComment() abort
     call CreateCommentBuffer()
 endfunction
 
-function! repoman#RepoManLabels() abort
+function! repoman#RepoManLabel() abort
     if bufexists(bufnr(s:repoman_bufs.labels)) > 0
         echo s:strings.error . 'Labels buffer already open'
         return
@@ -927,11 +927,11 @@ function! SoftReload() abort
     endif
 
     " Recreate home and issue buffer w/ locally updated files
-    call CreateIssueListBuffer(json_encode(
+    call CreateIssueListBuffer(json_decode(
         \repoman#crypto#Decrypt(
         \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)))
     if s:repoman.current_issue != -1
-        call CreateIssueBuffer(json_encode(
+        call CreateIssueBuffer(json_decode(
             \repoman#crypto#Decrypt(
             \repoman#utils#GetCacheFile('issue'), s:repoman.token_pw)))
     endif
