@@ -40,7 +40,7 @@ ___
 #### Vim Commands
 Vim Command | Action | Notes
 --- | --- | --- |
-`:RepoManInit` | Initializes the plugin, prompts for GitHub/GitLab token and a token password | 
+`:RepoManInit` | Initializes the plugin | 
 `:RepoMan` | **If in a git repo:**<br>Opens a list of issues/PRs if in a git repo.<br>**If not in a git repo:**<br>Opens a list of repositories for the user | *Will prompt for token password*
 `:RepoManComment` | Open a comment buffer for the current issue |
 `:RepoManLabel` | View/update labels for the current issue |
@@ -52,7 +52,7 @@ Vim Command | Action | Notes
 Keyboard Shortcut | Action | Notes
 --- | --- | --- |
 `<Enter>` | Open the selected repository or issue | *Current repo/issue is determined by cursor line position*
-`<Backspace>` | Navigates back to the issue/repo list | 
+`<Backspace>` or `gi` | Navigates back to the issue/repo list | 
 `J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
 `H` and `L` | Navigates between pages of issues/repositories |`H`: prev page<br>`L`: next page 
 
