@@ -4,6 +4,8 @@
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
 " ============================================================================
+scriptencoding utf-8
+
 function! repoman#utils#Decorations() abort
     let decorations = {
         \'spacer': repeat('─ ', 27),
