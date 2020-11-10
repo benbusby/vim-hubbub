@@ -4,6 +4,14 @@
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
 " ============================================================================
+function! repoman#utils#Decorations() abort
+    let decorations = {
+        \'spacer': repeat('─ ', 27),
+        \'spacer_small': repeat('─', 33)
+    \}
+
+    return decorations
+endfunction
 
 " ============================================================================
 " Syntax
@@ -43,6 +51,21 @@ function! repoman#utils#LoadSyntaxColoring() abort
     for type in s:syntax_types
         call TextEnableCodeSnip(type, '```' . type, '```', 'SpecialComment')
     endfor
+
+    " Color UI decorations as comments
+    let l:spacer_color = '#cccccc'
+    let l:comment_colors = filter(split(execute(':hi Comment')), 'v:val =~ "guifg="')
+    if len(l:comment_colors) > 0
+        let l:spacer_color = l:comment_colors[0]
+    endif
+
+    exe 'hi repoman_spacer gui=bold guifg=' . substitute(l:spacer_color, 'guifg=', '', 'ge')
+    exe 'syn match repoman_spacer /' . repoman#utils#Decorations().spacer . '/'
+    exe 'syn match repoman_spacer /' . repoman#utils#Decorations().spacer_small . '/'
+
+    " Highlight stars as yellow
+    exe 'hi star_color guifg=#ffff00'
+    exe 'syn match star_color /★/'
 endfunction
 
 " ============================================================================

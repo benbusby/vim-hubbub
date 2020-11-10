@@ -8,8 +8,7 @@ scriptencoding utf-8
 
 let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 
-let s:repoman_spacer = repeat('─ ', 27)
-let s:repoman_spacer_small = repeat('─', 33)
+let s:decorations = repoman#utils#Decorations()
 
 let s:repoman_bufs = {
     \'issue':      '/dev/null/issue.repoman.diff',
@@ -239,7 +238,7 @@ function! repoman#RepoManJump(...) abort
 
     if !l:has_new_pos
         " Cycle back to beginning/end
-        let l:current_line = l:direction
+        let l:current_line = b:jump_guide[l:direction ? 0 : -1]
     endif
 
     call cursor(l:current_line, 0)
@@ -384,7 +383,7 @@ function! IssueListQuery(...) abort
         let s:repoman.repo = a:1
         let s:api.api_path = s:api.api_path . a:1
     endif
-        
+
     let l:response = s:api.ViewAll(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
@@ -551,17 +550,17 @@ function! CreateIssueBuffer(contents) abort
     " Write issue and comments to buffer
     let l:type = (s:repoman.in_pr ? s:strings.pr : s:strings.issue)
     call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
-    let l:line_idx = WriteLine(s:repoman_spacer_small)
+    let l:line_idx = WriteLine(s:decorations.spacer_small)
 
     " Split body on line breaks for proper formatting
     let l:line_idx += InsertBodyText(a:contents[s:r_keys.desc])
 
-    call WriteLine(s:repoman_spacer_small)
+    call WriteLine(s:decorations.spacer_small)
     call WriteLine(s:strings.created . FormatTime(a:contents[s:r_keys.created_at]))
     call WriteLine(s:strings.updated . FormatTime(a:contents[s:r_keys.updated_at]))
     call WriteLine(s:strings.author . a:contents[s:r_keys.user][s:r_keys.login])
     call WriteLine(s:strings.labels . ParseLabels(a:contents[s:r_keys.labels]))
-    call WriteLine(s:repoman_spacer_small)
+    call WriteLine(s:decorations.spacer_small)
 
     " Add reactions to issue (important)
     let l:reactions_str = GenerateReactionsStr(a:contents)
@@ -569,7 +568,7 @@ function! CreateIssueBuffer(contents) abort
         call WriteLine(l:reactions_str)
     endif
 
-    call WriteLine(s:repoman_spacer_small)
+    call WriteLine(s:decorations.spacer_small)
     call WriteLine('')
 
     let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents[s:r_keys.comments]) . ')')
@@ -603,7 +602,7 @@ function! CreateIssueListBuffer(results) abort
         call add(b:jump_guide, l:start_idx)
 
         " Draw boundary between title and body
-        let l:line_idx = WriteLine(s:repoman_spacer_small)
+        let l:line_idx = WriteLine(s:decorations.spacer_small)
 
         let l:label_list = ParseLabels(item[s:r_keys.labels])
         call WriteLine(s:strings.comments . item[s:r_keys.comments])
@@ -612,7 +611,7 @@ function! CreateIssueListBuffer(results) abort
 
         " Mark line number where the issue interaction should stop
         let l:line_idx = WriteLine('')
-        call WriteLine(s:repoman_spacer)
+        call WriteLine(s:decorations.spacer)
         call WriteLine('')
 
         " Store issue number and title to use for viewing issue details later
@@ -652,15 +651,15 @@ function! CreateRepoListBuffer(repos) abort
         let l:start_idx = WriteLine(item['full_name'] . (item['private'] ? ' (Private)' : ''))
         call add(b:jump_guide, l:start_idx)
 
-        call WriteLine(s:repoman_spacer_small)
+        call WriteLine(s:decorations.spacer_small)
         call WriteLine(item['description'])
         call WriteLine(s:strings.updated . FormatTime(item[s:r_keys.updated_at]))
         call WriteLine('Issues:   ' . item['open_issues_count'])
         call WriteLine('★ ' . item['stargazers_count'])
-        call WriteLine(s:repoman_spacer_small)
+        call WriteLine(s:decorations.spacer_small)
 
         let l:line_idx = WriteLine('')
-        call WriteLine(s:repoman_spacer)
+        call WriteLine(s:decorations.spacer)
         call WriteLine('')
 
         while l:start_idx <= l:line_idx
@@ -736,7 +735,7 @@ function! InsertComment(comment) abort
         let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
     endif
 
-    call WriteLine(s:repoman_spacer)
+    call WriteLine(s:decorations.spacer)
 
     " If this is a review comment, it needs different formatting/coloring
     if has_key(a:comment, 'pull_request_review_id')
@@ -875,12 +874,6 @@ endfunction
 " Filters out bad characters, brings the cursor to the top of the
 " buffer, and sets the buffer as not modifiable
 function! FinishOutput() abort
-    exe 'hi repoman_spacer gui=bold guifg=#719872'
-    exe 'syn match repoman_spacer /' . s:repoman_spacer . '/'
-    exe 'syn match repoman_spacer /' . s:repoman_spacer_small . '/'
-    exe 'hi star_color guifg=#ffff00'
-    exe 'syn match star_color /★/'
-
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
     call repoman#utils#LoadSyntaxColoring()
