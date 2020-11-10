@@ -72,16 +72,17 @@ There are a few additional variables you can include in your `.vimrc` file to tw
 - `g:repoman_default_host` - Set the default host to prefer if outside of a git repo
   - `'github'`: Use GitHub as primary
   - `'gitlab'`: Use GitLab as primary
-  - *Note: Required for viewing list of repositories from outside git repos*
+  - *Note: This only needs to be set if you set both GitHub and GitLab tokens*
 - `g:repoman_openssl_old` - Rely on commands that work with older versions of OpenSSL / LibreSSL
   - `0`: (Default) Disabled
   - `1`: Enabled
   
 Example `.vimrc` settings:
 ```vim
-" English, use GitHub by default
+" Defaults
 let g:repoman_language = 'en'
-let g:repoman_default_host = 'github'
+let g:repoman_show_outdated = 0
+let g:repoman_openssl_old = 0
 ```
 
 ```vim
@@ -92,9 +93,7 @@ let g:repoman_default_host = 'gitlab'
 ```
 
 ```vim
-" Spanish, use older OpenSSL, with *no* primary repo host
-" Note: Will not be able to view a list of repositories, but can
-" still manage a repo if :RepoMan is called from within a git repo 
+" Spanish, use older OpenSSL
 let g:repoman_language = 'es'
 let g:repoman_openssl_old = 1
 ```

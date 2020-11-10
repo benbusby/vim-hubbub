@@ -94,9 +94,15 @@ function! repoman#RepoMan() abort
         echo 'No tokens found -- have you run :RepoManInit?'
         return
     elseif !s:in_repo && !exists('g:repoman_default_host')
-        " If user hasn't set their default host, there's nothing else to do
-        echo 'Not in git repo -- run :RepoMan from within a repository, or set g:repoman_default_host'
-        return
+        if filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
+            let g:repoman_default_host = 'github'
+        elseif filereadable(s:gl_token_path) && !filereadable(s:gh_token_path)
+            let g:repoman_default_host = 'gitlab'
+        else
+            " If user hasn't set their default host, and is using both tokens, so there's nothing to do
+            echo 'Not in git repo -- run :RepoMan from within a repository, or set g:repoman_default_host'
+            return
+        endif
     endif
 
     if len(s:repoman.token_pw) > 0
