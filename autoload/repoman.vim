@@ -425,6 +425,12 @@ function! PostComment(comment) abort
     call s:api.PostComment(s:repoman)
 endfunction
 
+function! DeleteComment(id) abort
+    let s:repoman.comment_id = a:id
+    call s:api.DeleteComment(s:repoman)
+    call repoman#RepoMan()
+endfunction
+
 function! UpdateLabels(number, labels) abort
     let s:repoman.number = a:number
     let s:repoman.labels = a:labels
@@ -492,6 +498,7 @@ function! CreateCommentBuffer() abort
 
     " Re-enable modifiable so that we can write something
     set modifiable
+    nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
 endfunction
 
 " Create a buffer to pick labels for an issue/pr/etc
@@ -585,6 +592,7 @@ function! CreateIssueBuffer(contents) abort
 
     let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents[s:r_keys.comments]) . ')')
 
+    let b:comment_lookup = {}
     for comment in a:contents[s:r_keys.comments]
         call InsertComment(comment)
     endfor
@@ -754,7 +762,8 @@ function! InsertComment(comment) abort
         set syntax=diff
         call InsertReviewComment(a:comment)
     else
-        call WriteLine(FormatTime(a:comment[s:r_keys.created_at]))
+        let l:line_idx = WriteLine(FormatTime(a:comment[s:r_keys.created_at]))
+        let l:start_idx = l:line_idx
         call WriteLine(commenter . ': ')
         call WriteLine('')
 
@@ -770,7 +779,14 @@ function! InsertComment(comment) abort
         endif
     endif
 
-    call WriteLine('')
+    let l:line_idx = WriteLine('')
+    while l:start_idx <= l:line_idx
+        let b:comment_lookup[string(l:start_idx)] = a:comment[s:r_keys.id]
+        let l:start_idx += 1
+    endwhile
+
+    nnoremap <buffer> <silent> <C-d> :call DeleteComment(
+        \b:comment_lookup[getcurpos()[1]])<CR>
 endfunction
 
 " Inserts a comment for a Pull Request review

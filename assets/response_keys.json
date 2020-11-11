@@ -1,6 +1,7 @@
 {
     "github": {
         "number": "number",
+        "id": "id",
         "body": "body",
         "desc": "body",
         "comments": "comments",
@@ -13,6 +14,7 @@
     },
     "gitlab": {
         "number": "iid",
+        "id": "id",
         "body": "body",
         "desc": "description",
         "comments": "user_notes_count",

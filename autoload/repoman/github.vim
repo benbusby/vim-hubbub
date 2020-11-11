@@ -89,18 +89,26 @@ function! repoman#github#API(token_pw) abort
             \repoman#utils#SanitizeText(a:repoman.body) . l:footer .
             \'"}'
 
-        call system(repoman#request#Curl().BackgroundSend(
+        call system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues/' . a:repoman.number . '/comments',
             \l:comment_data, 'POST'))
 
-        let l:temp_comment = {
-            \'created_at': strftime('%G-%m-%d %H:%M:%S'),
-            \'body': a:repoman.body,
-            \'user': {'login': 'You'}
-        \}
-        call repoman#utils#AddLocalComment(
-            \l:temp_comment, a:repoman.current_issue, a:repoman.token_pw)
+        "let l:temp_comment = {
+            "\'created_at': strftime('%G-%m-%d %H:%M:%S'),
+            "\'body': a:repoman.body,
+            "\'user': {'login': 'You'}
+        "\}
+        "call repoman#utils#AddLocalComment(
+            "\l:temp_comment, a:repoman.current_issue, a:repoman.token_pw)
+    endfunction
+
+    function! request.DeleteComment(repoman) abort
+        let x = system(repoman#request#Curl().Send(
+            \repoman#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/comments/' . a:repoman.comment_id,
+            \{}, 'DELETE'))
+        echo x
     endfunction
 
     " --------------------------------------------------------------

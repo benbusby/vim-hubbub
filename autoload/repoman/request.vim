@@ -25,11 +25,14 @@ function! repoman#request#Curl(...) abort
             \'-H ''Accept: ' . self.type . ''' ' .
             \self.auth . a:token . ''' '
 
-        if !empty(l:body) && !empty(l:method)
+        if !empty(l:body) 
             let l:request = l:request .
-                \'--data ''' . l:body . ''' ' .
-                \'-X '. l:method . ' '
+                \'--data ''' . l:body . ''' '
+        endif
 
+        if !empty(l:method)
+            let l:request = l:request .
+                \'-X '. l:method . ' '
         endif
 
         return l:request . ' ''' . a:url . ''''
