@@ -270,15 +270,13 @@ function! repoman#RepoManReact(reaction) abort
         call NewReaction('comment', a:reaction, b:comment_lookup[getcurpos()[1]])
     endif
 endfunction
+
 " :RepoManComment splits the issue buffer in half horizontally,
 " and allows the user to enter a comment of any length.
 "
 " Used in conjunction with :RepoManPost to post the comment.
 function! repoman#RepoManComment() abort
-    if bufexists(bufnr(s:repoman_bufs.comment)) > 0
-        echo s:strings.error . 'Post buffer already open'
-        return
-    elseif s:repoman.current_issue <= 0
+    if s:repoman.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to comment!'
         return
     endif
@@ -291,10 +289,7 @@ function! repoman#RepoManLabel() abort
         let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]][s:r_keys.number]
     endif
 
-    if bufexists(bufnr(s:repoman_bufs.labels)) > 0
-        echo s:strings.error . 'Labels buffer already open'
-        return
-    elseif s:repoman.current_issue <= 0
+    if s:repoman.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to label'
         return
     endif
@@ -521,8 +516,7 @@ endfunction
 " Create a buffer for a comment
 function! CreateCommentBuffer() abort
     set splitbelow
-    new
-    execute 'file ' . fnameescape(s:repoman_bufs.comment)
+    call OpenBuffer(s:repoman_bufs.comment, -1)
     call WriteLine(s:strings.comment_help)
     call FinishOutput()
 
@@ -534,9 +528,9 @@ endfunction
 " Create a buffer to pick labels for an issue/pr/etc
 function! CreateLabelsBuffer(contents) abort
     set splitbelow
-    new
+    call OpenBuffer(s:repoman_bufs.labels, -1)
+
     let b:jump_guide = [1]
-    execute 'file ' . fnameescape(s:repoman_bufs.labels)
     for label in a:contents
         let l:toggle = '[ ] '
         if has_key(label, 'active')
@@ -571,14 +565,12 @@ endfunction
 " Create a buffer for a new item (issue/pr/mr/etc)
 function! NewItemBuffer(type) abort
     set splitbelow
-    new
-
     let l:descriptor = 'Issue'
 
     if a:type ==? 'issue'
-        execute 'file ' . fnameescape(s:repoman_bufs.new_issue)
+        call OpenBuffer(s:repoman_bufs.new_issue, -1)
     else
-        execute 'file ' . fnameescape(s:repoman_bufs.new_req)
+        call OpenBuffer(s:repoman_bufs.new_req, -1)
         let l:descriptor = 'Request'
     endif
 
@@ -908,14 +900,17 @@ function! OpenBuffer(buf_name, show_page_num) abort
     elseif winwidth(0) > winheight(0) * 2
         vnew  " Window is wide enough for vertical split
     else
-        new   " Window is too narrow, use horizontal split
+        if a:buf_name == s:repoman_bufs.issue
+            enew  " Use full buffer for issue view
+        else
+            new  " Window is too narrow, use horizontal split
+        endif
     endif
 
     execute 'file ' . fnameescape(a:buf_name)
     setlocal bufhidden=hide noswapfile wrap
 
-    let l:line_idx = SetHeader(a:show_page_num)
-    return l:line_idx
+    return a:show_page_num >= 0 ? SetHeader(a:show_page_num) : 1
 endfunction
 
 " Filters out bad characters, brings the cursor to the top of the
