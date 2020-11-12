@@ -4,7 +4,7 @@
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
 " ============================================================================
-let s:footer = '<hr>\n\n<sub>_%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
+let s:footer = '\n\n___\n<sub>_%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
 
 " ============================================================================
 " GitHub API
@@ -168,6 +168,20 @@ function! repoman#github#API(token_pw) abort
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues/' . a:repoman.number . '/labels',
             \'{"labels": ' . repoman#utils#SanitizeText(json_encode(a:repoman.labels)) . '}', 'PUT'))
+    endfunction
+
+    " ============================================================================
+    " Reactions
+    " ============================================================================
+    function! request.PostReaction(repoman) abort
+        if a:repoman.type ==# 'comment'
+            call system(repoman#request#Curl(s:github_reactions_type).Send(
+                \repoman#utils#ReadToken(self.token_pw),
+                \self.api_path . '/issues/comments/' . a:repoman.id . '/reactions',
+                \'{"content": "' . a:repoman.reaction . '"}', 'POST'))
+        else
+            echom 'Reaction error: Unknown type'
+        endif
     endfunction
 
     " ============================================================================

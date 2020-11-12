@@ -76,6 +76,9 @@ There are a few additional variables you can include in your `.vimrc` file to tw
 - `g:repoman_openssl_old` - Rely on commands that work with older versions of OpenSSL / LibreSSL
   - `0`: (Default) Disabled
   - `1`: Enabled
+- `g:repoman_footer` - Include/exclude the vim-repoman footer from comments/issues
+  - `0`: Exclude
+  - `1`: (Default) Include
   
 Example `.vimrc` settings:
 ```vim
@@ -93,7 +96,8 @@ let g:repoman_default_host = 'gitlab'
 ```
 
 ```vim
-" Spanish, use older OpenSSL
+" Spanish, use older OpenSSL, hide footer 😢
 let g:repoman_language = 'es'
 let g:repoman_openssl_old = 1
+let g:repoman_footer = 0
 ```

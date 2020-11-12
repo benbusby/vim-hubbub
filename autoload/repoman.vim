@@ -27,6 +27,18 @@ let s:repoman = {
     \'repo': repoman#utils#GetRepoPath()
 \}
 
+let s:reaction_map = {
+    \'+1': '👍 ',
+    \'-1': '👎 ',
+    \'laugh': '😂 ',
+    \'eyes': '👀 ',
+    \'hooray': '🎉 ',
+    \'confused': '😕 ',
+    \'heart': '❤️ ',
+    \'rocket': '🚀 '
+\}
+
+
 let s:repoman_max_page = -1
 
 " Set language and response keys
@@ -248,6 +260,16 @@ endfunction
 " --------------------------------------------------------------
 " Interaction --------------------------------------------------
 " --------------------------------------------------------------
+function! repoman#RepoManReact(reaction) abort
+    if index(keys(s:reaction_map), a:reaction) < 0
+        echo 'Invalid arg: must be one of ' . string(keys(s:reaction_map))
+        return
+    endif
+
+    if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
+        call NewReaction('comment', a:reaction, b:comment_lookup[getcurpos()[1]])
+    endif
+endfunction
 " :RepoManComment splits the issue buffer in half horizontally,
 " and allows the user to enter a comment of any length.
 "
@@ -428,6 +450,14 @@ endfunction
 function! DeleteComment(id) abort
     let s:repoman.comment_id = a:id
     call s:api.DeleteComment(s:repoman)
+    call repoman#RepoMan()
+endfunction
+
+function! NewReaction(item_type, reaction, id) abort
+    let s:repoman.id = a:id
+    let s:repoman.type = a:item_type
+    let s:repoman.reaction = a:reaction
+    call s:api.PostReaction(s:repoman)
     call repoman#RepoMan()
 endfunction
 
@@ -845,17 +875,6 @@ endfunction
 "
 " Returns a string
 function! GenerateReactionsStr(item) abort
-    let l:reaction_map = {
-        \'+1': '👍 ',
-        \'-1': '👎 ',
-        \'laugh': '😂 ',
-        \'eyes': '👀 ',
-        \'hooray': '🎉 ',
-        \'confused': '😕 ',
-        \'heart': '❤️ ',
-        \'rocket': '🚀 '
-    \}
-
     if !has_key(a:item, 'reactions')
         return s:strings.no_reactions
     endif
@@ -863,10 +882,10 @@ function! GenerateReactionsStr(item) abort
     let l:reactions = a:item['reactions']
     let l:reaction_str = ''
 
-    for key in keys(l:reaction_map)
+    for key in keys(s:reaction_map)
         if has_key(l:reactions, key) && l:reactions[key] > 0
             let l:reaction_str = l:reaction_str .
-                \l:reaction_map[key] . 'x' . l:reactions[key] . ' '
+                \s:reaction_map[key] . 'x' . l:reactions[key] . ' '
         endif
     endfor
 
