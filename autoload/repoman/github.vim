@@ -114,7 +114,7 @@ function! repoman#github#API(token_pw) abort
         call system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
-            \'{"body": "' . a:repoman.body . '"}', 'PATCH'))
+            \'{"body": "' . repoman#utils#SanitizeText(a:repoman.body) . '"}', 'PATCH'))
     endfunction
 
     " --------------------------------------------------------------

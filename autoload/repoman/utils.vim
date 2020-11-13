@@ -92,7 +92,7 @@ function! repoman#utils#GetCacheFile(name) abort
 endfunction
 
 function! repoman#utils#SanitizeText(text) abort
-    let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"]]
+    let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"], ['"', '\\"']]
     let l:text = a:text
 
     for item in l:replacements
