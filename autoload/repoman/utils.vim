@@ -9,7 +9,11 @@ scriptencoding utf-8
 function! repoman#utils#Decorations() abort
     let decorations = {
         \'spacer': repeat('─ ', 27),
-        \'spacer_small': repeat('─', 33)
+        \'spacer_small': repeat('─', 33),
+        \'new_comment': '╠' . repeat('═', 51),
+        \'comment': '║ ',
+        \'new_review_comment': '├' . repeat('─', 51),
+        \'review_comment': '│ ',
     \}
 
     return decorations
@@ -25,29 +29,29 @@ let s:syntax_types = [
 
 " From https://vim.fandom.com/wiki/Different_syntax_highlighting_within_regions_of_a_file
 function! TextEnableCodeSnip(filetype, start, end, textSnipHl) abort
-    let ft=toupper(a:filetype)
-    let group='textGroup'.ft
+    let ft = toupper(a:filetype)
+    let group = 'textGroup' . ft
     if exists('b:current_syntax')
-        let s:current_syntax=b:current_syntax
+        let s:current_syntax = b:current_syntax
         " Remove current syntax definition, as some syntax files (e.g. cpp.vim)
         " do nothing if b:current_syntax is defined.
         unlet b:current_syntax
     endif
-    execute 'syntax include @'.group.' syntax/'.a:filetype.'.vim'
+    execute 'syntax include @' . group . ' syntax/' . a:filetype . '.vim'
     try
-        execute 'syntax include @'.group.' after/syntax/'.a:filetype.'.vim'
+        execute 'syntax include @' . group . ' after/syntax/' . a:filetype . '.vim'
     catch
     endtry
     if exists('s:current_syntax')
-        let b:current_syntax=s:current_syntax
+        let b:current_syntax = s:current_syntax
     else
         unlet b:current_syntax
     endif
-    execute 'syntax region textSnip'.ft.'
-                \ matchgroup='.a:textSnipHl.'
-                \ keepend
-                \ start="'.a:start.'" end="'.a:end.'"
-                \ contains=@'.group
+    execute 'syntax region textSnip' . ft . '
+        \ matchgroup='.a:textSnipHl.'
+        \ keepend
+        \ start="'.a:start.'" end="'.a:end.'"
+        \ contains=@'.group
 endfunction
 
 function! repoman#utils#LoadSyntaxColoring() abort
@@ -56,15 +60,16 @@ function! repoman#utils#LoadSyntaxColoring() abort
     endfor
 
     " Color UI decorations as comments
-    let l:spacer_color = '#cccccc'
+    let l:spacer_color = '#aaaaaa'
     let l:comment_colors = filter(split(execute(':hi Comment')), 'v:val =~? "guifg="')
     if len(l:comment_colors) > 0
         let l:spacer_color = l:comment_colors[0]
     endif
 
     exe 'hi repoman_spacer gui=bold guifg=' . substitute(l:spacer_color, 'guifg=', '', 'ge')
-    exe 'syn match repoman_spacer /' . repoman#utils#Decorations().spacer . '/'
-    exe 'syn match repoman_spacer /' . repoman#utils#Decorations().spacer_small . '/'
+    for val in values(repoman#utils#Decorations())
+        exe 'syn match repoman_spacer /' . val . '/'
+    endfor
 
     " Highlight stars as yellow
     exe 'hi star_color guifg=#ffff00'

@@ -29,10 +29,10 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.ViewAll(repoman) abort
-        return json_decode(system(repoman#request#Curl().Send(
+        return reverse(json_decode(system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues?state=open&per_page=10&page=' . a:repoman.page,
-            \{}, '')))
+            \{}, ''))))
     endfunction
 
     function! request.View(repoman) abort
@@ -104,11 +104,17 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.DeleteComment(repoman) abort
-        let x = system(repoman#request#Curl().Send(
+        call system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/comments/' . a:repoman.comment_id,
+            \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
             \{}, 'DELETE'))
-        echo x
+    endfunction
+
+    function! request.EditComment(repoman) abort
+        call system(repoman#request#Curl().Send(
+            \repoman#utils#ReadToken(self.token_pw),
+            \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
+            \'{"body": "' . a:repoman.body . '"}', 'PATCH'))
     endfunction
 
     " --------------------------------------------------------------

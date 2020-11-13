@@ -16,7 +16,8 @@ let s:repoman_bufs = {
     \'comment':    '/dev/null/comment.repoman',
     \'new_issue':  '/dev/null/new_issue.repoman',
     \'new_req':    '/dev/null/new_req.repoman',
-    \'labels':     '/dev/null/labels.repoman'
+    \'labels':     '/dev/null/labels.repoman',
+    \'edit':       '/dev/null/edit.repoman'
 \}
 
 let s:repoman = {
@@ -303,7 +304,17 @@ endfunction
 " :RepoManPost posts the contents of the comment buffer to the
 " comment section for whichever issue/PR/MR is currently open.
 function! repoman#RepoManPost() abort
-    if bufexists(bufnr(s:repoman_bufs.new_issue)) > 0 || bufexists(bufnr(s:repoman_bufs.new_req))
+    if bufexists(bufnr(s:repoman_bufs.edit))
+        if !exists('b:edit_values')
+            return
+        endif
+
+        if b:edit_values.edit ==# 'comment'
+            let b:edit_values.body = join(getline(1, '$'), '\n')
+            call EditComment(b:edit_values)
+        endif
+        execute 'bw! ' . fnameescape(s:repoman_bufs.edit)
+    elseif bufexists(bufnr(s:repoman_bufs.new_issue)) > 0 || bufexists(bufnr(s:repoman_bufs.new_req))
         " Determine which buffer to use for the post
         let l:post_buf = s:repoman_bufs.new_issue
         let l:pr = 0
@@ -343,7 +354,7 @@ function! repoman#RepoManPost() abort
         call UpdateLabels(s:repoman.current_issue, l:active_labels)
         execute 'bw! ' . fnameescape(s:repoman_bufs.labels)
     else
-        echo s:strings.error . 'No buffers open to post'
+        echom s:strings.error . 'No buffers open to post'
         return
     endif
 
@@ -442,10 +453,18 @@ function! PostComment(comment) abort
     call s:api.PostComment(s:repoman)
 endfunction
 
-function! DeleteComment(id) abort
-    let s:repoman.comment_id = a:id
+function! DeleteComment(comment) abort
+    let s:repoman.comment_id = a:comment.id
+    let s:repoman.type = a:comment.type
     call s:api.DeleteComment(s:repoman)
     call repoman#RepoMan()
+endfunction
+
+function! EditComment(comment) abort
+    let s:repoman.comment_id = a:comment.id
+    let s:repoman.body = a:comment.body
+    let s:repoman.type = a:comment.type
+    call s:api.EditComment(s:repoman)
 endfunction
 
 function! NewReaction(item_type, reaction, id) abort
@@ -521,6 +540,25 @@ function! CreateCommentBuffer() abort
     call FinishOutput()
 
     " Re-enable modifiable so that we can write something
+    set modifiable
+    nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
+endfunction
+
+" Create a buffer for editing the comment
+function! EditCommentBuffer(comment) abort
+    set splitbelow
+    call OpenBuffer(s:repoman_bufs.edit, -1)
+
+    for chunk in split(a:comment.body, '\n')
+        call WriteLine(chunk)
+    endfor
+    call FinishOutput()
+
+    let b:edit_values = {
+        \'edit': 'comment',
+        \'type': a:comment.type,
+        \'id': a:comment.id}
+
     set modifiable
     nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
 endfunction
@@ -631,7 +669,6 @@ function! CreateIssueListBuffer(results) abort
     let l:line_idx = OpenBuffer(s:repoman_bufs.issue_list, 1)
     let s:results_line = l:line_idx
     let b:issue_lookup = {}
-    let b:jump_guide = []
 
     " Write issue details to buffer
     for item in a:results
@@ -686,7 +723,6 @@ function! CreateRepoListBuffer(repos) abort
     let l:line_idx = OpenBuffer(s:repoman_bufs.issue_list, 1)
     let s:results_line = l:line_idx
     let b:repo_lookup = {}
-    let b:jump_guide = []
 
     " Write repo details to buffer
     for item in a:repos
@@ -777,37 +813,46 @@ function! InsertComment(comment) abort
         let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
     endif
 
-    call WriteLine(s:decorations.spacer)
+    call WriteLine(s:decorations.new_comment)
 
     " If this is a review comment, it needs different formatting/coloring
     if has_key(a:comment, 'pull_request_review_id')
         set syntax=diff
         call InsertReviewComment(a:comment)
     else
-        let l:line_idx = WriteLine(FormatTime(a:comment[s:r_keys.created_at]))
+        let l:created = FormatTime(a:comment[s:r_keys.created_at])
+        let l:updated = FormatTime(a:comment[s:r_keys.updated_at])
+        let l:time = FormatTime(l:created) . 
+            \(l:created !=# l:updated ? '- edited: ' . l:updated : '')
+        let l:line_idx = WriteLine(s:decorations.comment . l:time)
         let l:start_idx = l:line_idx
-        call WriteLine(commenter . ': ')
-        call WriteLine('')
+        call WriteLine(s:decorations.comment . commenter . ': ')
+        call WriteLine(s:decorations.comment . '')
 
         " Split comment body on line breaks for proper formatting
         for comment_line in split(a:comment[s:r_keys.body], '\n')
-            call WriteLine(comment_line)
+            let l:line_idx = WriteLine(s:decorations.comment . comment_line)
         endfor
 
         let l:reactions_str = GenerateReactionsStr(a:comment)
         if !empty(l:reactions_str)
-            call WriteLine('')
-            call WriteLine(l:reactions_str)
+            call WriteLine(s:decorations.comment . '')
+            let l:line_idx = WriteLine(s:decorations.comment . '[ ' . l:reactions_str . ']')
         endif
     endif
 
-    let l:line_idx = WriteLine('')
+    call add(b:jump_guide, l:line_idx)
     while l:start_idx <= l:line_idx
-        let b:comment_lookup[string(l:start_idx)] = a:comment[s:r_keys.id]
+        let b:comment_lookup[string(l:start_idx)] = {
+            \'id': a:comment[s:r_keys.id],
+            \'body': a:comment[s:r_keys.body],
+            \'type': 'issues'}
         let l:start_idx += 1
     endwhile
 
     nnoremap <buffer> <silent> <C-d> :call DeleteComment(
+        \b:comment_lookup[getcurpos()[1]])<CR>
+    nnoremap <buffer> <silent> <C-e> :call EditCommentBuffer(
         \b:comment_lookup[getcurpos()[1]])<CR>
 endfunction
 
@@ -831,7 +876,7 @@ function! InsertReviewComment(comment) abort
         call WriteLine(diff_line)
     endfor
 
-    call WriteLine('|------')
+    call WriteLine(s:decorations.new_review_comment)
 
     " Each individual review comment can have its own subdiscussion, which
     " is tracked in the 'review_comments' array
@@ -840,26 +885,37 @@ function! InsertReviewComment(comment) abort
         if has_key(review_comment, 'author_association') && review_comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(review_comment['author_association']) . ') ' . commenter
         endif
-        call WriteLine('| ' . FormatTime(review_comment[s:r_keys.created_at]))
-        call WriteLine('| ' . commenter . ': ')
+        let l:line_idx = WriteLine(s:decorations.review_comment . FormatTime(review_comment[s:r_keys.created_at]))
+        let l:start_idx = l:line_idx
+
+        call WriteLine(s:decorations.review_comment . commenter . ': ')
         for body_line in split(review_comment['comment'], '\n')
             " If there's a suggestion, replace w/ relevant syntax highlighting
             " for the file
             if body_line =~# 'suggestion'
-                call WriteLine('| ' . s:strings.suggestion)
+                call WriteLine(s:decorations.review_comment . s:strings.suggestion)
                 let extension = fnamemodify(a:comment['path'], ':e')
                 let body_line = substitute(body_line, 'suggestion', extension, '')
             endif
-            call WriteLine('| ' . body_line)
+            let l:line_idx = WriteLine(s:decorations.review_comment . body_line)
         endfor
 
         let l:reactions_str = GenerateReactionsStr(review_comment)
         if !empty(l:reactions_str)
-            call WriteLine('| ')
-            call WriteLine('| ' . l:reactions_str)
+            call WriteLine(s:decorations.review_comment)
+            let l:line_idx = WriteLine(s:decorations.review_comment . l:reactions_str)
         endif
 
-        call WriteLine('|------')
+        call add(b:jump_guide, l:line_idx)
+        while l:start_idx <= l:line_idx
+            let b:comment_lookup[string(l:start_idx)] = {
+                \'id': review_comment[s:r_keys.id],
+                \'body': review_comment['comment'],
+                \'type': 'pulls'}
+            let l:start_idx += 1
+        endwhile
+
+        call WriteLine(s:decorations.new_review_comment)
     endfor
 endfunction
 
@@ -910,6 +966,9 @@ function! OpenBuffer(buf_name, show_page_num) abort
     execute 'file ' . fnameescape(a:buf_name)
     setlocal bufhidden=hide noswapfile wrap
 
+    " Set up jump guide for skipping through content
+    let b:jump_guide = []
+
     return a:show_page_num >= 0 ? SetHeader(a:show_page_num) : 1
 endfunction
 
@@ -921,7 +980,7 @@ function! FinishOutput() abort
     call repoman#utils#LoadSyntaxColoring()
 
     " Add HJKL shortcuts if in the buffer supports it
-    if exists('b:jump_guide')
+    if exists('b:jump_guide') && len(b:jump_guide) > 0
         nnoremap <buffer> <silent> J :RepoManJump 1<CR>
         nnoremap <buffer> <silent> K :RepoManJump -1<CR>
         nnoremap <buffer> <silent> L :RepoManPage 1<CR>
