@@ -139,23 +139,23 @@ function! repoman#RepoMan() abort
         if len(s:repoman.token_pw) == 0
             return
         endif
-    endif
 
-    if !s:in_repo && g:repoman_default_host
-        let l:repo_host = g:repoman_default_host
-    endif
+        if !s:in_repo && g:repoman_default_host
+            let l:repo_host = g:repoman_default_host
+        endif
 
-    " Initialize script API object
-    let s:api = function('repoman#' . l:repo_host . '#API')(s:repoman.token_pw)
+        " Initialize script API object
+        let s:api = function('repoman#' . l:repo_host . '#API')(s:repoman.token_pw)
+    endif
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
-    let l:results = s:in_repo ? IssueListQuery() : RepoListQuery()
+    let l:results = s:in_repo || !empty(s:repoman.repo) ? IssueListQuery() : RepoListQuery()
     if len(l:results) < 10
         let s:repoman_max_page = 1
     endif
 
-    if !s:in_repo
+    if !s:in_repo && empty(s:repoman.repo)
         call CreateRepoListBuffer(l:results)
     else
         call CreateIssueListBuffer(l:results)
