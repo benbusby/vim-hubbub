@@ -2,6 +2,8 @@
 
 repo(sitory) man(ager) - Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
 
+![Demo Gif](assets/gifs/home-demo.gif)
+
 ## Table of Contents
 - [Dependencies](#dependencies)
 - [Install](#install)
