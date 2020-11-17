@@ -1,10 +1,13 @@
 # vim-repoman [![Build Status](https://travis-ci.com/benbusby/vim-repoman.svg?token=JgVbn8LSCz5Mmr9h5qq7&branch=main)](https://travis-ci.com/benbusby/vim-repoman)
 
-repo(sitory) man(ager) - Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
+#### repo(sitory) man(ager):
+
+Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
 
 ![Demo Gif](assets/gifs/home-demo.gif)
 
 ## Table of Contents
+- [Features](#features)
 - [Dependencies](#dependencies)
 - [Install](#install)
 - [Setup](#setup)
@@ -13,19 +16,53 @@ repo(sitory) man(ager) - Create and manage GitHub issues, pull requests, code re
 
 ___
 
+### Features
+vim-repoman allows interaction with:
+- Issues
+    - View
+    - Create
+    - Comment
+    - Label
+    - Delete
+- Comments
+    - React
+        - i.e. 👍, 👎, 👀, etc.
+    - Reply
+    - Edit
+    - Delete
+- Pull Requests / Merge Requests
+    - Create
+    - View
+    - Review
+        - Supports inserting comments on a line (or multiple lines) of code in review
+    - Comment
+    - Merge
+    - Delete
+    
+Additionally, the plugin's interface supports multiple languages ([see Configuration](#configuration)), with a simple process for adding translations.
+    
+___
+
 ### Dependencies
-- curl
-- openssl
-  - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `g:repoman_openssl_old` must be added to your .vimrc*
+- `vim` >= 8.0 / `neovim`
+- `curl`
+- `openssl`
+  - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` must be added to your `.vimrc`*
+  
+___
 
 ### Install
-- Vundle: `Plugin 'benbusby/vim-repoman'`
-- vim-plug: `Plug 'benbusby/vim-repoman'`
-- DIY
+#### Vundle
+`Plugin 'benbusby/vim-repoman'`
+#### vim-plug
+`Plug 'benbusby/vim-repoman'`
+#### DIY
   1. Clone the repo to your vim plugin directory
       - Ex: `git clone https://github.com/benbusby/vim-repoman.git ~/.vim/bundle/vim-repoman`
   2. Update your runtime path in your .vimrc file
       - Ex: `:set rtp+=~/.vim/bundle/vim-repoman`
+
+___
 
 ### Setup
 1. Create a personal access token
@@ -37,6 +74,8 @@ ___
       - Generate new token with the "api", "read_repository" and "write_repository" boxes checked
 2. After installing vim-repoman, run `:RepoManInit`
     - You will be prompted for your token(s) and a password to encrypt them
+
+___
 
 ### Usage
 #### Vim Commands
