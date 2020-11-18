@@ -145,6 +145,13 @@ function! repoman#github#API(token_pw) abort
             \'{"state": "closed"}', 'PATCH'))
     endfunction
 
+    function! request.Merge(repoman) abort
+        call system(repoman#request#Curl().Send(
+            \repoman#utils#ReadToken(self.token_pw),
+            \self.api_path . '/pulls/' . a:repoman.number . '/merge',
+            \'{"merge_method": "' . a:repoman.method . '"}', 'PUT'))
+    endfunction
+
     " --------------------------------------------------------------
     " Labels -------------------------------------------------------
     " --------------------------------------------------------------

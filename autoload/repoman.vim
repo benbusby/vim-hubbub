@@ -272,6 +272,25 @@ function! repoman#RepoManReact(reaction) abort
     endif
 endfunction
 
+function! repoman#RepoManMerge(...) abort
+    " Only allow merge command if a PR is currently opened
+    if !s:repoman.in_pr
+        echo s:strings.error . ' Must have a PR open to merge'
+        return
+    endif
+
+    " Get merge method if available, else default to "merge" type
+    let l:merge_method = 'merge'
+    if a:0 > 0 && index(['merge', 'rebase', 'squash'], a:1) >= 0
+        let l:merge_method = a:1
+    else
+        echo s:strings.error . 'Invalid merge method "' . a:1 . '"'
+        return
+    endif
+
+    call Merge(l:merge_method)
+endfunction
+
 " :RepoManComment splits the issue buffer in half horizontally,
 " and allows the user to enter a comment of any length.
 "
@@ -472,6 +491,13 @@ function! NewReaction(item_type, reaction, id) abort
     let s:repoman.type = a:item_type
     let s:repoman.reaction = a:reaction
     call s:api.PostReaction(s:repoman)
+    call repoman#RepoMan()
+endfunction
+
+function! Merge(method) abort
+    let s:repoman.method = a:method
+    let s:repoman.number = s:repoman.number
+    call s:api.Merge(s:repoman)
     call repoman#RepoMan()
 endfunction
 
