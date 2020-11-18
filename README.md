@@ -14,9 +14,7 @@ Create and manage GitHub issues, pull requests, code reviews, and more using Vim
 - [Usage](#usage)
 - [Configuration](#configuration)
 
-___
-
-### Features
+## Features
 vim-repoman allows interaction with:
 - Issues
     - View
@@ -40,18 +38,14 @@ vim-repoman allows interaction with:
     - Delete
     
 Additionally, the plugin's interface supports multiple languages ([see Configuration](#configuration)), with a simple process for adding translations.
-    
-___
 
-### Dependencies
+## Dependencies
 - `vim` >= 8.0 / `neovim`
 - `curl`
 - `openssl`
   - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` must be added to your `.vimrc`*
-  
-___
 
-### Install
+## Install
 #### Vundle
 `Plugin 'benbusby/vim-repoman'`
 #### vim-plug
@@ -62,9 +56,7 @@ ___
   2. Update your runtime path in your .vimrc file
       - Ex: `:set rtp+=~/.vim/bundle/vim-repoman`
 
-___
-
-### Setup
+## Setup
 1. Create a personal access token
     - GitHub
       - Settings > Developer Settings > Personal Access Tokens
@@ -75,9 +67,7 @@ ___
 2. After installing vim-repoman, run `:RepoManInit`
     - You will be prompted for your token(s) and a password to encrypt them
 
-___
-
-### Usage
+## Usage
 #### Vim Commands
 Vim Command | Action | Notes
 --- | --- | --- |
@@ -97,7 +87,7 @@ Keyboard Shortcut | Action | Notes
 `J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
 `H` and `L` | Navigates between pages of issues/repositories |`H`: prev page<br>`L`: next page 
 
-### Configuration
+## Configuration
 #### (Optional) Global Variables
 There are a few additional variables you can include in your `.vimrc` file to tweak vim-repoman to your preference:
 
