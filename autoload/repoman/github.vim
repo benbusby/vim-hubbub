@@ -195,10 +195,11 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.UpdateLabels(repoman) abort
+        let l:labels = substitute(json_encode(a:repoman.labels), "'", "'\"'\"'", 'ge')
         call system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues/' . a:repoman.number . '/labels',
-            \'{"labels": ' . repoman#utils#SanitizeText(json_encode(a:repoman.labels)) . '}', 'PUT'))
+            \'{"labels": ' . l:labels . '}', 'PUT'))
     endfunction
 
     " ============================================================================

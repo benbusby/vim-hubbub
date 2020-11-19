@@ -306,7 +306,8 @@ endfunction
 
 function! repoman#RepoManLabel() abort
     if exists('b:issue_lookup') && has_key(b:issue_lookup, getcurpos()[1])
-        let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]][s:r_keys.number]
+        let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]]['number']
+        let s:repoman.pr = b:issue_lookup[getcurpos()[1]]['is_pr']
     endif
 
     if s:repoman.current_issue <= 0
@@ -411,7 +412,7 @@ function! repoman#RepoManClose() abort
     " Check to see if the user is not in an issue buffer, and
     " if not, close the issue under their cursor
     if expand('%:p') =~ s:repoman_bufs.issue_list
-        let l:number_to_close = b:issue_lookup[getcurpos()[1]][s:r_keys.number]
+        let l:number_to_close = b:issue_lookup[getcurpos()[1]]['number']
         let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
         let l:reset_current = 0
     endif
