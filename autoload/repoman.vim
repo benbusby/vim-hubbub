@@ -337,18 +337,23 @@ function! repoman#RepoManPost() abort
         " Determine which buffer to use for the post
         let l:post_buf = s:repoman_bufs.new_issue
         let l:pr = 0
+        let l:line_offset = 0
+        let l:post_data = {}
         if bufexists(bufnr(s:repoman_bufs.new_req))
             let l:post_buf = s:repoman_bufs.new_req
             let l:pr = 1
+            let l:line_offset = 3
+            let l:post_data.head = substitute(getline(1), s:strings.head . ': ', '', 'ge')
+            let l:post_data.base = substitute(getline(2), s:strings.base . ': ', '', 'ge')
         endif
 
         " Focus on active buffer for issue/request creation
         execute 'b ' . fnameescape(l:post_buf)
 
         " Extract title and body segments
-        let l:title = getline(1)
-        let l:body = join(getline(3, '$'), '\n')
-        call NewItem(l:pr, l:title, l:body)
+        let l:post_data.title = getline(1 + l:line_offset)
+        let l:post_data.body = join(getline(3 + l:line_offset, '$'), '\n')
+        call NewItem(l:pr, l:post_data)
         execute 'bw! ' . fnameescape(l:post_buf)
     elseif bufexists(bufnr(s:repoman_bufs.comment)) > 0
         execute 'b ' . fnameescape(s:repoman_bufs.comment)
@@ -509,10 +514,9 @@ function! UpdateLabels(number, labels) abort
     return l:response
 endfunction
 
-function! NewItem(type, title, body) abort
-    let s:repoman.title = a:title
-    let s:repoman.body = a:body
-    let s:repoman.pr = (a:type ==? 'issue' ? 0 : 1)
+function! NewItem(pr, data) abort
+    call extend(s:repoman, a:data)
+    let s:repoman.pr = a:pr
     call s:api.NewItem(s:repoman)
 endfunction
 
@@ -629,13 +633,16 @@ endfunction
 " Create a buffer for a new item (issue/pr/mr/etc)
 function! NewItemBuffer(type) abort
     set splitbelow
-    let l:descriptor = 'Issue'
+    let l:descriptor = s:strings.issue
 
     if a:type ==? 'issue'
         call OpenBuffer(s:repoman_bufs.new_issue, -1)
     else
         call OpenBuffer(s:repoman_bufs.new_req, -1)
-        let l:descriptor = 'Request'
+        let l:descriptor = s:strings.pr
+        call WriteLine(s:strings.head . ': ' . repoman#utils#GetBranchName())
+        call WriteLine(s:strings.base . ': ' . s:api.RepoInfo().default_branch)
+        call WriteLine('')
     endif
 
     call WriteLine(l:descriptor . ' ' . s:strings.title)
@@ -653,7 +660,7 @@ function! CreateIssueBuffer(contents) abort
     let s:results_line = l:line_idx
 
     " Write issue and comments to buffer
-    let l:type = (s:repoman.in_pr ? s:strings.pr : s:strings.issue)
+    let l:type = '(' . (s:repoman.in_pr ? s:strings.pr : s:strings.issue) . ') '
     call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
     let l:line_idx = WriteLine(s:decorations.spacer_small)
 
@@ -700,8 +707,8 @@ function! CreateIssueListBuffer(results) abort
     for item in a:results
         " Set title and indicator for whether or not the item is a Pull
         " Request
-        let l:item_name = (has_key(item, 'pull_request')
-            \? s:strings.pr : s:strings.issue) .
+        let l:item_name = '(' . (has_key(item, 'pull_request')
+            \? s:strings.pr : s:strings.issue) . ') ' .
             \'#' . item[s:r_keys.number] . ': ' . item[s:r_keys.title]
         let l:start_idx = WriteLine(l:item_name)
         call add(b:jump_guide, l:start_idx)
