@@ -20,6 +20,15 @@ function! repoman#github#API(token_pw) abort
     \}
 
     " --------------------------------------------------------------
+    " Info ---------------------------------------------------------
+    " --------------------------------------------------------------
+    function! request.RepoInfo() abort
+        return json_decode(system(repoman#request#Curl().Send(
+            \repoman#utils#ReadToken(self.token_pw),
+            \self.api_path)))
+    endfunction
+
+    " --------------------------------------------------------------
     " Views --------------------------------------------------------
     " --------------------------------------------------------------
     function! request.ViewRepos(repoman) abort
@@ -29,10 +38,10 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.ViewAll(repoman) abort
-        return reverse(json_decode(system(repoman#request#Curl().Send(
+        return json_decode(system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues?state=open&per_page=10&page=' . a:repoman.page,
-            \{}, ''))))
+            \self.api_path . '/issues?state=open&per_page=10&sort=updated&page=' . a:repoman.page,
+            \{}, '')))
     endfunction
 
     function! request.View(repoman) abort
@@ -122,20 +131,29 @@ function! repoman#github#API(token_pw) abort
     " --------------------------------------------------------------
 
     function! request.NewItem(repoman) abort
+        let l:type = 'issues'
         let l:footer = ''
         if !exists('g:repoman_footer') || g:repoman_footer
             let l:footer = printf(s:footer, 'Created')
         endif
 
-        let l:issue_data = '{
+        let l:item_data = '
             \"title": "' . repoman#utils#SanitizeText(a:repoman.title) . '",
             \"body": "' . repoman#utils#SanitizeText(a:repoman.body) . l:footer . '"
-        \}'
+        \'
+
+        if a:repoman.pr
+            let l:type = 'pulls'
+            let l:item_data = '{' . l:item_data . '
+                \,"head": "' . a:repoman.head . '","base":"' . a:repoman.base . '"}'
+        else
+            let l:item_data = '{' . l:item_data . '}'
+        endif
 
         call system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues',
-            \l:issue_data, 'POST'))
+            \self.api_path . '/' . l:type,
+            \l:item_data, 'POST'))
     endfunction
 
     function! request.CloseItem(repoman) abort

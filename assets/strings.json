@@ -13,13 +13,15 @@
         "comments": "Comments: ",
         "comments_alt": "Comments ",
         "no_reactions": "",
-        "issue": "(Issue) ",
-        "pr": "(Pull Request) ",
+        "issue": "Issue",
+        "pr": "Pull Request",
         "title": "Title",
         "desc": "Description",
         "outdated": "!!! Outdated !!!",
         "hidden": "(hidden)",
-        "suggestion": "Suggestion"
+        "suggestion": "Suggestion",
+        "head": "From",
+        "base": "Into"
     },
     "es": {
         "pw_prompt": "Ingrese la contraseña del token: ",
@@ -41,7 +43,9 @@
         "desc": "Descripción",
         "outdated": "¡¡¡ Anticuado !!!",
         "hidden": "(oculto)",
-        "suggestion": "Sugerencia"
+        "suggestion": "Sugerencia",
+        "head": "Desde: ",
+        "base": "Dentro: "
     },
     "fr": {
         "pw_prompt": "Entrez le mot de passe du jeton: ",
@@ -63,7 +67,9 @@
         "desc": "La Description",
         "outdated": "!!! Dépassé !!!",
         "hidden": "(caché)",
-        "suggestion": "Suggestion"
+        "suggestion": "Suggestion",
+        "head": "De: ",
+        "base": "Dans: "
     },
     "cn_sm": {
         "pw_prompt": "输入令牌密码: ",
@@ -85,7 +91,9 @@
         "desc": "描述",
         "outdated": "!!! 过时的 !!!",
         "hidden": "(隐)",
-        "suggestion": "建议"
+        "suggestion": "建议",
+        "head": "从",
+        "base": "进入"
     },
     "cn_tr": {
         "pw_prompt": "輸入令牌密碼: ",
@@ -107,6 +115,8 @@
         "desc": "描述",
         "outdated": "!!! 過時的 !!!",
         "hidden": "(隱)",
-        "suggestion": "建議"
+        "suggestion": "建議",
+        "head": "從",
+        "base": "進入"
     }
 }

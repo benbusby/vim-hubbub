@@ -172,3 +172,12 @@ endfunction
 function! repoman#utils#InGitRepo() abort
     return len(system('git -C . rev-parse')) == 0
 endfunction
+
+function! repoman#utils#GetBranchName() abort
+    if repoman#utils#InGitRepo()
+        let l:branch_name = system('git rev-parse --abbrev-ref HEAD')
+        return substitute(l:branch_name, '[[:cntrl:]]', '', 'ge')
+    endif
+
+    return ''
+endfunction
