@@ -1,0 +1,52 @@
+*repoman.txt*  Create and manage GitHub issues, PRs, reviews, etc in Vim
+
+Author:        Ben Busby <https://benbusby.com>
+Homepage:      https://github.com/benbusby/vim-repoman
+License:       Same terms as Vim itself (see |license|)
+
+This plugin is only available if 'compatible' is not set.
+
+INTRODUCTION                                    *repoman*
+
+Repoman is a plugin for creating and managing issues, pull requests, code
+reviews, and more. "Managing" in this context can include commenting on,
+reacting to, replying to, editing, closing, labeling, and so on. The intent
+is to fully mirror the core functionality of GitHub in a Vim plugin.
+
+COMMANDS                                        *repoman-commands*
+
+Nearly all commands are contextually dependent on whether or not a repo is
+"active". In the plugin, a repo is seen as active if the current buffer has
+been opened from within a GitHub repo, or if you have navigated into a repo
+view from the repo list view.
+
+NOTE: All commands are contingent on the prior execution of :RepoManInit,
+which initializes the state of the plugin in order to query public and
+private repos for an authenticated user.
+
+                                                *:RepoMan*
+:RepoMan                Run the primary entrypoint command for Repoman and 
+                        display the output. 
+
+                        If this command _was_ run from within a Git 
+                        repository, the plugin will display the current 
+                        list of issues and pull requests for the repo.
+
+                        If this command _was not_ run from within a Git
+                        repository, the plugin will display the list of
+                        repositories of which the authenticated user is a
+                        member. From this view, pressing <Enter> on any
+                        item in the list will generate a repository details
+                        view identical to the one seen when running the
+                        command from within a repository.
+
+ABOUT                                           *repoman-about*
+
+Repoman was written by Ben Busby and is released under the Vim licence, see
+|license|. It was loosely inspired by the vim-rhubarb plugin by Tim Pope.
+
+For the latest release, or to file a bug report, go to:
+
+https://github.com/benbusby/vim-repoman
+
+vim:tw=78:et:ft=help:norl:
