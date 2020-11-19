@@ -1,8 +1,8 @@
 *repoman.txt*  Create and manage GitHub issues, PRs, reviews, etc in Vim
 
-Author:        Ben Busby <https://benbusby.com>
-Homepage:      https://github.com/benbusby/vim-repoman
-License:       Same terms as Vim itself (see |license|)
+Author:   Ben Busby <https://benbusby.com>
+Homepage: https://github.com/benbusby/vim-repoman
+License:  Same terms as Vim itself (see |license|)
 
 This plugin is only available if 'compatible' is not set.
 
@@ -24,29 +24,70 @@ NOTE: All commands are contingent on the prior execution of :RepoManInit,
 which initializes the state of the plugin in order to query public and
 private repos for an authenticated user.
 
+                                                *:RepoManInit*
+:RepoManInit            Initialize the plugin with a GitHub authentication
+                        token and a password to encrypt the token. 
+
+                        This command only needs to be run once, and will allow
+                        for indefinite use of the plugin, provided the token
+                        is valid.
+
+                        The password for encryption is a safety feature to
+                        avoid having sensitive plaintext information on your
+                        device. If OpenSSL v1.1.1 or later is available, the
+                        PBKDF2 algorithm is used for key derivation.
+
                                                 *:RepoMan*
 :RepoMan                Run the primary entrypoint command for Repoman and 
-                        display the output. 
+                        display the output. A password prompt will appear, but
+                        will not be required for any other commands as long as
+                        the plugin is open.
 
-                        If this command _was_ run from within a Git 
-                        repository, the plugin will display the current 
-                        list of issues and pull requests for the repo.
+                        If this command _was_ run from within a Git
+                        repository, the plugin will display the current list
+                        of issues and pull requests for the repo.
 
                         If this command _was not_ run from within a Git
                         repository, the plugin will display the list of
                         repositories of which the authenticated user is a
-                        member. From this view, pressing <Enter> on any
-                        item in the list will generate a repository details
-                        view identical to the one seen when running the
-                        command from within a repository.
+                        member. From this view, pressing <Enter> on any item
+                        in the list will generate a repository details view
+                        identical to the one seen when running the command
+                        from within a repository.
+
+KEY MAPPINGS                                    *repoman-maps*
+
+These key mappings are available in all buffers, but some will do nothing if
+used out of context. For example, "J" and "K" are used for navigating between
+issues/comments/etc, but will do nothing when in the "Create Issue" buffer.
+
+<Enter>                 In list view:
+                            Open the item (issue/repo/etc) positioned under
+                            the current cursor position.
+                        In label view:
+                            Select/deselect the label for the issue.
+
+<BS> / <Backspace>      Similar to the "Back" button on a browser -- navigate
+                        to the previous buffer. If the buffer is split to show
+                        the details of an issue, hitting <Backspace> will
+                        close the issue's buffer and refocus on the issue list
+                        buffer.
+
+H                       Navigate to the prev page of issues/comments/repos
+
+J                       Move cursor to the next (down) issue/comment/label/repo
+
+K                       Move cursor to the prev (up) issue/comment/label/repo
+
+L                       Navigate to the next page of issues/comments/repos
 
 ABOUT                                           *repoman-about*
 
 Repoman was written by Ben Busby and is released under the Vim licence, see
-|license|. It was loosely inspired by the vim-rhubarb plugin by Tim Pope.
+|license|. It was very loosely inspired by the vim-rhubarb plugin by Tim Pope.
 
 For the latest release, or to file a bug report, go to:
 
 https://github.com/benbusby/vim-repoman
 
-vim:tw=78:et:ft=help:norl:
+vim:tw=75:et:ft=help:norl:
