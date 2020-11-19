@@ -502,7 +502,7 @@ endfunction
 
 function! Merge(method) abort
     let s:repoman.method = a:method
-    let s:repoman.number = s:repoman.number
+    let s:repoman.number = s:repoman.current_issue
     call s:api.Merge(s:repoman)
     call repoman#RepoMan()
 endfunction
