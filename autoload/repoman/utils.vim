@@ -91,8 +91,11 @@ function! repoman#utils#GetCacheFile(name) abort
     return s:local_files[a:name]
 endfunction
 
-function! repoman#utils#SanitizeText(text) abort
-    let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"], ['"', '\\"']]
+function! repoman#utils#SanitizeText(text, ...) abort
+    let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"]]
+    if a:0 > 0 && a:1
+        let l:replacements += ['"', '\\"']
+    endif
     let l:text = a:text
 
     for item in l:replacements

@@ -95,7 +95,7 @@ function! repoman#github#API(token_pw) abort
         endif
 
         let l:comment_data = '{"body": "' .
-            \repoman#utils#SanitizeText(a:repoman.body) . l:footer .
+            \repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer .
             \'"}'
 
         call system(repoman#request#Curl().Send(
@@ -123,7 +123,7 @@ function! repoman#github#API(token_pw) abort
         call system(repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
-            \'{"body": "' . repoman#utils#SanitizeText(a:repoman.body) . '"}', 'PATCH'))
+            \'{"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . '"}', 'PATCH'))
     endfunction
 
     " --------------------------------------------------------------
@@ -138,8 +138,8 @@ function! repoman#github#API(token_pw) abort
         endif
 
         let l:item_data = '
-            \"title": "' . repoman#utils#SanitizeText(a:repoman.title) . '",
-            \"body": "' . repoman#utils#SanitizeText(a:repoman.body) . l:footer . '"
+            \"title": "' . repoman#utils#SanitizeText(a:repoman.title, 1) . '",
+            \"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer . '"
         \'
 
         if a:repoman.pr

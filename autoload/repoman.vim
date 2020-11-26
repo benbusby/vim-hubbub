@@ -39,7 +39,6 @@ let s:reaction_map = {
     \'rocket': '🚀 '
 \}
 
-
 let s:repoman_max_page = -1
 
 " Set language and response keys
@@ -140,18 +139,19 @@ function! repoman#RepoMan() abort
         if len(s:repoman.token_pw) == 0
             return
         endif
-
-        if !s:in_repo && g:repoman_default_host
-            let l:repo_host = g:repoman_default_host
-        endif
-
-        " Initialize script API object
-        let s:api = function('repoman#' . l:repo_host . '#API')(s:repoman.token_pw)
     endif
+
+    if !s:in_repo && g:repoman_default_host
+        let l:repo_host = g:repoman_default_host
+    endif
+
+    " Initialize script API object
+    let s:api = function('repoman#' . l:repo_host . '#API')(s:repoman.token_pw)
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
-    let l:results = s:in_repo || !empty(s:repoman.repo) ? IssueListQuery() : RepoListQuery()
+    let l:results = s:in_repo || !empty(s:repoman.repo) ? 
+        \IssueListQuery() : RepoListQuery()
     if len(l:results) < 10
         let s:repoman_max_page = 1
     endif
@@ -183,7 +183,9 @@ function! repoman#RepoManBack() abort
         execute 'b ' . fnameescape(s:repoman_bufs.issue_list)
     endif
 
-    if bufwinnr(s:repoman_bufs.issue) > 0
+    " Navigate back to issue list buffer if the buffer is open, or if currently
+    " viewing an issue
+    if bufwinnr(s:repoman_bufs.issue) > 0 || s:repoman.current_issue > 0
         for buffer in l:post_bufs
             if bufwinnr(buffer) > 0
                 echo s:strings.error . ' Cannot close issue while updating'
