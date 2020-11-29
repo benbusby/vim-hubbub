@@ -1,9 +1,9 @@
-" ============================================================================
+" =========================================================================
 " File:    autoload/repoman.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
-" ============================================================================
+" =========================================================================
 scriptencoding utf-8
 
 let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
@@ -30,9 +30,9 @@ let s:gh_token_path = g:repoman_dir . '/.github.repoman'
 let s:gl_token_path = g:repoman_dir . '/.gitlab.repoman'
 let s:api = {}
 
-" ============================================================================
+" =========================================================================
 " Commands
-" ============================================================================
+" =========================================================================
 
 " --------------------------------------------------------------
 " Init ---------------------------------------------------------
@@ -282,7 +282,7 @@ function! repoman#RepoManComment() abort
         return
     endif
 
-    call CreateCommentBuffer()
+    call s:buffers(s:repoman).CreateCommentBuffer()
 endfunction
 
 function! repoman#RepoManLabel() abort
@@ -299,7 +299,7 @@ function! repoman#RepoManLabel() abort
     set cmdheight=4
     echo s:strings.load
 
-    call CreateLabelsBuffer(LabelsQuery(s:repoman.current_issue))
+    call s:buffers(s:repoman).CreateLabelsBuffer(LabelsQuery(s:repoman.current_issue))
 endfunction
 
 " :RepoManPost posts the contents of the comment buffer to the
@@ -373,14 +373,15 @@ endfunction
 
 " :RepoManNew creates a new issue/PR/MR.
 " - a:1: Either 'issue' or 'pr'/'mr'
-function! repoman#RepoManNew(...) abort
-    let l:item_type = a:1
-    if bufexists(bufnr(s:constants.buffers.new_issue)) > 0 || bufexists(bufnr(s:constants.buffers.new_req))
-        echo s:strings.error . 'New item buffer already open'
-        return
+function! repoman#RepoManNew(type) abort
+    let l:item_type = a:type
+    let l:pr_branch = ''
+
+    if l:item_type !~# 'issue'
+        let l:pr_branch = s:api.RepoInfo().default_branch
     endif
 
-    call NewItemBuffer(l:item_type)
+    call s:buffers(s:repoman).NewItemBuffer(l:item_type, l:pr_branch)
 endfunction
 
 " :RepoManClose closes the currently selected issue/PR/MR, depending
@@ -411,9 +412,9 @@ function! repoman#RepoManClose() abort
     endif
 endfunction
 
-" ============================================================================
+" =========================================================================
 " External Script Calls
-" ============================================================================
+" =========================================================================
 function! RepoListQuery() abort
     return s:api.ViewRepos(s:repoman)
 endfunction
@@ -508,9 +509,9 @@ function! CloseItem(number, pr) abort
     call s:api().CloseItem(s:repoman)
 endfunction
 
-" ============================================================================
+" =========================================================================
 " Interactions
-" ============================================================================
+" =========================================================================
 
 " Open issue based on the provided issue number
 function! ViewIssue(issue_number, in_pr) abort
