@@ -1,4 +1,4 @@
-name: reviewdog
+name: Run reviewdog
 on: [pull_request]
 jobs:
   vint:

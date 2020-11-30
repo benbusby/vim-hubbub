@@ -1,0 +1,32 @@
+Execute (init):
+  let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+  let g:curl_obj = repoman#request#Curl()
+  let g:branch_file = '.branch.repoman'
+  let g:token_file = '.github.repoman'
+  let g:password = 'p@s$w0rD'
+
+  call repoman#crypto#Encrypt(join(readfile(g:token_file)), g:token_file, g:password)
+
+Execute (validate curl object):
+  AssertEqual g:curl_obj.type, 'application/json'
+  AssertEqual g:curl_obj.auth, '-H ''Authorization: token '
+
+Execute (validate crypto):
+  let plaintext = 'testing crypto'
+  let test_file = 'test.repoman'
+  call repoman#crypto#Encrypt(plaintext, test_file, g:password)
+  let decrypted = repoman#crypto#Decrypt(test_file, g:password)
+  let decrypted = substitute(decrypted, '[[:cntrl:]]', '', 'ge')
+
+  AssertEqual decrypted, plaintext
+
+Execute (validate git utils):
+  AssertEqual repoman#utils#InGitRepo(), 1
+  AssertEqual repoman#utils#GetRepoHost(), 'github'
+  AssertEqual repoman#utils#GetBranchName(), join(readfile(g:branch_file))
+  Assert repoman#utils#GetRepoPath() =~# 'vim-repoman'
+
+Execute (validate api):
+  let api_path = 'https://api.github.com/repos/'
+  let github_api = repoman#github#API(g:password)
+  AssertEqual github_api.api_path, api_path . repoman#utils#GetRepoPath()

@@ -1,0 +1,26 @@
+name: Run Vader tests
+on:
+- push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+          github_token: ${{ secrets.github_token }}
+    - name: Set up Vader tests
+      run: |
+        # Set up test files for vader
+        echo "${{ secrets.GITHUB_TOKEN }}" > .github.repoman
+        echo "${GITHUB_REF##*/}" > .branch.repoman
+        chmod a+rw ./test/*
+        pwd
+        ls -l
+        ls -l test
+
+        # Install vader
+        git clone https://github.com/junegunn/vader.vim.git
+        vim -Nu <(cat << VIMRC
+        set rtp+=vader.vim
+        set rtp+=.
+        VIMRC) -c 'Vader! test/*' > /dev/null
