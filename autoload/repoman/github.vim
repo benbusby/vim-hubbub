@@ -1,17 +1,26 @@
-" ============================================================================
+" =========================================================================
 " File:    autoload/repoman/github.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
-" ============================================================================
+" Description: A constructor and collection of functions for interacting
+" with the GitHub API.
+" =========================================================================
 let s:footer = '\n\n___\n<sub>_%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
 
-" ============================================================================
+" =========================================================================
 " GitHub API
-" ============================================================================
+" =========================================================================
 let s:github_reactions_type = 'application/vnd.github.squirrel-girl-preview'
 let s:github_multiline_type = 'application/vnd.github.comfort-fade-preview+json'
 
+" The primary class for interfacing with the GitHub API.
+"
+" Args:
+" - token_pw: the password for the user's encrypted token
+"
+" Returns:
+" - (API) the API object for sending requests to GitHub
 function! repoman#github#API(token_pw) abort
     let l:github_api = 'https://api.github.com/repos/' . repoman#utils#GetRepoPath()
     let request = {
@@ -23,40 +32,41 @@ function! repoman#github#API(token_pw) abort
     " Info ---------------------------------------------------------
     " --------------------------------------------------------------
     function! request.RepoInfo() abort
-        return json_decode(system(repoman#request#Curl().Send(
+        return repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path)))
+            \self.api_path)
     endfunction
 
     " --------------------------------------------------------------
     " Views --------------------------------------------------------
     " --------------------------------------------------------------
     function! request.ViewRepos(repoman) abort
-        return json_decode(system(repoman#request#Curl().Send(
+        return repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \'https://api.github.com/user/repos?sort=updated&type=owner&per_page=10&page=' . a:repoman.page)))
+            \'https://api.github.com/user/repos?sort=updated&type=owner&per_page=10&page=' . a:repoman.page)
     endfunction
 
     function! request.ViewAll(repoman) abort
-        return json_decode(system(repoman#request#Curl().Send(
+        return repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues?state=open&per_page=10&sort=updated&page=' . a:repoman.page,
-            \{}, '')))
+            \{}, '')
     endfunction
 
     function! request.View(repoman) abort
         let l:path_type = (a:repoman.pr ? 'pulls' : 'issues')
-        let l:accept_type = (a:repoman.pr ? s:github_multiline_type : s:github_reactions_type)
+        let l:accept_type = (a:repoman.pr ? 
+            \s:github_multiline_type : 
+            \s:github_reactions_type)
         let l:token = repoman#utils#ReadToken(self.token_pw)
 
-        let l:issue_result = json_decode(system(
-            \repoman#request#Curl(l:accept_type).Send(
-            \l:token, self.api_path . '/' . l:path_type . '/' . a:repoman.number,
-            \{}, '')))
+        let l:issue_result = repoman#request#Curl(l:accept_type).Send(
+            \l:token, self.api_path . '/' . l:path_type . 
+            \'/' . a:repoman.number)
 
-        let l:comments_result = json_decode(system(
-            \repoman#request#Curl(l:accept_type).Send(
-            \l:token, self.api_path . '/' . l:path_type . '/' . a:repoman.number . '/comments')))
+        let l:comments_result = repoman#request#Curl(l:accept_type).Send(
+            \l:token, self.api_path . '/' . l:path_type . 
+            \'/' . a:repoman.number . '/comments')
 
         " If this is a pull request, we have to format the comments so that
         " comments on the same code changes appear grouped together
@@ -76,8 +86,9 @@ function! repoman#github#API(token_pw) abort
                 let l:idx += 1
             endwhile
 
-            let l:comments_result = l:comments_result + json_decode(system(repoman#request#Curl(s:github_reactions_type).Send(
-                \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments')))
+            let l:comments_result = l:comments_result + 
+                \repoman#request#Curl(s:github_reactions_type).Send(
+                \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments')
         endif
 
         let l:issue_result['comments'] = l:comments_result
@@ -98,10 +109,10 @@ function! repoman#github#API(token_pw) abort
             \repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer .
             \'"}'
 
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues/' . a:repoman.number . '/comments',
-            \l:comment_data, 'POST'))
+            \l:comment_data, 'POST')
 
         "let l:temp_comment = {
             "\'created_at': strftime('%G-%m-%d %H:%M:%S'),
@@ -113,17 +124,17 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.DeleteComment(repoman) abort
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
-            \{}, 'DELETE'))
+            \{}, 'DELETE')
     endfunction
 
     function! request.EditComment(repoman) abort
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
-            \'{"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . '"}', 'PATCH'))
+            \'{"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . '"}', 'PATCH')
     endfunction
 
     " --------------------------------------------------------------
@@ -150,24 +161,24 @@ function! repoman#github#API(token_pw) abort
             let l:item_data = '{' . l:item_data . '}'
         endif
 
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . l:type,
-            \l:item_data, 'POST'))
+            \l:item_data, 'POST')
     endfunction
 
     function! request.CloseItem(repoman) abort
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues/' . a:repoman.number,
-            \'{"state": "closed"}', 'PATCH'))
+            \'{"state": "closed"}', 'PATCH')
     endfunction
 
     function! request.Merge(repoman) abort
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/pulls/' . a:repoman.number . '/merge',
-            \'{"merge_method": "' . a:repoman.method . '"}', 'PUT'))
+            \'{"merge_method": "' . a:repoman.method . '"}', 'PUT')
     endfunction
 
     " --------------------------------------------------------------
@@ -176,14 +187,12 @@ function! repoman#github#API(token_pw) abort
 
     function! request.ViewLabels(repoman) abort
         " Need to fetch all labels, then cross check against issue labels
-        let l:current_labels = json_decode(system(
-            \repoman#request#Curl().Send(
+        let l:current_labels = repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number . '/labels')))
-        let l:all_labels = json_decode(system(
-            \repoman#request#Curl().Send(
+            \self.api_path . '/issues/' . a:repoman.number . '/labels')
+        let l:all_labels = repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/labels')))
+            \self.api_path . '/labels')
 
         for label in l:all_labels
             if index(l:current_labels, label) >= 0
@@ -196,29 +205,29 @@ function! repoman#github#API(token_pw) abort
 
     function! request.UpdateLabels(repoman) abort
         let l:labels = substitute(json_encode(a:repoman.labels), "'", "'\"'\"'", 'ge')
-        call system(repoman#request#Curl().Send(
+        call repoman#request#Curl().Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues/' . a:repoman.number . '/labels',
-            \'{"labels": ' . l:labels . '}', 'PUT'))
+            \'{"labels": ' . l:labels . '}', 'PUT')
     endfunction
 
-    " ============================================================================
+    " =====================================================================
     " Reactions
-    " ============================================================================
+    " =====================================================================
     function! request.PostReaction(repoman) abort
         if a:repoman.type ==# 'comment'
-            call system(repoman#request#Curl(s:github_reactions_type).Send(
+            call repoman#request#Curl(s:github_reactions_type).Send(
                 \repoman#utils#ReadToken(self.token_pw),
                 \self.api_path . '/issues/comments/' . a:repoman.id . '/reactions',
-                \'{"content": "' . a:repoman.reaction . '"}', 'POST'))
+                \'{"content": "' . a:repoman.reaction . '"}', 'POST')
         else
             echom 'Reaction error: Unknown type'
         endif
     endfunction
 
-    " ============================================================================
+    " =====================================================================
     " Formatting
-    " ============================================================================
+    " =====================================================================
     function! FormatReviewComment(comment) abort
         return {
             \'comment_id': a:comment['id'],
@@ -244,4 +253,3 @@ function! repoman#github#API(token_pw) abort
 
     return request
 endfunction
-

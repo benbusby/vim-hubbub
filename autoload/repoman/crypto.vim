@@ -1,3 +1,10 @@
+" =========================================================================
+" File:    autoload/repoman/crypto.vim
+" Author:  Ben Busby <https://benbusby.com>
+" License: MIT
+" Website: https://github.com/benbusby/vim-repoman
+" Description: A set of functions for encrypting and decrypting text.
+" =========================================================================
 let s:encrypt_cmd = 'openssl enc -aes-256-cbc %s -out '
 let s:decrypt_cmd = 'openssl aes-256-cbc -d %s -in '
 let s:pw_str = ' -pass pass:'
