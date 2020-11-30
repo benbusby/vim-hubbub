@@ -2,7 +2,7 @@
 
 #### repo(sitory) man(ager):
 
-Create and manage GitHub issues, pull requests, code reviews, and more using Vim.
+Create and manage GitHub/GitLab issues, pull requests, code reviews, and more using Vim.
 
 ![Demo Gif](assets/gifs/home-demo.gif)
 
@@ -15,29 +15,42 @@ Create and manage GitHub issues, pull requests, code reviews, and more using Vim
 - [Configuration](#configuration)
 
 ## Features
-vim-repoman allows interaction with:
-- Issues
-    - View
-    - Create
-    - Comment
-    - Label
-    - Delete
-- Comments
-    - React
-        - i.e. 👍, 👎, 👀, etc.
-    - Reply
-    - Edit
-    - Delete
-- Pull Requests / Merge Requests
-    - Create
-    - View
-    - Review
-        - Supports inserting comments on a line (or multiple lines) of code in review
-    - Comment
-    - Merge
-    - Delete
+vim-repoman supports the following features:
+
+#### Issues
+Action | GitHub | GitLab
+--- | --- | ---
+View | :heavy_check_mark: | :heavy_check_mark:
+Create | :heavy_check_mark: | :heavy_check_mark:
+Comment | :heavy_check_mark: | :heavy_check_mark:
+Label | :heavy_check_mark: | :no_entry_sign:
+Delete | :heavy_check_mark: | :heavy_check_mark:
+
+#### Comments
+Action | GitHub | GitLab
+--- | --- | ---
+React* | :heavy_check_mark: | :no_entry_sign:
+Reply | :heavy_check_mark: | :no_entry_sign:
+Edit | :heavy_check_mark: | :no_entry_sign:
+Delete | :heavy_check_mark: | :no_entry_sign:
+
+<sup>* 👍, 👎, 👀, etc.</sup>
+
+#### Pull Requests / Merge Requests
+Action | GitHub | GitLab
+--- | --- | ---
+Create | :heavy_check_mark: | :heavy_check_mark:
+View | :heavy_check_mark: | :heavy_check_mark:
+Review* | :heavy_check_mark: | :no_entry_sign:
+Comment | :heavy_check_mark: | :heavy_check_mark:
+Merge** | :heavy_check_mark: | :heavy_check_mark:
+Delete | :heavy_check_mark: | :heavy_check_mark:
+
+<sup>* PR/MR review supports inserting comments on a line (or multiple lines) of code in review<br>** Includes merge commits, as well as squash and rebase merges.</sup>
+
+#### Other
     
-Additionally, the plugin's interface supports multiple languages ([see Configuration](#configuration)), with a simple process for adding translations.
+The plugin's interface supports multiple languages ([see Configuration](#configuration)), with a simple process for adding translations.
 
 ## Dependencies
 - `vim` >= 8.0 / `neovim`
