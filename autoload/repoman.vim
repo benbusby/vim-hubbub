@@ -3,6 +3,8 @@
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
+" Description: A set of functions for handling user input, buffer
+" modifications, and interaction with the host API.
 " =========================================================================
 scriptencoding utf-8
 

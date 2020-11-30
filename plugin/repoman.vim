@@ -3,6 +3,7 @@
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
+" Description: A header file of all commands that are available to the user.
 " ============================================================================
 
 " Init

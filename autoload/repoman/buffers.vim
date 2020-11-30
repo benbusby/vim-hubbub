@@ -3,6 +3,8 @@
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
+" Description: Methods/utilities and a constructor for creating/modifying
+" specific buffers for every view. 
 " =========================================================================
 scriptencoding utf-8
 

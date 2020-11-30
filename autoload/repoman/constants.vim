@@ -1,3 +1,12 @@
+" =========================================================================
+" File:    autoload/repoman/constants.vim
+" Author:  Ben Busby <https://benbusby.com>
+" License: MIT
+" Website: https://github.com/benbusby/vim-repoman
+" Description: Constants used in the repoman plugin.
+" =========================================================================
+scriptencoding utf-8
+
 function! repoman#constants#Constants() abort
     let constants = {
         \'buffers': {
@@ -23,4 +32,3 @@ function! repoman#constants#Constants() abort
 
     return constants
 endfunction
-

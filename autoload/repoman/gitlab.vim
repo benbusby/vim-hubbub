@@ -3,6 +3,8 @@
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
+" Description: A constructor and collection of functions for interacting
+" with the GitLab API.
 " ============================================================================
 let s:footer = '<hr>\n\n<sub>_%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
 

@@ -3,6 +3,8 @@
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
+" Description: A class for constructing and sending curl requests to the
+" appropriate endpoint.
 " =========================================================================
 
 " A vimscript curl implementation, used for sending requests to the

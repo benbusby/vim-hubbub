@@ -3,6 +3,8 @@
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
+" Description: A collection of various syntax, file, and git related
+" operations.
 " ============================================================================
 scriptencoding utf-8
 
