@@ -1,4 +1,4 @@
-name: Run Vader tests
+name: vader
 on:
 - push
 jobs:
@@ -13,10 +13,6 @@ jobs:
         # Set up test files for vader
         echo "${{ secrets.GITHUB_TOKEN }}" > .github.repoman
         echo "${GITHUB_REF##*/}" > .branch.repoman
-        chmod a+rw ./test/*
-        pwd
-        ls -l
-        ls -l test
 
         # Install vader
         git clone https://github.com/junegunn/vader.vim.git
