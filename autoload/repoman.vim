@@ -207,7 +207,9 @@ function! repoman#RepoManPage(...) abort
     if len(l:response) < 10
         let s:repoman_max_page = s:repoman.page
     endif
-    let s:buf_create = l:page_issues ? function('CreateIssueListBuffer') : function('CreateRepoListBuffer')
+    let s:buf_create = l:page_issues ? 
+        \s:buffers(s:repoman).CreateIssueListBuffer : 
+        \s:buffers(s:repoman).CreateRepoListBuffer
     call s:buf_create(l:response)
 endfunction
 
