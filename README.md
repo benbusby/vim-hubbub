@@ -1,4 +1,6 @@
-# vim-repoman [![Build Status](https://travis-ci.com/benbusby/vim-repoman.svg?token=JgVbn8LSCz5Mmr9h5qq7&branch=main)](https://travis-ci.com/benbusby/vim-repoman)
+# vim-repoman 
+[![vint](https://github.com/benbusby/vim-repoman/workflows/vint/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avint)
+[![vader](https://github.com/benbusby/vim-repoman/workflows/vader/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avader)
 
 #### repo(sitory) man(ager):
 
