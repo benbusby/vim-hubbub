@@ -17,6 +17,7 @@ command! -nargs=1 RepoManPage call repoman#RepoManPage('<args>')
 
 " Interactions
 command! -nargs=1 RepoManReact   call repoman#RepoManReact('<args>')
+command! -nargs=0 RepoManEdit    call repoman#RepoManEdit()
 command! -nargs=0 RepoManComment call repoman#RepoManComment()
 command! -nargs=0 RepoManPost    call repoman#RepoManPost()
 command! -nargs=0 RepoManClose   call repoman#RepoManClose()

@@ -30,5 +30,11 @@ function! repoman#constants#Constants() abort
         \}
     \}
 
+    " Track buffers that should be considered "primary", or take precedence
+    " over existing buffers in the view
+    let constants['primary_bufs'] = [
+        \constants.buffers.issue, constants.buffers.issue_list
+    \]
+
     return constants
 endfunction

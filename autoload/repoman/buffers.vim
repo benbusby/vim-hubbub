@@ -35,15 +35,23 @@ function! OpenBuffer(buf_name, header_mode, state) abort
         execute 'bw! ' . fnameescape(a:buf_name)
     endif
 
-    if line('$') ==? 1 && getline(1) ==? ''
-        enew  " Use whole window for results
-    elseif winwidth(0) > winheight(0) * 2
-        vnew  " Window is wide enough for vertical split
+    " Open issue buffer in new buffer if split is disabled
+    " Note that we do not want to open a new buffer for non-primary buffers
+    " (i.e. new comments, issue mods, etc).
+    let l:skip_split = exists('g:repoman_split_issue') && !g:repoman_split_issue
+    if index(s:constants.primary_bufs, a:buf_name) >= 0 && l:skip_split
+        enew
     else
-        if a:buf_name == s:constants.buffers.issue
-            enew  " Use full buffer for issue view
+        if line('$') ==? 1 && getline(1) ==? ''
+            enew  " Use whole window for results
+        elseif winwidth(0) > winheight(0) * 2.5
+            vnew  " Window is wide enough for vertical split
         else
-            new   " Window is too narrow, use horizontal split
+            if a:buf_name == s:constants.buffers.issue
+                enew  " Use full buffer for issue view
+            else
+                new   " Window is too narrow, use horizontal split
+            endif
         endif
     endif
 
@@ -234,7 +242,7 @@ function! InsertComment(comment) abort
         let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
     endif
 
-    call WriteLine(s:decorations.new_comment)
+    call WriteLine(s:decorations.comment_header_start)
 
     " If this is a review comment, it needs different formatting/coloring
     if has_key(a:comment, 'pull_request_review_id')
@@ -245,10 +253,10 @@ function! InsertComment(comment) abort
         let l:updated = FormatTime(a:comment[s:r_keys.updated_at])
         let l:time = FormatTime(l:created) . 
             \(l:created !=# l:updated ? '- edited: ' . l:updated : '')
-        let l:line_idx = WriteLine(s:decorations.comment . l:time)
+        let l:line_idx = WriteLine('  ' . l:time)
         let l:start_idx = l:line_idx
-        call WriteLine(s:decorations.comment . commenter . ': ')
-        call WriteLine(s:decorations.comment . '')
+        call WriteLine('  ' . commenter . ': ')
+        call WriteLine(s:decorations.comment_header_end)
 
         " Split comment body on line breaks for proper formatting
         for comment_line in split(a:comment[s:r_keys.body], '\n')

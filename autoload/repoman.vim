@@ -289,6 +289,21 @@ function! repoman#RepoManComment() abort
     call s:buffers(s:repoman).CreateCommentBuffer()
 endfunction
 
+" :RepoManEdit allows editing the contents of an issue or comment, depending
+" on the current location of the cursor.
+function! repoman#RepoManEdit() abort
+    " Edit comment if the cursor is over a comment
+    if exists('b:comment_lookup') && index(b:comment_lookup, getcurpos()[1])
+        call s:buffers(s:repoman).EditCommentBuffer(b:comment_lookup[getcurpos()[1]])
+        return
+    elseif s:repoman.current_issue > 0
+        echo 'todo'
+        return
+    endif
+
+    echo 'No issue or comment available to edit'
+endfunction
+
 function! repoman#RepoManLabel() abort
     if exists('b:issue_lookup') && has_key(b:issue_lookup, getcurpos()[1])
         let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]]['number']
