@@ -27,7 +27,8 @@ function! repoman#constants#Constants() abort
             \'confused': '😕 ',
             \'heart': '❤️ ',
             \'rocket': '🚀 '
-        \}
+        \},
+        \'merge_methods': ['merge', 'rebase', 'squash']
     \}
 
     " Track buffers that should be considered "primary", or take precedence

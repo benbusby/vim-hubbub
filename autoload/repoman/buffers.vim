@@ -148,10 +148,10 @@ function! FinishOutput() abort
 
     " Add HJKL shortcuts if in the buffer supports it
     if exists('b:jump_guide') && len(b:jump_guide) > 0
-        nnoremap <buffer> <silent> J :RepoManJump 1<CR>
-        nnoremap <buffer> <silent> K :RepoManJump -1<CR>
-        nnoremap <buffer> <silent> L :RepoManPage 1<CR>
-        nnoremap <buffer> <silent> H :RepoManPage -1<CR>
+        nnoremap <buffer> <silent> J :call repoman#RepoManJump(1)<CR>
+        nnoremap <buffer> <silent> K :call repoman#RepoManJump(-1)<CR>
+        nnoremap <script> <silent> L :call repoman#RepoManPage(1)<CR>
+        nnoremap <script> <silent> H :call repoman#RepoManPage(-1)<CR>
     endif
 endfunction
 
@@ -483,11 +483,6 @@ function! repoman#buffers#Buffers(repoman) abort
             \b:issue_lookup[getcurpos()[1]]['number'],
             \b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
 
-        " Allow gn shortcut for jumping to next issue in the list
-        nnoremap <buffer> <silent> J :RepoManJump 1<CR>
-        nnoremap <buffer> <silent> K :RepoManJump -1<CR>
-        nnoremap <script> <silent> L :RepoManPage 1<CR>
-        nnoremap <script> <silent> H :RepoManPage -1<CR>
         call FinishOutput()
     endfunction
 
@@ -536,6 +531,8 @@ function! repoman#buffers#Buffers(repoman) abort
         " Store issue number for interacting with the issue (commenting, closing,
         " etc)
         let self.current_issue = a:contents[s:r_keys.number]
+
+        nnoremap <buffer> <silent> gi :RepoManBack<CR>
 
         call FinishOutput()
     endfunction

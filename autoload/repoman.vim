@@ -258,15 +258,13 @@ function! repoman#RepoManReact(reaction) abort
 endfunction
 
 function! repoman#RepoManMerge(...) abort
-    " Only allow merge command if a PR is currently opened
     if !s:repoman.in_pr
         echo s:strings.error . ' Must have a PR open to merge'
         return
     endif
 
-    " Get merge method if available, else default to "merge" type
-    let l:merge_method = 'merge'
-    if a:0 > 0 && index(['merge', 'rebase', 'squash'], a:1) >= 0
+    let l:merge_method = s:constants.merge_methods[0]
+    if a:0 > 0 && index(s:constants.merge_methods, a:1) >= 0
         let l:merge_method = a:1
     else
         echo s:strings.error . 'Invalid merge method "' . a:1 . '"'

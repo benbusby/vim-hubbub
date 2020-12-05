@@ -6,13 +6,15 @@ License:  Same terms as Vim itself (see |license|)
 
 This plugin is only available if 'compatible' is not set.
 
+==============================================================================
 INTRODUCTION                                    *repoman*
 
 Repoman is a plugin for creating and managing issues, pull requests, code
 reviews, and more. "Managing" in this context can include commenting on,
 reacting to, replying to, editing, closing, labeling, and so on. The intent
-is to fully mirror the core functionality of GitHub in a Vim plugin.
+is to mirror the core functionality of GitHub in a Vim plugin.
 
+==============================================================================
 COMMANDS                                        *repoman-commands*
 
 Nearly all commands are contextually dependent on whether or not a repo is
@@ -55,39 +57,165 @@ private repos for an authenticated user.
                         identical to the one seen when running the command
                         from within a repository.
 
+                                                *:RepoManBack*
+:RepoManBack            Navigate back to a previous buffer view. This behaves
+                        similarly to the "Back" button on a web browser. If
+                        the window is split between an issue list and an
+                        issue details view, :RepoManBack will close the issue
+                        details view and refocus on the issue list.
+
+                        Note: This is more conveniently accessed via the
+                        <Backspace> key mapping. 
+
+                                                *:RepoManComment*
+:RepoManComment         Opens a new buffer to write a comment. The comment
+                        contents can be submitted to GitHub/GitLab using
+                        :RepoManPost, and will apply to the currently opened
+                        issue. If an issue is not open, this command cannot be
+                        used.
+
+                                                *:RepoManLabel*
+:RepoManLabel           Opens a new buffer to modify labels for a particular
+                        issue/pull request/etc. The buffer is populated with a
+                        list of available labels for the repo, as well as
+                        indicators for which labels are active or inactive for
+                        the current issue*. 
+
+                        Selecting/deselecting a label can be done using the
+                        <Enter> key on any particular label. As with any other
+                        list type buffer in the repoman plugin, the labels can
+                        quickly be navigated using J and K.
+
+                        *Note: Current issue is determined using cursor
+                        position. If your cursor is positioned over an issue
+                        in the issues list buffer, or if it is located anywhere
+                        within an issue details buffer, then this command will
+                        apply to that issue. 
+
+                                                *:RepoManNew*
+:RepoManNew [type]      Opens a buffer for creating a new issue or pull
+                        request. The buffer is prepopulated with editable
+                        content to help create the new item (examples below).
+
+                        [type] can be: 
+                            issue
+                            pr
+
+                        -- Examples --
+
+                        :RepoManNew issue
+                            Issue Title
+                            --------------------
+                            Issue Description
+
+                        :RepoManNew pr -->
+                            From: feature/vader-tests
+                            Into: main
+
+                            Pull Request Title
+                            --------------------
+                            Pull Request Description
+
+                                                *:RepoManClose*
+:RepoManClose           Generates a prompt for closing the current issue*. You
+                        must supply a "y" or "n" response to the prompt to
+                        finish closing the issue.
+
+                        *Note: Current issue is determined using cursor
+                        position. If your cursor is positioned over an issue
+                        in the issues list buffer, or if it is located anywhere
+                        within an issue details buffer, then this command will
+                        apply to that issue. 
+
+                                                *:RepoManReact*
+:RepoManReact [type]    Posts a reaction to an issue or comment, depending on
+                        where the cursor is located. If the cursor is
+                        positioned over a comment in an issue details view,
+                        the reaction will apply to that comment. If the cursor
+                        is anywhere else in an issue details view, the
+                        reaction will apply to the issue.
+
+                        [type] can be:
+                            +1
+                            -1
+                            laugh
+                            eyes
+                            hooray
+                            confused
+                            heart
+                            rocket
+
+                        Reactions not in this list are rejected.
+
+                                                *:RepoManEdit*
+:RepoManEdit            Opens a buffer for editing the content depending on
+                        the cursor location. If the cursor is positioned over
+                        a comment, this will open a buffer for editing the
+                        relevant comment. If the cursor is positioned in an
+                        issue details buffer, or over an issue in an issue
+                        list, then the buffer will allow editing issue
+                        details.
+
+                                                *:RepoManMerge*
+:RepoManMerge {method}  Merges the current pull request / merge request using
+                        the default merge method (merge commit), or using the
+                        method specified. 
+
+                        {method} can be:
+                            merge
+                            rebase
+                            squash
+
+                        Note: At this time, each of these methods use the
+                        default commit message/description.
+
+==============================================================================
 KEY MAPPINGS                                    *repoman-maps*
 
 These key mappings are available in all buffers, but some will do nothing if
 used out of context. For example, "J" and "K" are used for navigating between
 issues/comments/etc, but will do nothing when in the "Create Issue" buffer.
 
-<Enter>                 In list view:
+<CR>                    In list view:
                             Open the item (issue/repo/etc) positioned under
                             the current cursor position.
                         In label view:
                             Select/deselect the label for the issue.
 
-<BS> / <Backspace>      Similar to the "Back" button on a browser -- navigate
+<BS>                    Similar to the "Back" button on a browser -- navigate
                         to the previous buffer. If the buffer is split to show
                         the details of an issue, hitting <Backspace> will
                         close the issue's buffer and refocus on the issue list
                         buffer.
 
+<C-p>                   Shortcut for :RepoManPost (see |:RepoManPost|)
+
+<C-e>                   Shortcut for :RepoManEdit (see |:RepoManEdit|)
+
+gi                      Navigate back to the issues list (if in an issue
+                        details view)
+
 H                       Navigate to the prev page of issues/comments/repos
 
-J                       Move cursor to the next (down) issue/comment/label/repo
+J                       Move cursor down to next issue/comment/label/repo
 
-K                       Move cursor to the prev (up) issue/comment/label/repo
+K                       Move cursor up to prev issue/comment/label/repo
 
 L                       Navigate to the next page of issues/comments/repos
 
+==============================================================================
+HISTORY                                         *repoman-history*
+
+1.0 (TBD 2020)
+    - Initial release
+==============================================================================
 ABOUT                                           *repoman-about*
 
-Repoman was written by Ben Busby and is released under the Vim licence, see
+Repoman was written by Ben Busby and is released under the Vim license, see
 |license|. It was very loosely inspired by the vim-rhubarb plugin by Tim Pope.
 
 For the latest release, or to file a bug report, go to:
 
 https://github.com/benbusby/vim-repoman
 
-vim:tw=75:et:ft=help:norl:
+vim: tw=78 ts=8 sw=4 sts=4 et ft=help

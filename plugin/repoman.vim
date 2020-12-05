@@ -11,7 +11,6 @@ command! -nargs=0 RepoManInit call repoman#RepoManInit()
 
 " Navigation
 command! -nargs=0 RepoMan     call repoman#RepoMan()
-command! -nargs=1 RepoManJump call repoman#RepoManJump('<args>')
 command! -nargs=0 RepoManBack call repoman#RepoManBack()
 command! -nargs=1 RepoManPage call repoman#RepoManPage('<args>')
 
