@@ -97,24 +97,27 @@ private repos for an authenticated user.
                         request. The buffer is prepopulated with editable
                         content to help create the new item (examples below).
 
+                        Descriptions can be as long as needed, and line breaks
+                        are supported. 
+
                         [type] can be: 
                             issue
                             pr
 
                         -- Examples --
 
-                        :RepoManNew issue
-                            Issue Title
-                            --------------------
-                            Issue Description
+                        :RepoManNew issue -->
+                        1| Issue Title
+                        2| --------------------
+                        3| Issue Description
 
                         :RepoManNew pr -->
-                            From: feature/vader-tests
-                            Into: main
-
-                            Pull Request Title
-                            --------------------
-                            Pull Request Description
+                        1| From: feature/vader-tests
+                        2| Into: main
+                        3|
+                        4| Pull Request Title
+                        5| --------------------
+                        6| Pull Request Description
 
                                                 *:RepoManClose*
 :RepoManClose           Generates a prompt for closing the current issue*. You
