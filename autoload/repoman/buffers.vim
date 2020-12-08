@@ -122,10 +122,10 @@ function! GenerateReactionsStr(item) abort
     let l:reactions = a:item['reactions']
     let l:reaction_str = ''
 
-    for key in keys(s:constants.reactions)
+    for key in sort(keys(s:constants.reactions))
         if has_key(l:reactions, key) && l:reactions[key] > 0
             let l:reaction_str = l:reaction_str .
-                \s:constants.reactions[key] . 'x' . l:reactions[key] . ' '
+                \s:constants.reactions[key] . l:reactions[key] . ' '
         endif
     endfor
 
@@ -396,8 +396,8 @@ function! repoman#buffers#Buffers(repoman) abort
             call WriteLine(s:decorations.spacer_small)
             call WriteLine(item['description'])
             call WriteLine(s:strings.updated . FormatTime(item[s:r_keys.updated_at]))
-            call WriteLine('Issues:   ' . item['open_issues_count'])
-            call WriteLine('★ ' . item['stargazers_count'])
+            call WriteLine(s:strings.issues . item['open_issues_count'])
+            call WriteLine(s:constants.symbols.star . item['stargazers_count'])
             call WriteLine(s:decorations.spacer_small)
 
             let l:line_idx = WriteLine('')
