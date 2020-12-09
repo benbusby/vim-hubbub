@@ -126,6 +126,9 @@ There are a few additional variables you can include in your `.vimrc` file to tw
 - `g:repoman_footer` - Include/exclude the vim-repoman footer from comments/issues
   - `0`: Exclude
   - `1`: (Default) Include
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+  - `0`: Hide (use ascii alternatives)
+  - `1`: (Default) Show emojis
   
 Example `.vimrc` settings:
 ```vim
