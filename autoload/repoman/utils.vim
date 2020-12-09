@@ -7,6 +7,7 @@
 " operations.
 " ============================================================================
 scriptencoding utf-8
+let s:constants = function('repoman#constants#Constants')()
 
 function! repoman#utils#Decorations() abort
     let decorations = {
@@ -82,18 +83,6 @@ endfunction
 " ============================================================================
 " Local File Read/Write
 " ============================================================================
-let s:local_files = {
-    \'github': g:repoman_dir . '/.github.repoman',
-    \'gitlab': g:repoman_dir . '/.gitlab.repoman',
-    \'home':   g:repoman_dir . '/.view_all.repoman',
-    \'issue':  g:repoman_dir . '/.view.repoman',
-    \'labels': g:repoman_dir . '/.view_labels.repoman'
-\}
-
-function! repoman#utils#GetCacheFile(name) abort
-    return s:local_files[a:name]
-endfunction
-
 function! repoman#utils#SanitizeText(text, ...) abort
     let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"]]
     if a:0 > 0 && a:1
@@ -108,18 +97,18 @@ function! repoman#utils#SanitizeText(text, ...) abort
 endfunction
 
 function! repoman#utils#ReadFile(name, password) abort
-    return json_decode(repoman#crypto#Decrypt(s:local_files[a:name], a:password))
+    return json_decode(repoman#crypto#Decrypt(s:constants.local_files[a:name], a:password))
 endfunction
 
 function! repoman#utils#ReadToken(password) abort
     return substitute(
-        \repoman#crypto#Decrypt(s:local_files[repoman#utils#GetRepoHost()], a:password),
+        \repoman#crypto#Decrypt(s:constants.local_files[repoman#utils#GetRepoHost()], a:password),
         \'[[:cntrl:]]', '', 'ge')
 endfunction
 
 function! repoman#utils#AddLocalComment(comment, number, password) abort
     " Update comments count for current issue
-    let l:home_json = json_decode(repoman#crypto#Decrypt(s:local_files['home'], a:password))
+    let l:home_json = json_decode(repoman#crypto#Decrypt(s:constants.local_files.home, a:password))
     for issue in l:home_json
         if issue['number'] == a:number
             let issue['comments'] += 1
@@ -131,7 +120,7 @@ function! repoman#utils#AddLocalComment(comment, number, password) abort
         \'home', a:password)
 
     " Update comments array with new comment
-    let l:issue_json = json_decode(repoman#crypto#Decrypt(s:local_files['home'], a:password))
+    let l:issue_json = json_decode(repoman#crypto#Decrypt(s:constants.local_files.home, a:password))
     call add(l:issue_json['comments'], a:comment)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:issue_json)),

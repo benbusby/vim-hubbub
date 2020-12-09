@@ -22,6 +22,13 @@ function! repoman#constants#Constants() abort
             \'labels':     '/dev/null/labels.repoman',
             \'edit':       '/dev/null/edit.repoman'
         \},
+        \'local_files': {
+            \'github': g:repoman_dir . '/.github.repoman',
+            \'gitlab': g:repoman_dir . '/.gitlab.repoman',
+            \'home':   g:repoman_dir . '/.view_all.repoman',
+            \'issue':  g:repoman_dir . '/.view.repoman',
+            \'labels': g:repoman_dir . '/.view_labels.repoman'
+        \},
         \'reactions': {
             \'+1': emojis ? '👍 x' : '+',
             \'-1': emojis ? '👎 x' : '-',

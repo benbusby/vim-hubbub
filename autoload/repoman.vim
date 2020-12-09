@@ -447,7 +447,7 @@ function! IssueListQuery(...) abort
     let l:response = s:api.ViewAll(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
-        \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)
+        \s:constants.local_files.home, s:repoman.token_pw)
     return l:response
 endfunction
 
@@ -457,7 +457,7 @@ function! IssueQuery(number, pr) abort
     let l:response = s:api.View(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
-        \repoman#utils#GetCacheFile('issue'), s:repoman.token_pw)
+        \s:constants.local_files.issue, s:repoman.token_pw)
     return l:response
 endfunction
 
@@ -466,7 +466,7 @@ function! LabelsQuery(number) abort
     let l:response = s:api.ViewLabels(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
-        \repoman#utils#GetCacheFile('labels'), s:repoman.token_pw)
+        \s:constants.local_files.labels, s:repoman.token_pw)
     return l:response
 endfunction
 
@@ -565,11 +565,11 @@ function! SoftReload() abort
     " Recreate home and issue buffer w/ locally updated files
     call CreateIssueListBuffer(json_decode(
         \repoman#crypto#Decrypt(
-        \repoman#utils#GetCacheFile('home'), s:repoman.token_pw)))
+        \s:constants.local_files.home, s:repoman.token_pw)))
     if s:repoman.current_issue != -1
         call CreateIssueBuffer(json_decode(
             \repoman#crypto#Decrypt(
-            \repoman#utils#GetCacheFile('issue'), s:repoman.token_pw)))
+            \s:constants.local_files.issue, s:repoman.token_pw)))
     endif
 endfunction
 
