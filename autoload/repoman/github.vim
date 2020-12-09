@@ -181,10 +181,16 @@ function! repoman#github#API(token_pw) abort
             \'{"merge_method": "' . a:repoman.method . '"}', 'PUT')
     endfunction
 
+    function! request.Review(repoman) abort
+        if a:repoman.action ~=# 'new'
+
+        endif
+    endfunction
+
     " --------------------------------------------------------------
     " Labels -------------------------------------------------------
     " --------------------------------------------------------------
-
+ 
     function! request.ViewLabels(repoman) abort
         " Need to fetch all labels, then cross check against issue labels
         let l:current_labels = repoman#request#Curl().Send(
@@ -211,9 +217,9 @@ function! repoman#github#API(token_pw) abort
             \'{"labels": ' . l:labels . '}', 'PUT')
     endfunction
 
-    " =====================================================================
-    " Reactions
-    " =====================================================================
+    " --------------------------------------------------------------
+    " Reactions ----------------------------------------------------
+    " --------------------------------------------------------------
     function! request.PostReaction(repoman) abort
         if a:repoman.type ==# 'comment'
             call repoman#request#Curl(s:github_reactions_type).Send(

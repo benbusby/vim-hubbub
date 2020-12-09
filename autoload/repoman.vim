@@ -259,7 +259,7 @@ endfunction
 
 function! repoman#RepoManMerge(...) abort
     if !s:repoman.in_pr
-        echo s:strings.error . ' Must have a PR open to merge'
+        echo s:strings.error . 'Must have a PR open to merge'
         return
     endif
 
@@ -272,6 +272,30 @@ function! repoman#RepoManMerge(...) abort
     endif
 
     call Merge(l:merge_method)
+endfunction
+
+function! repoman#RepoManReview(action) abort
+    let l:actions = ['new', 'approve', 'request_changes', 'comment']
+    if !s:repoman.in_pr
+        echo s:strings.error . 'Must have a PR open to review'
+        return
+    elseif index(l:actions, a:action) < 0
+        echo s:strings.error . 
+            \'Invalid action -- must be one of ' . string(l:actions)
+    elseif bufexists(bufnr(s:constants.buffers.review)) && a:action ==# 'new'
+        echo s:strings.error .
+            \'Cannot create a new review while one is already open'
+        return
+    endif
+
+    call Review(a:action)
+endfunction
+
+function! repoman#RepoManSave() abort
+    if @% !=# s:constants.buffers.review
+        echo s:strings.error . 'Must be in a review to save'
+        return
+    endif
 endfunction
 
 " :RepoManComment splits the issue buffer in half horizontally,
@@ -504,6 +528,12 @@ function! Merge(method) abort
     let s:repoman.number = s:repoman.current_issue
     call s:api.Merge(s:repoman)
     call repoman#RepoMan()
+endfunction
+
+function! Review(action) abort
+    let s:repoman.number = s:repoman.current_issue
+    let s:repoman.action = a:action
+    call s:api.Review(s:repoman)
 endfunction
 
 function! UpdateLabels(number, labels) abort

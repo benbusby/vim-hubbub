@@ -20,14 +20,16 @@ function! repoman#constants#Constants() abort
             \'new_issue':  '/dev/null/new_issue.repoman',
             \'new_req':    '/dev/null/new_req.repoman',
             \'labels':     '/dev/null/labels.repoman',
-            \'edit':       '/dev/null/edit.repoman'
+            \'edit':       '/dev/null/edit.repoman',
+            \'review':     '/dev/null/review.repoman'
         \},
         \'local_files': {
             \'github': g:repoman_dir . '/.github.repoman',
             \'gitlab': g:repoman_dir . '/.gitlab.repoman',
             \'home':   g:repoman_dir . '/.view_all.repoman',
             \'issue':  g:repoman_dir . '/.view.repoman',
-            \'labels': g:repoman_dir . '/.view_labels.repoman'
+            \'labels': g:repoman_dir . '/.view_labels.repoman',
+            \'review': g:repoman_dir . '/.review.repoman'
         \},
         \'reactions': {
             \'+1': emojis ? '👍 x' : '+',
