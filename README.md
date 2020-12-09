@@ -85,21 +85,15 @@ The plugin's interface supports multiple languages ([see Configuration](#configu
 
 ## Usage
 #### Vim Commands
-Vim Command | Action | Notes
---- | --- | --- |
-`:RepoManInit` | Initializes the plugin | 
-`:RepoMan` | **If in a git repo:**<br>Opens a list of issues/PRs if in a git repo.<br>**If not in a git repo:**<br>Opens a list of repositories for the user | *Will prompt for token password*
-`:RepoManComment` | Open a comment buffer for the current issue |
-`:RepoManLabel` | View/update labels for the current issue |
-`:RepoManPost` | Posts an update to the issue | *Works for <br>`:RepoManComment` and <br>`:RepoManLabel` buffers*
-`:RepoManNew <type>` | Create a new issue or PR | *`type` can be "issue" or "pr"*
-`:RepoManClose` | Closes the current issue | 
 
 #### Keyboard Shortcuts
 Keyboard Shortcut | Action | Notes
 --- | --- | --- |
 `<Enter>` | Open the selected repository or issue | *Current repo/issue is determined by cursor line position*
 `<Backspace>` or `gi` | Navigates back to the issue/repo list | 
+`J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
+`J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
+`J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
 `J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
 `H` and `L` | Navigates between pages of issues/repositories |`H`: prev page<br>`L`: next page 
 
@@ -127,6 +121,9 @@ There are a few additional variables you can include in your `.vimrc` file to tw
   - `0`: Exclude
   - `1`: (Default) Include
 - `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
   - `0`: Hide (use ascii alternatives)
   - `1`: (Default) Show emojis
   
@@ -140,14 +137,21 @@ let g:repoman_openssl_old = 0
 
 ```vim
 " French, show outdated, use GitLab by default
-let g:repoman_show_outdated = 1
-let g:repoman_language = 'fr'
-let g:repoman_default_host = 'gitlab'
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
+- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
 ```
 
 ```vim
 " Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, hide footer 😢
 let g:repoman_language = 'es'
-let g:repoman_openssl_old = 1
-let g:repoman_footer = 0
 ```
