@@ -7,9 +7,6 @@
 " =========================================================================
 scriptencoding utf-8
 
-let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
-let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
-
 function! repoman#constants#Constants() abort
     let emojis = !exists('g:repoman_emojis') || g:repoman_emojis
     let constants = {
@@ -42,7 +39,7 @@ function! repoman#constants#Constants() abort
             \'rocket': emojis ? '🚀 x' : 'rocket:'
         \},
         \'symbols': {
-            \'star': emojis ? '★ ' : s:strings.stars
+            \'star': '★ '
         \},
         \'merge_methods': ['merge', 'rebase', 'squash']
     \}
