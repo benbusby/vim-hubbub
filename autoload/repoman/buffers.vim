@@ -268,16 +268,16 @@ function! InsertComment(comment) abort
             call WriteLine(s:decorations.comment . '')
             let l:line_idx = WriteLine(s:decorations.comment . '[ ' . l:reactions_str . ']')
         endif
-    endif
 
-    call add(b:jump_guide, l:line_idx)
-    while l:start_idx <= l:line_idx
-        let b:comment_lookup[string(l:start_idx)] = {
-            \'id': a:comment[s:r_keys.id],
-            \'body': a:comment[s:r_keys.body],
-            \'type': 'issues'}
-        let l:start_idx += 1
-    endwhile
+        call add(b:jump_guide, l:line_idx)
+        while l:start_idx <= l:line_idx
+            let b:comment_lookup[string(l:start_idx)] = {
+                \'id': a:comment[s:r_keys.id],
+                \'body': a:comment[s:r_keys.body],
+                \'type': 'issues'}
+            let l:start_idx += 1
+        endwhile
+    endif
 
     nnoremap <buffer> <silent> <C-d> :call DeleteComment(
         \b:comment_lookup[getcurpos()[1]])<CR>
