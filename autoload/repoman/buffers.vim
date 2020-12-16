@@ -467,10 +467,11 @@ function! repoman#buffers#Buffers(repoman) abort
 
             " Store issue number and title to use for viewing issue details later
             while l:start_idx <= l:line_idx
+                let l:is_pr = has_key(item, 'pull_request')
                 let b:issue_lookup[l:start_idx] = {
                     \'number': item[s:r_keys.number],
                     \'title': item[s:r_keys.title],
-                    \'is_pr': has_key(item, 'pull_request')
+                    \'pr_diff': l:is_pr ? '1' . item['pull_request']['diff_url'] : ''
                 \}
                 let l:start_idx += 1
             endwhile
@@ -481,7 +482,7 @@ function! repoman#buffers#Buffers(repoman) abort
         call cursor(s:results_line, 1)
         nnoremap <buffer> <silent> <CR> :call ViewIssue(
             \b:issue_lookup[getcurpos()[1]]['number'],
-            \b:issue_lookup[getcurpos()[1]]['is_pr'])<cr>
+            \b:issue_lookup[getcurpos()[1]]['pr_diff'])<cr>
 
         call FinishOutput()
     endfunction
@@ -498,7 +499,7 @@ function! repoman#buffers#Buffers(repoman) abort
         let s:results_line = l:line_idx
 
         " Write issue and comments to buffer
-        let l:type = '(' . (self.in_pr ? s:strings.pr : s:strings.issue) . ') '
+        let l:type = '(' . (self.pr_diff ? s:strings.pr : s:strings.issue) . ') '
         call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
         let l:line_idx = WriteLine(s:decorations.spacer_small)
 

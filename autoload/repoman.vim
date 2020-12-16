@@ -15,7 +15,7 @@ let s:constants = function('repoman#constants#Constants')()
 let s:repoman = {
     \'token_pw': '',
     \'current_issue': -1,
-    \'in_pr': 0,
+    \'pr_diff': 0,
     \'page': 1,
     \'repo': repoman#utils#GetRepoPath()
 \}
@@ -142,7 +142,7 @@ function! repoman#RepoMan() abort
         call s:buffers(s:repoman).CreateIssueListBuffer(l:results)
         if s:repoman.current_issue > 0 && l:issue_open
             call s:buffers(s:repoman).CreateIssueBuffer(
-                \IssueQuery(s:repoman.current_issue, s:repoman.in_pr))
+                \IssueQuery(s:repoman.current_issue, s:repoman.pr_diff))
         else
             let s:repoman.current_issue = -1
         endif
@@ -185,7 +185,7 @@ function! repoman#RepoManBack() abort
 
     " Reset issue number
     let s:repoman.current_issue = -1
-    let s:repoman.in_pr = 0
+    let s:repoman.pr_diff = 0
 endfunction
 
 " :RepoManPage is used to navigate to fetch the next page
@@ -258,7 +258,7 @@ function! repoman#RepoManReact(reaction) abort
 endfunction
 
 function! repoman#RepoManMerge(...) abort
-    if !s:repoman.in_pr
+    if !s:repoman.pr_diff
         echo s:strings.error . 'Must have a PR open to merge'
         return
     endif
@@ -276,7 +276,8 @@ endfunction
 
 function! repoman#RepoManReview(action) abort
     let l:actions = ['new', 'approve', 'request_changes', 'comment']
-    if !s:repoman.in_pr
+
+    if !s:repoman.pr_diff
         echo s:strings.error . 'Must have a PR open to review'
         return
     elseif index(l:actions, a:action) < 0
@@ -329,7 +330,7 @@ endfunction
 function! repoman#RepoManLabel() abort
     if exists('b:issue_lookup') && has_key(b:issue_lookup, getcurpos()[1])
         let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]]['number']
-        let s:repoman.pr = b:issue_lookup[getcurpos()[1]]['is_pr']
+        let s:repoman.pr_diff = b:issue_lookup[getcurpos()[1]]['pr_diff']
     endif
 
     if s:repoman.current_issue <= 0
@@ -356,7 +357,8 @@ function! repoman#RepoManPost() abort
             call EditComment(b:edit_values)
         endif
         execute 'bw! ' . fnameescape(s:constants.buffers.edit)
-    elseif bufexists(bufnr(s:constants.buffers.new_issue)) > 0 || bufexists(bufnr(s:constants.buffers.new_req))
+    elseif bufexists(bufnr(s:constants.buffers.new_issue)) > 0 
+            \|| bufexists(bufnr(s:constants.buffers.new_req))
         " Determine which buffer to use for the post
         let l:post_buf = s:constants.buffers.new_issue
         let l:pr = 0
@@ -429,14 +431,14 @@ endfunction
 " on the current active buffer.
 function! repoman#RepoManClose() abort
     let l:number_to_close = s:repoman.current_issue
-    let l:pr = s:repoman.in_pr
+    let l:pr = s:repoman.pr_diff
     let l:reset_current = 1
 
     " Check to see if the user is not in an issue buffer, and
     " if not, close the issue under their cursor
     if expand('%:p') =~ s:constants.buffers.issue_list
         let l:number_to_close = b:issue_lookup[getcurpos()[1]]['number']
-        let l:pr = b:issue_lookup[getcurpos()[1]]['is_pr']
+        let l:pr = b:issue_lookup[getcurpos()[1]]['pr_diff']
         let l:reset_current = 0
     endif
 
@@ -477,7 +479,7 @@ endfunction
 
 function! IssueQuery(number, pr) abort
     let s:repoman.number = a:number
-    let s:repoman.pr = a:pr
+    let s:repoman.pr_diff = a:pr
     let l:response = s:api.View(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
@@ -497,7 +499,7 @@ endfunction
 function! PostComment(comment) abort
     let s:repoman.body = a:comment
     let s:repoman.number = s:repoman.current_issue
-    let s:repoman.pr = s:repoman.in_pr
+    let s:repoman.pr_diff = s:repoman.pr_diff
     call s:api.PostComment(s:repoman)
 endfunction
 
@@ -546,13 +548,13 @@ endfunction
 
 function! NewItem(pr, data) abort
     call extend(s:repoman, a:data)
-    let s:repoman.pr = a:pr
+    let s:repoman.pr_diff = a:pr
     call s:api.NewItem(s:repoman)
 endfunction
 
 function! CloseItem(number, pr) abort
     let s:repoman.number = a:number
-    let s:repoman.pr = a:pr
+    let s:repoman.pr_diff = a:pr
     call s:api().CloseItem(s:repoman)
 endfunction
 
@@ -561,13 +563,13 @@ endfunction
 " =========================================================================
 
 " Open issue based on the provided issue number
-function! ViewIssue(issue_number, in_pr) abort
-    let s:repoman.in_pr = a:in_pr
+function! ViewIssue(issue_number, pr_diff) abort
+    let s:repoman.pr_diff = a:pr_diff
     set cmdheight=4
     echo s:strings.load
 
     call s:buffers(s:repoman).CreateIssueBuffer(
-        \IssueQuery(a:issue_number, a:in_pr))
+        \IssueQuery(a:issue_number, a:pr_diff))
 endfunction
 
 " Resets the RepoMan script dictionary
@@ -575,7 +577,7 @@ function! ResetState() abort
     let s:repoman = {
         \'token_pw': s:repoman.token_pw,
         \'current_issue': s:repoman.current_issue,
-        \'in_pr': s:repoman.in_pr,
+        \'pr_diff': s:repoman.pr_diff,
         \'page': s:repoman.page,
         \'repo': s:repoman.repo
     \}
