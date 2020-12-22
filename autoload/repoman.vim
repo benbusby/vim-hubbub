@@ -157,7 +157,8 @@ function! repoman#RepoManBack() abort
         \s:constants.buffers.comment,
         \s:constants.buffers.new_issue,
         \s:constants.buffers.new_req,
-        \s:constants.buffers.labels
+        \s:constants.buffers.labels,
+        \s:constants.buffers.review
     \]
 
     " Reopen listview buffer, and close the issue buffer
@@ -169,8 +170,9 @@ function! repoman#RepoManBack() abort
     " viewing an issue
     if bufwinnr(s:constants.buffers.issue) > 0 || s:repoman.current_issue > 0
         for buffer in l:post_bufs
-            if bufwinnr(buffer) > 0
+            if bufexists(bufnr(buffer))
                 echo s:strings.error . ' Cannot close issue while updating'
+                execute 'b ' . fnameescape(buffer)
                 return
             endif
         endfor
@@ -290,7 +292,11 @@ function! repoman#RepoManReview(action) abort
         return
     endif
 
-    call Review(a:action)
+    if a:action =~# 'new'
+        call s:buffers(s:repoman).CreateReviewBuffer(Review(a:action))
+    else
+        echo 'todo'
+    endif
 endfunction
 
 function! repoman#RepoManSave() abort
@@ -555,7 +561,7 @@ endfunction
 function! Review(action) abort
     let s:repoman.number = s:repoman.current_issue
     let s:repoman.action = a:action
-    call s:api.Review(s:repoman)
+    return s:api.Review(s:repoman)
 endfunction
 
 function! UpdateLabels(number, labels) abort

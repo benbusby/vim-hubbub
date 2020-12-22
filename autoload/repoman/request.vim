@@ -40,7 +40,7 @@ function! repoman#request#Curl(...) abort
             let l:method = a:2
         endif
 
-        let l:request = 'curl -s ' .
+        let l:request = 'curl -L -s ' .
             \'-A ''vim-repoman'' ' .
             \'-H ''Accept: ' . self.type . ''' ' .
             \self.auth . a:token . ''' '
@@ -55,11 +55,7 @@ function! repoman#request#Curl(...) abort
                 \'-X '. l:method . ' '
         endif
 
-        try
-            return json_decode(system(l:request . ' ''' . a:url . ''''))
-        catch
-            return {}
-        endtry
+        return system(l:request . ' ''' . a:url . '''')
     endfunction
 
     " Creates and sends a background curl request to the specified url.

@@ -18,7 +18,7 @@ function! repoman#constants#Constants() abort
             \'new_req':    '/dev/null/new_req.repoman',
             \'labels':     '/dev/null/labels.repoman',
             \'edit':       '/dev/null/edit.repoman',
-            \'review':     '/dev/null/review.repoman'
+            \'review':     '/dev/null/review.repoman.diff'
         \},
         \'local_files': {
             \'github': g:repoman_dir . '/.github.repoman',

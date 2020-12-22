@@ -39,7 +39,8 @@ function! OpenBuffer(buf_name, header_mode, state) abort
     " Note that we do not want to open a new buffer for non-primary buffers
     " (i.e. new comments, issue mods, etc).
     let l:skip_split = exists('g:repoman_split_issue') && !g:repoman_split_issue
-    if index(s:constants.primary_bufs, a:buf_name) >= 0 && l:skip_split
+    if (index(s:constants.primary_bufs, a:buf_name) >= 0 && l:skip_split) ||
+            \a:buf_name == s:constants.buffers.review
         enew
     else
         if line('$') ==? 1 && getline(1) ==? ''
@@ -567,6 +568,22 @@ function! repoman#buffers#Buffers(repoman) abort
 
         " Re-enable modifiable so that we can write something
         set modifiable
+    endfunction
+
+    " Create a buffer for the current PR diff
+    "
+    " Args:
+    " - diff: the pr diff contents
+    "
+    " Returns:
+    " - none
+    function! state.CreateReviewBuffer(diff) abort
+        call OpenBuffer(s:constants.buffers.review, -1, self)
+        for chunk in split(a:diff, '\n')
+            call WriteLine(chunk)
+        endfor
+
+        set syntax=diff
     endfunction
 
     " =====================================================================

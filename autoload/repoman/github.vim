@@ -14,6 +14,7 @@ let s:footer = '\n\n___\n<sub>_%s with [vim-repoman](https://github.com/benbusby
 let s:api_root = 'https://api.github.com/user/repos'
 let s:reactions_type = 'application/vnd.github.squirrel-girl-preview'
 let s:multiline_type = 'application/vnd.github.comfort-fade-preview+json'
+let s:diff_type = 'application/vnd.github.v3.diff'
 let s:curl = repoman#request#Curl(s:reactions_type . ', ' . s:multiline_type)
 
 " The primary class for interfacing with the GitHub API.
@@ -34,39 +35,39 @@ function! repoman#github#API(token_pw) abort
     " Info ---------------------------------------------------------
     " --------------------------------------------------------------
     function! request.RepoInfo() abort
-        return s:curl.Send(
+        return json_decode(s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path)
+            \self.api_path))
     endfunction
 
     " --------------------------------------------------------------
     " Views --------------------------------------------------------
     " --------------------------------------------------------------
     function! request.ViewRepos(repoman) abort
-        return s:curl.Send(
+        return json_decode(s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
             \s:api_root . '?sort=updated&type=owner&per_page=10&page=' .
-            \a:repoman.page)
+            \a:repoman.page))
     endfunction
 
     function! request.ViewAll(repoman) abort
-        return s:curl.Send(
+        return json_decode(s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues?state=open&per_page=10&sort=updated&page=' . a:repoman.page,
-            \{}, '')
+            \{}, ''))
     endfunction
 
     function! request.View(repoman) abort
         let l:path_type = (a:repoman.pr_diff ? 'pulls' : 'issues')
         let l:token = repoman#utils#ReadToken(self.token_pw)
 
-        let l:issue_result = s:curl.Send(
+        let l:issue_result = json_decode(s:curl.Send(
             \l:token, self.api_path . '/' . l:path_type . 
-            \'/' . a:repoman.number)
+            \'/' . a:repoman.number))
 
-        let l:comments_result = s:curl.Send(
+        let l:comments_result = json_decode(s:curl.Send(
             \l:token, self.api_path . '/' . l:path_type . 
-            \'/' . a:repoman.number . '/comments')
+            \'/' . a:repoman.number . '/comments'))
 
         " If this is a pull request, we need to format the comments so that
         " comments on the same code changes appear grouped together
@@ -87,8 +88,8 @@ function! repoman#github#API(token_pw) abort
             endwhile
 
             let l:comments_result = l:comments_result + 
-                \s:curl.Send(
-                \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments')
+                \json_decode(s:curl.Send(
+                \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments'))
         endif
 
         let l:issue_result['comments'] = l:comments_result
@@ -188,8 +189,11 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.Review(repoman) abort
+        let l:curl = repoman#request#Curl(s:diff_type)
         if a:repoman.action =~# 'new'
-            echo 'TODO'
+            return l:curl.Send(
+                \repoman#utils#ReadToken(self.token_pw),
+                \self.api_path . '/pulls/' . a:repoman.number)
         endif
     endfunction
 
@@ -199,12 +203,12 @@ function! repoman#github#API(token_pw) abort
  
     function! request.ViewLabels(repoman) abort
         " Need to fetch all labels, then cross check against issue labels
-        let l:current_labels = s:curl.Send(
+        let l:current_labels = json_decode(s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number . '/labels')
-        let l:all_labels = s:curl.Send(
+            \self.api_path . '/issues/' . a:repoman.number . '/labels'))
+        let l:all_labels = json_decode(s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/labels')
+            \self.api_path . '/labels'))
 
         for label in l:all_labels
             if index(l:current_labels, label) >= 0
