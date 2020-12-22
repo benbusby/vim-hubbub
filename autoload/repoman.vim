@@ -24,6 +24,7 @@ let s:repoman_max_page = -1
 
 " Set language and response keys
 let response_keys = json_decode(join(readfile(g:repoman_dir . '/assets/response_keys.json')))
+let s:r_keys = response_keys[repoman#utils#GetRepoHost()]
 
 let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
 let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
@@ -299,6 +300,24 @@ function! repoman#RepoManSave() abort
     endif
 endfunction
 
+" :RepoManReply functions similarly to RepoManComment, but
+" posts a reply to an existing review comment instead of a
+" regular issue comment.
+"
+" Used in conjunction with :RepoManPost to post the reply.
+function! repoman#RepoManReply() abort
+    if !exists('b:comment_lookup')
+        echo 'No review comments to reply to'
+        return
+    elseif !has_key(b:comment_lookup, getcurpos()[1])
+        echo 'Cursor is not positioned over a review comment'
+        return
+    endif
+
+    let l:parent_id = b:comment_lookup[getcurpos()[1]][s:r_keys.id]
+    call s:buffers(s:repoman).CreateReplyBuffer(l:parent_id)
+endfunction
+
 " :RepoManComment splits the issue buffer in half horizontally,
 " and allows the user to enter a comment of any length.
 "
@@ -316,7 +335,7 @@ endfunction
 " on the current location of the cursor.
 function! repoman#RepoManEdit() abort
     " Edit comment if the cursor is over a comment
-    if exists('b:comment_lookup') && index(b:comment_lookup, getcurpos()[1])
+    if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
         call s:buffers(s:repoman).EditCommentBuffer(b:comment_lookup[getcurpos()[1]])
         return
     elseif s:repoman.current_issue > 0
@@ -386,7 +405,7 @@ function! repoman#RepoManPost() abort
         " Condense buffer into a single line with line break chars
         let l:comment_text = join(getline(1, '$'), '\n')
 
-        call PostComment(l:comment_text)
+        call PostComment(l:comment_text, exists('b:parent_id') ? b:parent_id : -1)
         execute 'bw! ' . fnameescape(s:constants.buffers.comment)
     elseif bufexists(bufnr(s:constants.buffers.labels)) > 0
         execute 'b ' . fnameescape(s:constants.buffers.labels)
@@ -496,8 +515,9 @@ function! LabelsQuery(number) abort
     return l:response
 endfunction
 
-function! PostComment(comment) abort
+function! PostComment(comment, parent_id) abort
     let s:repoman.body = a:comment
+    let s:repoman.parent_id = a:parent_id
     let s:repoman.number = s:repoman.current_issue
     let s:repoman.pr_diff = s:repoman.pr_diff
     call s:api.PostComment(s:repoman)

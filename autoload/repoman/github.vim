@@ -109,9 +109,15 @@ function! repoman#github#API(token_pw) abort
             \repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer .
             \'"}'
 
+        let l:reply_path = a:repoman.parent_id > 0 
+            \? '/' . a:repoman.parent_id . '/replies'
+            \: ''
+        let l:type = empty(l:reply_path) ? 'issues' : 'pulls'
+
         call s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number . '/comments',
+            \self.api_path . '/' . l:type . '/' . a:repoman.number . 
+            \'/comments' . l:reply_path,
             \l:comment_data, 'POST')
 
         "let l:temp_comment = {
@@ -236,7 +242,7 @@ function! repoman#github#API(token_pw) abort
     " =====================================================================
     function! FormatReviewComment(comment) abort
         return {
-            \'comment_id': a:comment['id'],
+            \'id': a:comment['id'],
             \'reactions': a:comment['reactions'],
             \'login': a:comment['user']['login'],
             \'comment': a:comment['body'],

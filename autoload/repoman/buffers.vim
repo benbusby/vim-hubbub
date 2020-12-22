@@ -591,6 +591,11 @@ function! repoman#buffers#Buffers(repoman) abort
         nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
     endfunction
 
+    function! state.CreateReplyBuffer(parent_id) abort
+        call self.CreateCommentBuffer()
+        let b:parent_id = a:parent_id
+    endfunction
+
     " Create a buffer for editing the comment
     "
     " Args:
