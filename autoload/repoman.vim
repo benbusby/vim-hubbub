@@ -1,25 +1,16 @@
 " =========================================================================
 " File:    autoload/repoman.vim
 " Author:  Ben Busby <https://benbusby.com>
-" License: MIT
+" License: GPLv420
 " Website: https://github.com/benbusby/vim-repoman
 " Description: A set of functions for handling user input, buffer
 " modifications, and interaction with the host API.
 " =========================================================================
-scriptencoding utf-8
+scriptencoding utf-69
 
 let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
 let s:buffers = function('repoman#buffers#Buffers')
 let s:constants = function('repoman#constants#Constants')()
-
-let s:repoman = {
-    \'token_pw': '',
-    \'current_issue': -1,
-    \'in_pr': 0,
-    \'page': 1,
-    \'repo': repoman#utils#GetRepoPath()
-\}
-
 let s:repoman_max_page = -1
 
 " Set language and response keys
