@@ -572,6 +572,10 @@ function! repoman#buffers#Buffers(repoman) abort
 
     " Create a buffer for the current PR diff
     "
+    " The b:review_lookup table is populated according to the
+    " necessary review components seen here:
+    " https://docs.github.com/en/rest/reference/pulls#create-a-review-for-a-pull-request
+    "
     " Args:
     " - diff: the pr diff contents
     "
@@ -579,11 +583,36 @@ function! repoman#buffers#Buffers(repoman) abort
     " - none
     function! state.CreateReviewBuffer(diff) abort
         call OpenBuffer(s:constants.buffers.review, -1, self)
+        let b:review_lookup = {}
+        let l:current_file = ''
+        let l:current_line = -1
         for chunk in split(a:diff, '\n')
-            call WriteLine(chunk)
+            let l:line_idx = WriteLine(chunk)
+            if stridx(chunk, 'diff --git a/') == 0
+                let l:current_line = -1
+                let l:current_file = split(
+                    \substitute(chunk, 'diff --git a/', '', ''))[0]
+            endif
+
+            if l:current_line >= 0
+                let l:current_line += 1
+            endif
+
+            " The first @@ header should begin counting lines for
+            " commenting, but future headers should be ignored
+            if stridx(chunk, '@@') == 0 && l:current_line < 0
+                let l:current_line = 0
+            endif
+
+            let b:review_lookup[l:line_idx] = {
+                \'file': l:current_file,
+                \'line': l:current_line
+            \}
         endfor
 
         set syntax=diff
+        call FinishOutput()
+        nnoremap <buffer> <silent> <CR> :echo string(b:review_lookup[getcurpos()[1]])<cr>
     endfunction
 
     " =====================================================================
@@ -599,7 +628,15 @@ function! repoman#buffers#Buffers(repoman) abort
     " - none
     function! state.CreateCommentBuffer() abort
         set splitbelow
-        call OpenBuffer(s:constants.buffers.comment, -1, self)
+        let l:ext = ''
+        if exists('b:review_lookup')
+            let l:file = b:review_lookup[getcurpos()[1]]['file']
+            if stridx(l:file, '.') > 0
+                let l:ext = l:file[stridx(l:file, '.'):]
+            endif
+        endif
+
+        call OpenBuffer(s:constants.buffers.comment . l:ext, -1, self)
         call WriteLine(s:strings.comment_help)
         call FinishOutput()
 

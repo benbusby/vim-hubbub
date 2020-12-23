@@ -278,7 +278,7 @@ function! repoman#RepoManMerge(...) abort
 endfunction
 
 function! repoman#RepoManReview(action) abort
-    let l:actions = ['new', 'approve', 'request_changes', 'comment']
+    let l:actions = ['new', 'approve', 'request_changes', 'comment', 'pending']
 
     if !s:repoman.pr_diff
         echo s:strings.error . 'Must have a PR open to review'
@@ -295,7 +295,7 @@ function! repoman#RepoManReview(action) abort
     if a:action =~# 'new'
         call s:buffers(s:repoman).CreateReviewBuffer(Review(a:action))
     else
-        echo 'todo'
+        echo 'todo: ' . toupper(a:action)
     endif
 endfunction
 
