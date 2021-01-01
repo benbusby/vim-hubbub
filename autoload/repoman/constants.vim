@@ -41,7 +41,8 @@ function! repoman#constants#Constants() abort
         \'symbols': {
             \'star': '★ '
         \},
-        \'merge_methods': ['merge', 'rebase', 'squash']
+        \'merge_methods': ['merge', 'rebase', 'squash'],
+        \'null': 0
     \}
 
     " Track buffers that should be considered "primary", or take precedence

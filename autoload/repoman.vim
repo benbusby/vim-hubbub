@@ -332,6 +332,10 @@ function! repoman#RepoManComment() abort
     if s:repoman.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to comment!'
         return
+    elseif exists('b:review_lookup') && (
+        \!has_key(b:review_lookup, getcurpos()[1]) || !b:review_lookup[getcurpos()[1]]['line'])
+        echo s:strings.error . 'Invalid review line for a comment'
+        return
     endif
 
     call s:buffers(s:repoman).CreateCommentBuffer()
@@ -343,6 +347,11 @@ function! repoman#RepoManEdit() abort
     " Edit comment if the cursor is over a comment
     if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
         call s:buffers(s:repoman).EditCommentBuffer(b:comment_lookup[getcurpos()[1]])
+        return
+    elseif exists('b:review_comment_lookup') &&
+        \has_key(b:review_comment_lookup, getcurpos()[1])
+        call s:buffers(s:repoman).EditCommentBuffer(b:review_comments[
+            \b:review_comment_lookup[getcurpos()[1]]])
         return
     elseif s:repoman.current_issue > 0
         echo 'todo'
@@ -373,11 +382,24 @@ endfunction
 " comment section for whichever issue/PR/MR is currently open.
 function! repoman#RepoManPost() abort
     if exists('b:review_data') && bufexists(bufnr(s:constants.buffers.review))
-        " Add review comment to the review buffer
         let l:comment = getline(1, '$')
         let l:data = b:review_data
-        execute 'bw! ' . fnameescape(s:constants.buffers.comment)
-        call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data)
+        let l:start = s:constants.null
+
+        if bufexists(bufnr(s:constants.buffers.edit)) && exists('b:edit_values')
+            let l:edit_values = b:edit_values
+            execute 'bw! ' . fnameescape(s:constants.buffers.edit)
+
+            " Edit existing review comment in the buffer
+            call s:buffers(s:repoman).RemoveReviewBufferComment(l:edit_values)
+            let l:start = l:edit_values.curpos
+            let l:data.curpos = l:start
+        else
+            execute 'bw! ' . fnameescape(s:constants.buffers.comment)
+        endif
+
+        " Add review comment to the review buffer
+        call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data, l:start)
         return
     elseif bufexists(bufnr(s:constants.buffers.edit))
         if !exists('b:edit_values')

@@ -586,6 +586,8 @@ function! repoman#buffers#Buffers(repoman) abort
     function! state.CreateReviewBuffer(diff) abort
         call OpenBuffer(s:constants.buffers.review, -1, self)
         let b:review_lookup = {}
+        let b:review_comment_lookup = {}
+        let b:review_comments = {}
         let l:current_file = ''
         let l:current_line = -1
         for chunk in split(a:diff, '\n')
@@ -600,7 +602,7 @@ function! repoman#buffers#Buffers(repoman) abort
                 let l:current_line += 1
             endif
 
-            " The first @@ header should begin counting lines for
+            " The first '@@' header should begin counting lines for
             " commenting, but future headers should be ignored
             if stridx(chunk, '@@') == 0 && l:current_line < 0
                 let l:current_line = 0
@@ -617,17 +619,81 @@ function! repoman#buffers#Buffers(repoman) abort
         nnoremap <buffer> <silent> <CR> :echo string(b:review_lookup[getcurpos()[1]])<cr>
     endfunction
 
+    " Removes a comment from the review buffer, updating all lookup dicts
+    " pertaining to the removed comment
+    "
+    " Args:
+    " - comment: the comment data to be removed
+    "
+    " Returns:
+    " - none
+    function! state.RemoveReviewBufferComment(comment) abort
+        set modifiable
+        call remove(b:review_comments, a:comment.id)
+
+        " Initialize tracking values for which lines need modifications
+        let l:line_nr = 1
+        let l:num_del = 0
+        let l:line_del = 0
+
+        " Iterate through the lines in the buffer, marking the necessary
+        " comment lines for deletion and shifting the lookup table accordingly
+        for line in getline(1, '$')
+            if has_key(b:review_comment_lookup, l:line_nr) &&
+                \b:review_comment_lookup[l:line_nr] == a:comment.id
+                if !l:line_del
+                    let l:line_del = l:line_nr
+                endif
+                let l:num_del += 1
+                call remove(b:review_comment_lookup, l:line_nr)
+            elseif has_key(b:review_lookup, l:line_nr)
+                let b:review_lookup[l:line_nr - l:num_del] = b:review_lookup[l:line_nr]
+            endif
+
+            let l:line_nr += 1
+        endfor
+
+        " Remove the comment lines from the buffer, accounting for shifting of
+        " the buffer (ex/ removing lines 23-25 requires calling '23d' 3 times)
+        let l:i = 0
+        while l:i < l:num_del
+            execute l:line_del . 'd'
+            let l:i += 1
+        endwhile
+        set nomodifiable
+    endfunction
+
     " Add a comment to the review buffer
     "
     " Args:
     " - comment: the comment contents to add to the buffer
     " - review_data: the relevant line number and file for the comment
+    " - position: the cursor position to insert the comment. If 0/null, 
+    "   the comment will be inserted where the cursor was last positioned
+    "   in the buffer
     "
     " Returns:
     " - none
     "
-    function! state.AddReviewBufferComment(comment, review_data) abort
+    function! state.AddReviewBufferComment(comment, review_data, position) abort
         set modifiable
+
+        " Store comment for submission later
+        let l:curpos = a:position ? a:position : getcurpos()[1]
+        echom 'Cursor position: ' . l:curpos
+        echom 'Comment: ' . string(a:comment)
+        let l:comment_id = len(b:review_comments)
+        let b:review_comments[l:comment_id] = {
+            \'id': l:comment_id,
+            \'type': 'review',
+            \'path': b:review_lookup[l:curpos]['file'],
+            \'position': b:review_lookup[l:curpos]['line'],
+            \'curpos': l:curpos,
+            \'body': join(a:comment, '\n')
+        \}
+
+        " Reverse and shift the review buffer contents and insert the new
+        " comment contents below the cursor position
         let l:line_nr = line('$')
         let l:comment_lines = len(a:comment) - 1
         for line in reverse(getline(1, '$'))
@@ -643,11 +709,18 @@ function! repoman#buffers#Buffers(repoman) abort
                         \l:line_nr,
                         \s:decorations.buffer_comment . a:comment[l:comment_lines]
                     \)
+                    call remove(b:review_lookup, l:line_nr)
+                    let b:review_comment_lookup[l:line_nr] = l:comment_id
                     let l:comment_lines -= 1
                 endif
             endif
 
             let l:line_nr -= 1
+
+            " Check to see if we're done shifting the contents
+            if l:line_nr < a:review_data['curpos']
+                break
+            endif
         endfor
         set nomodifiable
     endfunction
@@ -669,7 +742,7 @@ function! repoman#buffers#Buffers(repoman) abort
         let l:review_lookup = exists('b:review_lookup') ? b:review_lookup : {}
 
         call OpenBuffer(s:constants.buffers.comment, -1, self)
-        call WriteLine(s:strings.comment_help)
+        "call WriteLine(s:strings.comment_help)
         call FinishOutput()
 
         " Set review data, if applicable
@@ -692,23 +765,34 @@ function! repoman#buffers#Buffers(repoman) abort
     "
     " Args:
     " - comment: a json object representing the current comment
-    "   - Must include "body", "id", and "type" properties
     "
     " Returns:
     " - none
     function! state.EditCommentBuffer(comment) abort
         set splitbelow
+        let l:curpos = getcurpos()[1]
+        if exists('b:review_comment_lookup')
+            let l:comment_id = b:review_comment_lookup[l:curpos]
+            let l:curpos = b:review_comments[l:comment_id]['curpos']
+        endif
+        let l:review_lookup = exists('b:review_lookup') ? b:review_lookup : {}
+
         call OpenBuffer(s:constants.buffers.edit, -1, self)
 
-        for chunk in split(a:comment.body, '\n')
+        let l:body = repoman#utils#SanitizeText(a:comment.body)
+        for chunk in split(l:body, '\\n')
             call WriteLine(chunk)
         endfor
         call FinishOutput()
 
-        let b:edit_values = {
-            \'edit': 'comment',
-            \'type': a:comment.type,
-            \'id': a:comment.id}
+        " Set review data, if applicable
+        if len(l:review_lookup)
+            let b:review_data = l:review_lookup[l:curpos]
+            let b:review_data.curpos = l:curpos
+        endif
+
+        let b:edit_values = a:comment
+        let b:edit_values.edit = 'comment'
 
         set modifiable
         nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
