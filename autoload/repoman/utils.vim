@@ -18,6 +18,7 @@ function! repoman#utils#Decorations() abort
         \'comment': '    ',
         \'new_review_comment': '├' . repeat('─', min([51, winwidth(0)])),
         \'review_comment': '│ ',
+        \'buffer_comment': '▓▓▓▓▓ '
     \}
 
     return decorations

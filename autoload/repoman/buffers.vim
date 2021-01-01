@@ -62,6 +62,8 @@ function! OpenBuffer(buf_name, header_mode, state) abort
     " Set up jump guide for skipping through content
     let b:jump_guide = []
 
+    set modifiable
+
     return a:header_mode >= 0 ? 
         \SetHeader(a:header_mode, a:state) : 1
 endfunction
@@ -615,6 +617,41 @@ function! repoman#buffers#Buffers(repoman) abort
         nnoremap <buffer> <silent> <CR> :echo string(b:review_lookup[getcurpos()[1]])<cr>
     endfunction
 
+    " Add a comment to the review buffer
+    "
+    " Args:
+    " - comment: the comment contents to add to the buffer
+    " - review_data: the relevant line number and file for the comment
+    "
+    " Returns:
+    " - none
+    "
+    function! state.AddReviewBufferComment(comment, review_data) abort
+        set modifiable
+        let l:line_nr = line('$')
+        let l:comment_lines = len(a:comment) - 1
+        for line in reverse(getline(1, '$'))
+            if l:line_nr > a:review_data['curpos']
+                let b:review_lookup[l:line_nr + len(a:comment)] = b:review_lookup[l:line_nr]
+                call setline(l:line_nr + len(a:comment), getline(l:line_nr))
+            endif
+
+            if l:line_nr > a:review_data['curpos'] &&
+                \l:line_nr <= a:review_data['curpos'] + len(a:comment)
+                if l:comment_lines >= 0
+                    call setline(
+                        \l:line_nr,
+                        \s:decorations.buffer_comment . a:comment[l:comment_lines]
+                    \)
+                    let l:comment_lines -= 1
+                endif
+            endif
+
+            let l:line_nr -= 1
+        endfor
+        set nomodifiable
+    endfunction
+
     " =====================================================================
     " Comments
     " =====================================================================
@@ -628,17 +665,18 @@ function! repoman#buffers#Buffers(repoman) abort
     " - none
     function! state.CreateCommentBuffer() abort
         set splitbelow
-        let l:ext = ''
-        if exists('b:review_lookup')
-            let l:file = b:review_lookup[getcurpos()[1]]['file']
-            if stridx(l:file, '.') > 0
-                let l:ext = l:file[stridx(l:file, '.'):]
-            endif
-        endif
+        let l:curpos = getcurpos()[1]
+        let l:review_lookup = exists('b:review_lookup') ? b:review_lookup : {}
 
-        call OpenBuffer(s:constants.buffers.comment . l:ext, -1, self)
+        call OpenBuffer(s:constants.buffers.comment, -1, self)
         call WriteLine(s:strings.comment_help)
         call FinishOutput()
+
+        " Set review data, if applicable
+        if len(l:review_lookup)
+            let b:review_data = l:review_lookup[l:curpos]
+            let b:review_data.curpos = l:curpos
+        endif
 
         " Re-enable modifiable so that we can write something
         set modifiable

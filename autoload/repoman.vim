@@ -372,7 +372,14 @@ endfunction
 " :RepoManPost posts the contents of the comment buffer to the
 " comment section for whichever issue/PR/MR is currently open.
 function! repoman#RepoManPost() abort
-    if bufexists(bufnr(s:constants.buffers.edit))
+    if exists('b:review_data') && bufexists(bufnr(s:constants.buffers.review))
+        " Add review comment to the review buffer
+        let l:comment = getline(1, '$')
+        let l:data = b:review_data
+        execute 'bw! ' . fnameescape(s:constants.buffers.comment)
+        call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data)
+        return
+    elseif bufexists(bufnr(s:constants.buffers.edit))
         if !exists('b:edit_values')
             return
         endif
