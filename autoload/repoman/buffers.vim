@@ -680,8 +680,6 @@ function! repoman#buffers#Buffers(repoman) abort
 
         " Store comment for submission later
         let l:curpos = a:position ? a:position : getcurpos()[1]
-        echom 'Cursor position: ' . l:curpos
-        echom 'Comment: ' . string(a:comment)
         let l:comment_id = len(b:review_comments)
         let b:review_comments[l:comment_id] = {
             \'id': l:comment_id,

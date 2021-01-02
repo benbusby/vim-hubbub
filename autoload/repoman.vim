@@ -509,6 +509,15 @@ function! repoman#RepoManClose() abort
     endif
 endfunction
 
+function! repoman#RepoManDelete() abort
+    if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
+        call DeleteComment(b:comment_lookup[getcurpos()[1])
+    elseif exists('b:review_comment_lookup') && has_key(b:review_comment_lookup, getcurpos()[1])
+        let l:comment_id = b:review_comment_lookup[getcurpos()[1]]
+        call s:buffers(s:repoman).RemoveReviewBufferComment(b:review_comments[l:comment_id])
+    end
+endfunction
+
 " =========================================================================
 " External Script Calls
 " =========================================================================
