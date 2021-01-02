@@ -27,3 +27,7 @@ command! -nargs=1 RepoManReview  call repoman#RepoManReview('<args>')
 command! -nargs=0 RepoManSave    call repoman#RepoManSave()
 command! -nargs=0 RepoManReply   call repoman#RepoManReply()
 command! -nargs=0 RepoManDelete  call repoman#RepoManDelete()
+
+" Range
+command! -range RepoManSuggest <line1>,<line2>call repoman#RepoManSuggest()
+command! -range RepoManComment <line1>,<line2>call repoman#RepoManComment()

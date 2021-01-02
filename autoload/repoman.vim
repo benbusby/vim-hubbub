@@ -45,7 +45,10 @@ let s:api = {}
 function! repoman#RepoManInit() abort
     call inputsave()
     let l:token_gh = input('GitHub Token (leave empty to skip): ')
-    let l:token_gl = input('GitLab Token (leave empty to skip): ')
+
+    " TODO: GitLab integration
+    let l:token_gl = ''
+    "let l:token_gl = input('GitLab Token (leave empty to skip): ')
     let l:token_pw = inputsecret('Enter a password to encrypt your token(s): ')
     call inputrestore()
 
@@ -131,7 +134,7 @@ function! repoman#RepoMan() abort
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
-    let l:results = s:in_repo || !empty(s:repoman.repo) ? 
+    let l:results = s:in_repo || !empty(s:repoman.repo) ?
         \IssueListQuery() : RepoListQuery()
     if len(l:results) < 10
         let s:repoman_max_page = 1
@@ -212,8 +215,8 @@ function! repoman#RepoManPage(...) abort
     if len(l:response) < 10
         let s:repoman_max_page = s:repoman.page
     endif
-    let s:buf_create = l:page_issues ? 
-        \s:buffers(s:repoman).CreateIssueListBuffer : 
+    let s:buf_create = l:page_issues ?
+        \s:buffers(s:repoman).CreateIssueListBuffer :
         \s:buffers(s:repoman).CreateRepoListBuffer
     call s:buf_create(l:response)
 endfunction
@@ -284,7 +287,7 @@ function! repoman#RepoManReview(action) abort
         echo s:strings.error . 'Must have a PR open to review'
         return
     elseif index(l:actions, a:action) < 0
-        echo s:strings.error . 
+        echo s:strings.error .
             \'Invalid action -- must be one of ' . string(l:actions)
     elseif bufexists(bufnr(s:constants.buffers.review)) && a:action ==# 'new'
         echo s:strings.error .
@@ -295,8 +298,25 @@ function! repoman#RepoManReview(action) abort
     if a:action =~# 'new'
         call s:buffers(s:repoman).CreateReviewBuffer(Review(a:action))
     else
-        echo 'todo: ' . toupper(a:action)
+        call Review(toupper(a:action))
+        execute 'bw! ' . s:constants.buffers.review
+        call repoman#RepoMan()
     endif
+endfunction
+
+function! repoman#RepoManSuggest() range
+    if !bufexists(bufnr(s:constants.buffers.review))
+        echo s:strings.error .
+            \'Cannot make a suggestion outside of a code review'
+        return
+    endif
+
+    let l:code = []
+    for line in getline(a:firstline, a:lastline)
+        call add(l:code, substitute(line, '^[^ ]', '', ''))
+    endfor
+
+    call s:buffers(s:repoman).CreateSuggestionBuffer(l:code)
 endfunction
 
 function! repoman#RepoManSave() abort
@@ -411,7 +431,7 @@ function! repoman#RepoManPost() abort
             call EditComment(b:edit_values)
         endif
         execute 'bw! ' . fnameescape(s:constants.buffers.edit)
-    elseif bufexists(bufnr(s:constants.buffers.new_issue)) > 0 
+    elseif bufexists(bufnr(s:constants.buffers.new_issue)) > 0
             \|| bufexists(bufnr(s:constants.buffers.new_req))
         " Determine which buffer to use for the post
         let l:post_buf = s:constants.buffers.new_issue
@@ -465,7 +485,7 @@ function! repoman#RepoManPost() abort
     call repoman#RepoMan()
     " TODO: Not sure if this feature should be supported
     " until there are reasonable error messages when it fails
-    "call SoftReload() 
+    "call SoftReload()
 endfunction
 
 " :RepoManNew creates a new issue/PR/MR.

@@ -62,11 +62,11 @@ function! repoman#github#API(token_pw) abort
         let l:token = repoman#utils#ReadToken(self.token_pw)
 
         let l:issue_result = json_decode(s:curl.Send(
-            \l:token, self.api_path . '/' . l:path_type . 
+            \l:token, self.api_path . '/' . l:path_type .
             \'/' . a:repoman.number))
 
         let l:comments_result = json_decode(s:curl.Send(
-            \l:token, self.api_path . '/' . l:path_type . 
+            \l:token, self.api_path . '/' . l:path_type .
             \'/' . a:repoman.number . '/comments'))
 
         " If this is a pull request, we need to format the comments so that
@@ -87,7 +87,7 @@ function! repoman#github#API(token_pw) abort
                 let l:idx += 1
             endwhile
 
-            let l:comments_result = l:comments_result + 
+            let l:comments_result = l:comments_result +
                 \json_decode(s:curl.Send(
                 \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments'))
         endif
@@ -110,14 +110,14 @@ function! repoman#github#API(token_pw) abort
             \repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer .
             \'"}'
 
-        let l:reply_path = a:repoman.parent_id > 0 
+        let l:reply_path = a:repoman.parent_id > 0
             \? '/' . a:repoman.parent_id . '/replies'
             \: ''
         let l:type = empty(l:reply_path) ? 'issues' : 'pulls'
 
         call s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/' . l:type . '/' . a:repoman.number . 
+            \self.api_path . '/' . l:type . '/' . a:repoman.number .
             \'/comments' . l:reply_path,
             \l:comment_data, 'POST')
 
@@ -181,6 +181,10 @@ function! repoman#github#API(token_pw) abort
             \'{"state": "closed"}', 'PATCH')
     endfunction
 
+    " --------------------------------------------------------------
+    " PRs only -----------------------------------------------------
+    " --------------------------------------------------------------
+
     function! request.Merge(repoman) abort
         call s:curl.Send(
             \repoman#utils#ReadToken(self.token_pw),
@@ -194,13 +198,34 @@ function! repoman#github#API(token_pw) abort
             return l:curl.Send(
                 \repoman#utils#ReadToken(self.token_pw),
                 \self.api_path . '/pulls/' . a:repoman.number)
+        else
+            " Extract review comments
+            let l:valid_keys = ['position', 'body', 'path']
+            let l:comments = []
+            let l:event = a:repoman.action ==# 'PENDING' ?
+                \'' : '"event": "' . a:repoman.action . '"'
+            for item in items(b:review_comments)
+                let l:comment = item[1]
+                for key_val in items(l:comment)
+                    if index(valid_keys, key_val[0]) < 0
+                        call remove(l:comment, key_val[0])
+                    endif
+                endfor
+                call add(l:comments, l:comment)
+            endfor
+            return l:curl.Send(
+                \repoman#utils#ReadToken(self.token_pw),
+                \self.api_path . '/pulls/' . a:repoman.number . '/reviews',
+                \'{' . l:event . (len(l:event) > 0 ? ',' : '') .
+                \'"comments": ' . substitute(json_encode(l:comments), '<br>', '\\n', 'ge') .
+                \'}', 'POST')
         endif
     endfunction
 
     " --------------------------------------------------------------
     " Labels -------------------------------------------------------
     " --------------------------------------------------------------
- 
+
     function! request.ViewLabels(repoman) abort
         " Need to fetch all labels, then cross check against issue labels
         let l:current_labels = json_decode(s:curl.Send(

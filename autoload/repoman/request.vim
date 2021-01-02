@@ -53,6 +53,7 @@ function! repoman#request#Curl(...) abort
         if !empty(l:method)
             let l:request = l:request .
                 \'-X '. l:method . ' '
+            echom l:request . ' ''' . a:url . ''''
         endif
 
         return system(l:request . ' ''' . a:url . '''')

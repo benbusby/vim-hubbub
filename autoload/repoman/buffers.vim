@@ -4,7 +4,7 @@
 " License: MIT
 " Website: https://github.com/benbusby/vim-repoman
 " Description: Methods/utilities and a constructor for creating/modifying
-" specific buffers for every view. 
+" specific buffers for every view.
 " =========================================================================
 scriptencoding utf-8
 
@@ -64,7 +64,7 @@ function! OpenBuffer(buf_name, header_mode, state) abort
 
     set modifiable
 
-    return a:header_mode >= 0 ? 
+    return a:header_mode >= 0 ?
         \SetHeader(a:header_mode, a:state) : 1
 endfunction
 
@@ -254,7 +254,7 @@ function! InsertComment(comment) abort
     else
         let l:created = FormatTime(a:comment[s:r_keys.created_at])
         let l:updated = FormatTime(a:comment[s:r_keys.updated_at])
-        let l:time = FormatTime(l:created) . 
+        let l:time = FormatTime(l:created) .
             \(l:created !=# l:updated ? '- edited: ' . l:updated : '')
         let l:line_idx = WriteLine('  ' . l:time)
         let l:start_idx = l:line_idx
@@ -363,7 +363,7 @@ endfunction
 
 " The "Buffers" class constructs various buffers that are relevant to the data
 " that is handled in repoman.
-" 
+"
 " Args:
 " - repoman: the current state of the repoman plugin.
 "
@@ -418,9 +418,9 @@ function! repoman#buffers#Buffers(repoman) abort
         " Set up the ability to hit Enter on any repo under the cursor
         " position to open an issues list buffer for that repo
         call cursor(s:results_line, 1)
-        nnoremap <buffer> <silent> <CR> :call 
+        nnoremap <buffer> <silent> <CR> :call
             \repoman#buffers#Buffers({
-                \'page': 1, 
+                \'page': 1,
                 \'repo': b:repo_lookup[getcurpos()[1]]['path']
             \}).CreateIssueListBuffer(IssueListQuery(
                 \b:repo_lookup[getcurpos()[1]]['path'])
@@ -668,13 +668,12 @@ function! repoman#buffers#Buffers(repoman) abort
     " Args:
     " - comment: the comment contents to add to the buffer
     " - review_data: the relevant line number and file for the comment
-    " - position: the cursor position to insert the comment. If 0/null, 
+    " - position: the cursor position to insert the comment. If 0/null,
     "   the comment will be inserted where the cursor was last positioned
     "   in the buffer
     "
     " Returns:
     " - none
-    "
     function! state.AddReviewBufferComment(comment, review_data, position) abort
         set modifiable
 
@@ -687,7 +686,7 @@ function! repoman#buffers#Buffers(repoman) abort
             \'path': b:review_lookup[l:curpos]['file'],
             \'position': b:review_lookup[l:curpos]['line'],
             \'curpos': l:curpos,
-            \'body': join(a:comment, '\n')
+            \'body': repoman#utils#SanitizeText(join(a:comment, '<br>'), 1)
         \}
 
         " Reverse and shift the review buffer contents and insert the new
@@ -778,7 +777,7 @@ function! repoman#buffers#Buffers(repoman) abort
         call OpenBuffer(s:constants.buffers.edit, -1, self)
 
         let l:body = repoman#utils#SanitizeText(a:comment.body)
-        for chunk in split(l:body, '\\n')
+        for chunk in split(l:body, '<br>')
             call WriteLine(chunk)
         endfor
         call FinishOutput()
@@ -794,6 +793,15 @@ function! repoman#buffers#Buffers(repoman) abort
 
         set modifiable
         nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
+    endfunction
+
+    function! state.CreateSuggestionBuffer(code) abort
+        call self.CreateCommentBuffer()
+        call WriteLine('```suggestion')
+        for line in a:code
+            call WriteLine(line)
+        endfor
+        call WriteLine('```')
     endfunction
 
     " =====================================================================
