@@ -159,6 +159,46 @@ private repos for an authenticated user.
                         list, then the buffer will allow editing issue
                         details.
 
+                                                *:RepoManDelete*
+:RepoManDelete          Deletes the comment positioned beneath the cursor in
+                        an issue buffer.
+
+                        This can be used for regular issue comments, as well
+                        as review comments (both pending and finalized).
+
+                                                *:RepoManReply*
+:RepoManReply           Opens a buffer for replying to the review comment
+                        positioned beneath the cursor.
+
+                        This action only applies to review comments, as
+                        regular comments do not have a parent->child
+                        relationship. 
+
+                                                *:RepoManSuggest*
+:RepoManSuggest         Opens a buffer for making a suggestion in a PR review.
+
+                        The buffer will contain the proper formatting for
+                        making a valid suggestion, as well as the code from
+                        the current cursor line (or range of lines). 
+
+                        Example: The code below wrapped with a % has been
+                        visually selected.
+
+                        1|  def main():
+                        2|% abc = 123 %
+                        3|% def = 456 %
+
+                        Running :RepoManSuggest on this selected block will
+                        create the following suggestion buffer for editing.
+
+                        1|```suggestion
+                        2|  abc = 123
+                        3|  def = 456
+                        4|```
+
+                        The suggestion can then be updated as needed, and
+                        added to the current PR review using :RepoManPost.
+
                                                 *:RepoManMerge*
 :RepoManMerge {method}  Merges the current pull request / merge request using
                         the default merge method (merge commit), or using the
@@ -171,6 +211,29 @@ private repos for an authenticated user.
 
                         Note: At this time, each of these methods use the
                         default commit message/description.
+
+                                                *:RepoManReview*
+:RepoManReview [state]  When [state] is "new", a new buffer is opened with the
+                        latest diff contents for the pull request.
+
+                        When [state] is any of the other supported state (see
+                        below), the current review is submitted to GitHub in
+                        the specified state.
+
+                        [state] can be: 
+                            new
+                            approve
+                            request_changes
+                            comment
+                            pending
+
+                        The "request_changes" and "comment" states require a
+                        comment from the user before submission.
+
+                        Note: The "pending" action allows for submitting the
+                        review to GitHub as a draft review, and can be
+                        double-checked online before final submission if
+                        desired.
 
 ==============================================================================
 KEY MAPPINGS                                    *repoman-maps*
@@ -209,7 +272,7 @@ L                       Navigate to the next page of issues/comments/repos
 ==============================================================================
 HISTORY                                         *repoman-history*
 
-1.0 (TBD 2020)
+1.0 (TBD 2021)
     - Initial release
 ==============================================================================
 ABOUT                                           *repoman-about*
