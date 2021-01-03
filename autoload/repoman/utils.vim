@@ -17,7 +17,12 @@ function! repoman#utils#Decorations() abort
         \'comment_header_end': '╚' . repeat('═', min([52, winwidth(0)]) - 1) . '╝',
         \'comment': '    ',
         \'new_review_comment': '├' . repeat('─', min([51, winwidth(0)])),
-        \'review_comment': '│ ',
+        \'review_comment': '│···· ',
+        \'review_reply': '    ├' . repeat('─', min([47, winwidth(0)])),
+        \'end_review_comment': '└' . repeat('─', min([51, winwidth(0)])),
+        \'end_first_comment': '└───┬' . repeat('─', min([47, winwidth(0)])),
+        \'end_review_reply': '    └' . repeat('─', min([47, winwidth(0)])),
+        \'end_first_reply': '    ├' . repeat('─', min([47, winwidth(0)])),
         \'buffer_comment': '▓▓▓▓▓ '
     \}
 

@@ -282,7 +282,7 @@ function! repoman#github#API(token_pw) abort
             \'id': a:comment['id'],
             \'reactions': a:comment['reactions'],
             \'login': a:comment['user']['login'],
-            \'comment': a:comment['body'],
+            \'body': a:comment['body'],
             \'created_at': a:comment['created_at'],
             \'author_association': a:comment['author_association']
         \}

@@ -245,13 +245,14 @@ function! InsertComment(comment) abort
         let commenter = '(' . tolower(a:comment['author_association']) . ') ' . commenter
     endif
 
-    call WriteLine(s:decorations.comment_header_start)
+    call WriteLine('')
 
     " If this is a review comment, it needs different formatting/coloring
     if has_key(a:comment, 'pull_request_review_id')
         set syntax=diff
         call InsertReviewComments(a:comment)
     else
+        call WriteLine(s:decorations.comment_header_start)
         let l:created = FormatTime(a:comment[s:r_keys.created_at])
         let l:updated = FormatTime(a:comment[s:r_keys.updated_at])
         let l:time = FormatTime(l:created) .
@@ -314,46 +315,70 @@ function! InsertReviewComments(comment) abort
         call WriteLine(diff_line)
     endfor
 
-    call WriteLine(s:decorations.new_review_comment)
+    let l:level = 1
 
     " Each individual review comment can have its own subdiscussion, which
     " is tracked in the 'review_comments' array
+    if !has_key(a:comment, 'review_comments')
+        let l:self = deepcopy(a:comment)
+        let l:self[s:r_keys.login] = l:self.user.login
+        let a:comment['review_comments'] = [l:self]
+    endif
     for review_comment in a:comment['review_comments']
+        let l:comment_decor = s:decorations.review_comment
+        if l:level ==# 1
+            call WriteLine(s:decorations.new_review_comment)
+        else
+            call WriteLine(s:decorations.review_reply)
+            let l:comment_decor = '    ' . l:comment_decor
+        endif
+
         let commenter = review_comment[s:r_keys.login]
         if has_key(review_comment, 'author_association') && review_comment['author_association'] !=? 'none'
             let commenter = '(' . tolower(review_comment['author_association']) . ') ' . commenter
         endif
-        let l:line_idx = WriteLine(s:decorations.review_comment . FormatTime(review_comment[s:r_keys.created_at]))
+        let l:line_idx = WriteLine(l:comment_decor . FormatTime(review_comment[s:r_keys.created_at]))
         let l:start_idx = l:line_idx
 
-        call WriteLine(s:decorations.review_comment . commenter . ': ')
-        for body_line in split(review_comment['comment'], '\n')
+        call WriteLine(l:comment_decor . commenter . ': ')
+        for body_line in split(review_comment['body'], '\n')
             " If there's a suggestion, replace w/ relevant syntax highlighting
             " for the file
             if body_line =~# 'suggestion'
-                call WriteLine(s:decorations.review_comment . s:strings.suggestion)
+                call WriteLine(l:comment_decor . s:strings.suggestion)
                 let extension = fnamemodify(a:comment['path'], ':e')
                 let body_line = substitute(body_line, 'suggestion', extension, '')
             endif
-            let l:line_idx = WriteLine(s:decorations.review_comment . body_line)
+            let l:line_idx = WriteLine(l:comment_decor . body_line)
         endfor
 
         let l:reactions_str = GenerateReactionsStr(review_comment)
         if !empty(l:reactions_str)
-            call WriteLine(s:decorations.review_comment)
-            let l:line_idx = WriteLine(s:decorations.review_comment . l:reactions_str)
+            call WriteLine(l:comment_decor)
+            let l:line_idx = WriteLine(l:comment_decor . l:reactions_str)
         endif
 
         call add(b:jump_guide, l:line_idx)
         while l:start_idx <= l:line_idx
             let b:comment_lookup[string(l:start_idx)] = {
                 \'id': review_comment[s:r_keys.id],
-                \'body': review_comment['comment'],
+                \'body': review_comment['body'],
                 \'type': 'pulls'}
             let l:start_idx += 1
         endwhile
 
-        call WriteLine(s:decorations.new_review_comment)
+        if l:level > 1 && l:level != len(a:comment['review_comments'])
+            call WriteLine(s:decorations.end_first_reply)
+        elseif l:level > 1 && l:level == len(a:comment['review_comments'])
+            call WriteLine(s:decorations.end_review_reply)
+        else
+            if l:level == len(a:comment['review_comments'])
+                call WriteLine(s:decorations.end_review_comment)
+            else
+                call WriteLine(s:decorations.end_first_comment)
+            endif
+        endif
+        let l:level += 1
     endfor
 endfunction
 
@@ -805,8 +830,8 @@ function! repoman#buffers#Buffers(repoman) abort
         nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
     endfunction
 
-    function! state.CreateReplyBuffer(parent_id) abort
-        call self.CreateCommentBuffer()
+    function! state.CreateReplyBuffer(parent_id, line) abort
+        call self.CreateCommentBuffer(a:line, a:line)
         let b:parent_id = a:parent_id
     endfunction
 

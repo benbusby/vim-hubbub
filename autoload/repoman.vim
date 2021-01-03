@@ -341,7 +341,7 @@ function! repoman#RepoManReply() abort
     endif
 
     let l:parent_id = b:comment_lookup[getcurpos()[1]][s:r_keys.id]
-    call s:buffers(s:repoman).CreateReplyBuffer(l:parent_id)
+    call s:buffers(s:repoman).CreateReplyBuffer(l:parent_id, a:firstline)
 endfunction
 
 " :RepoManComment splits the issue buffer in half horizontally,
