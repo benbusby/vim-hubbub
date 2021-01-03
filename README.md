@@ -3,7 +3,7 @@
 [![vint](https://github.com/benbusby/vim-repoman/workflows/vint/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avint)
 [![vader](https://github.com/benbusby/vim-repoman/workflows/vader/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avader)
 
-#### repo(sitory) man(ager):
+#### (repo)sitory (man)ager:
 
 Create and manage GitHub/GitLab issues, pull requests, code reviews, and more using Vim.
 

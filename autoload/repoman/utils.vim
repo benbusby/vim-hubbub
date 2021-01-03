@@ -13,11 +13,17 @@ function! repoman#utils#Decorations() abort
     let decorations = {
         \'spacer': repeat('─ ', min([27, winwidth(0)])),
         \'spacer_small': repeat('─', min([33, winwidth(0)])),
-        \'comment_header_start': '┌' . repeat('─', min([52, winwidth(0)]) - 1) . '┐',
-        \'comment_header_end': '└' . repeat('─', min([52, winwidth(0)]) - 1) . '┘',
+        \'comment_header_start': '╔' . repeat('═', min([52, winwidth(0)]) - 1) . '╗',
+        \'comment_header_end': '╚' . repeat('═', min([52, winwidth(0)]) - 1) . '╝',
         \'comment': '    ',
         \'new_review_comment': '├' . repeat('─', min([51, winwidth(0)])),
-        \'review_comment': '│ ',
+        \'review_comment': '│···· ',
+        \'review_reply': '    ├' . repeat('─', min([47, winwidth(0)])),
+        \'end_review_comment': '└' . repeat('─', min([51, winwidth(0)])),
+        \'end_first_comment': '└───┬' . repeat('─', min([47, winwidth(0)])),
+        \'end_review_reply': '    └' . repeat('─', min([47, winwidth(0)])),
+        \'end_first_reply': '    ├' . repeat('─', min([47, winwidth(0)])),
+        \'buffer_comment': '▓▓▓▓▓ '
     \}
 
     return decorations
@@ -175,4 +181,19 @@ function! repoman#utils#GetBranchName() abort
     endif
 
     return ''
+endfunction
+
+function! repoman#utils#GetDiffPosition(start, end) abort
+    let l:start_right = a:start.line_nr_right > 0
+    let l:start_left = a:start.line_nr_left > 0 && !l:start_right
+
+    let l:end_right = a:end.line_nr_right > 0
+    let l:end_left = a:end.line_nr_left > 0 && !l:end_right
+
+    return {
+        \'start_line': l:start_left ? a:start.line_nr_left : a:start.line_nr_right,
+        \'line': l:end_left ? a:end.line_nr_left : a:end.line_nr_right,
+        \'start_side': l:start_left ? 'LEFT' : 'RIGHT',
+        \'side': l:end_left ? 'LEFT' : 'RIGHT'
+    \}
 endfunction

@@ -1,0 +1,5 @@
+policies:
+    # Note: Range functions are used, which triggers the no-abort error
+    # incorrectly
+    ProhibitNoAbortFunction:
+        enabled: false
