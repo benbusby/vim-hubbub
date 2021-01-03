@@ -23,7 +23,6 @@ Execute (validate crypto):
 Execute (validate git utils):
   AssertEqual repoman#utils#InGitRepo(), 1
   AssertEqual repoman#utils#GetRepoHost(), 'github'
-  AssertEqual repoman#utils#GetBranchName(), join(readfile(g:branch_file))
   Assert repoman#utils#GetRepoPath() =~# 'vim-repoman'
 
 Execute (validate api):
