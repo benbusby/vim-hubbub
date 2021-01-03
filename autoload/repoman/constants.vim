@@ -42,7 +42,19 @@ function! repoman#constants#Constants() abort
             \'star': '★ '
         \},
         \'merge_methods': ['merge', 'rebase', 'squash'],
-        \'null': 0
+        \'multiline_keys': [
+            \'start_line',
+            \'line',
+            \'start_side',
+            \'side',
+            \'body',
+            \'path'
+        \],
+        \'singleline_keys': [
+            \'position',
+            \'body',
+            \'path'
+        \]
     \}
 
     " Track buffers that should be considered "primary", or take precedence

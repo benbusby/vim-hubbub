@@ -316,7 +316,7 @@ function! repoman#RepoManSuggest() range
         call add(l:code, substitute(line, '^[^ ]', '', ''))
     endfor
 
-    call s:buffers(s:repoman).CreateSuggestionBuffer(l:code)
+    call s:buffers(s:repoman).CreateSuggestionBuffer(l:code, a:firstline, a:lastline)
 endfunction
 
 function! repoman#RepoManSave() abort
@@ -348,17 +348,17 @@ endfunction
 " and allows the user to enter a comment of any length.
 "
 " Used in conjunction with :RepoManPost to post the comment.
-function! repoman#RepoManComment() abort
+function! repoman#RepoManComment() range
     if s:repoman.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to comment!'
         return
     elseif exists('b:review_lookup') && (
-        \!has_key(b:review_lookup, getcurpos()[1]) || !b:review_lookup[getcurpos()[1]]['line'])
+        \!has_key(b:review_lookup, getcurpos()[1]) || !b:review_lookup[getcurpos()[1]]['position'])
         echo s:strings.error . 'Invalid review line for a comment'
         return
     endif
 
-    call s:buffers(s:repoman).CreateCommentBuffer()
+    call s:buffers(s:repoman).CreateCommentBuffer(a:firstline, a:lastline)
 endfunction
 
 " :RepoManEdit allows editing the contents of an issue or comment, depending
@@ -404,7 +404,6 @@ function! repoman#RepoManPost() abort
     if exists('b:review_data') && bufexists(bufnr(s:constants.buffers.review))
         let l:comment = getline(1, '$')
         let l:data = b:review_data
-        let l:start = s:constants.null
 
         if bufexists(bufnr(s:constants.buffers.edit)) && exists('b:edit_values')
             let l:edit_values = b:edit_values
@@ -412,14 +411,12 @@ function! repoman#RepoManPost() abort
 
             " Edit existing review comment in the buffer
             call s:buffers(s:repoman).RemoveReviewBufferComment(l:edit_values)
-            let l:start = l:edit_values.curpos
-            let l:data.curpos = l:start
         else
             execute 'bw! ' . fnameescape(s:constants.buffers.comment)
         endif
 
         " Add review comment to the review buffer
-        call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data, l:start)
+        call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data)
         return
     elseif bufexists(bufnr(s:constants.buffers.edit))
         if !exists('b:edit_values')
@@ -531,7 +528,7 @@ endfunction
 
 function! repoman#RepoManDelete() abort
     if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
-        call DeleteComment(b:comment_lookup[getcurpos()[1])
+        call DeleteComment(b:comment_lookup[getcurpos()[1]])
     elseif exists('b:review_comment_lookup') && has_key(b:review_comment_lookup, getcurpos()[1])
         let l:comment_id = b:review_comment_lookup[getcurpos()[1]]
         call s:buffers(s:repoman).RemoveReviewBufferComment(b:review_comments[l:comment_id])

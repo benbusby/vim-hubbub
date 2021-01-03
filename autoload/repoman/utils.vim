@@ -177,3 +177,18 @@ function! repoman#utils#GetBranchName() abort
 
     return ''
 endfunction
+
+function! repoman#utils#GetDiffPosition(start, end) abort
+    let l:start_right = a:start.line_nr_right > 0
+    let l:start_left = a:start.line_nr_left > 0 && !l:start_right
+
+    let l:end_right = a:end.line_nr_right > 0
+    let l:end_left = a:end.line_nr_left > 0 && !l:end_right
+
+    return {
+        \'start_line': l:start_left ? a:start.line_nr_left : a:start.line_nr_right,
+        \'line': l:end_left ? a:end.line_nr_left : a:end.line_nr_right,
+        \'start_side': l:start_left ? 'LEFT' : 'RIGHT',
+        \'side': l:end_left ? 'LEFT' : 'RIGHT'
+    \}
+endfunction

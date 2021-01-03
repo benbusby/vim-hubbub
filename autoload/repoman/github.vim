@@ -16,6 +16,7 @@ let s:reactions_type = 'application/vnd.github.squirrel-girl-preview'
 let s:multiline_type = 'application/vnd.github.comfort-fade-preview+json'
 let s:diff_type = 'application/vnd.github.v3.diff'
 let s:curl = repoman#request#Curl(s:reactions_type . ', ' . s:multiline_type)
+let s:constants = repoman#constants#Constants()
 
 " The primary class for interfacing with the GitHub API.
 "
@@ -200,14 +201,21 @@ function! repoman#github#API(token_pw) abort
                 \self.api_path . '/pulls/' . a:repoman.number)
         else
             " Extract review comments
-            let l:valid_keys = ['position', 'body', 'path']
             let l:comments = []
             let l:event = a:repoman.action ==# 'PENDING' ?
                 \'' : '"event": "' . a:repoman.action . '"'
             for item in items(b:review_comments)
                 let l:comment = item[1]
+
+                " Single-line and multi-line comments use different parameters
+                " for determining where they appear in the review. See
+                " repoman#buffers#Buffers->CreateReviewBuffer for more info.
+                let l:key_filter = s:constants.multiline_keys
+                if l:comment.start_line ==# l:comment.line
+                    let l:key_filter = s:constants.singleline_keys
+                endif
                 for key_val in items(l:comment)
-                    if index(valid_keys, key_val[0]) < 0
+                    if index(l:key_filter, key_val[0]) < 0
                         call remove(l:comment, key_val[0])
                     endif
                 endfor
