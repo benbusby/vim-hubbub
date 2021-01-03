@@ -282,6 +282,7 @@ endfunction
 
 function! repoman#RepoManReview(action) abort
     let l:actions = ['new', 'approve', 'request_changes', 'comment', 'pending']
+    let l:body = ''
 
     if !s:repoman.pr_diff
         echo s:strings.error . 'Must have a PR open to review'
@@ -296,12 +297,19 @@ function! repoman#RepoManReview(action) abort
     endif
 
     if a:action =~# 'new'
-        call s:buffers(s:repoman).CreateReviewBuffer(Review(a:action))
-    else
-        call Review(toupper(a:action))
-        execute 'bw! ' . s:constants.buffers.review
-        call repoman#RepoMan()
+        call s:buffers(s:repoman).CreateReviewBuffer(Review(a:action, l:body))
+        return
+    elseif a:action =~# 'request_changes' || a:action =~# 'comment'
+        let l:body = input('Comment (required -- use \n for line breaks): ')
+        if empty(l:body)
+            echo s:strings.error . ' Invalid comment for "' . a:action . '" review submission'
+            return
+        endif
     endif
+
+    call Review(toupper(a:action), l:body)
+    execute 'bw! ' . s:constants.buffers.review
+    call repoman#RepoMan()
 endfunction
 
 function! repoman#RepoManSuggest() range
@@ -613,9 +621,10 @@ function! Merge(method) abort
     call repoman#RepoMan()
 endfunction
 
-function! Review(action) abort
+function! Review(action, body) abort
     let s:repoman.number = s:repoman.current_issue
     let s:repoman.action = a:action
+    let s:repoman.body = a:body
     return s:api.Review(s:repoman)
 endfunction
 

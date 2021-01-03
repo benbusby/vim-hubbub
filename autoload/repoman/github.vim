@@ -204,6 +204,8 @@ function! repoman#github#API(token_pw) abort
             let l:comments = []
             let l:event = a:repoman.action ==# 'PENDING' ?
                 \'' : '"event": "' . a:repoman.action . '"'
+            let l:body = empty(a:repoman.body) ?
+                \'' : '"body": "' . a:repoman.body . '"'
             for item in items(b:review_comments)
                 let l:comment = item[1]
 
@@ -221,10 +223,12 @@ function! repoman#github#API(token_pw) abort
                 endfor
                 call add(l:comments, l:comment)
             endfor
+
             return l:curl.Send(
                 \repoman#utils#ReadToken(self.token_pw),
                 \self.api_path . '/pulls/' . a:repoman.number . '/reviews',
-                \'{' . l:event . (len(l:event) > 0 ? ',' : '') .
+                \'{' . l:event . (!empty(l:event) ? ',' : '') .
+                \l:body . (!empty(l:body) ? ',' : '') .
                 \'"comments": ' . substitute(json_encode(l:comments), '<br>', '\\n', 'ge') .
                 \'}', 'POST')
         endif
