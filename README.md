@@ -5,7 +5,7 @@
 
 #### (repo)sitory (man)ager:
 
-Create and manage GitHub/GitLab issues, pull requests, code reviews, and more using Vim.
+Create and manage GitHub issues, pull requests, comments, code reviews, and more using Vim.
 
 ![Demo Gif](assets/img/home-demo.gif)
 
@@ -16,9 +16,11 @@ Create and manage GitHub/GitLab issues, pull requests, code reviews, and more us
 - [Setup](#setup)
 - [Usage](#usage)
 - [Configuration](#configuration)
+- [Contributing](#contributing)
+- [Miscellaneous](#miscellaneous)
 
 ## Features
-vim-repoman supports the following features:
+The plugin supports a wide variety of actions on GitHub, as well as a few in-progress features for GitLab:
 
 #### Issues
 Action | GitHub | GitLab
@@ -49,7 +51,7 @@ Comment | :heavy_check_mark: | :heavy_check_mark:
 Merge** | :heavy_check_mark: | :heavy_check_mark:
 Delete | :heavy_check_mark: | :heavy_check_mark:
 
-<sup>* PR/MR review supports inserting comments on a line (or multiple lines) of code in review<br>** Includes merge commits, as well as squash and rebase merges.</sup>
+<sup>* PR review supports both single-line and multi-line comments and suggestions<br>** Includes merge commits, as well as squash and rebase merges.</sup>
 
 #### Other
     
@@ -84,6 +86,9 @@ The plugin's interface supports multiple languages ([see Configuration](#configu
     - You will be prompted for your token(s) and a password to encrypt them
 
 ## Usage
+
+**Note:** This is not an exhaustive list. Please refer to `:h repoman` for a full list of documented features.
+
 #### Vim Commands
 Vim Command | Action | Notes
 --- | --- | --- |
@@ -151,3 +156,11 @@ let g:repoman_language = 'es'
 let g:repoman_openssl_old = 1
 let g:repoman_footer = 0
 ```
+
+## Contributing
+
+Any type of contribution is welcome and appreciated, whether its just using the plugin and validating that the available features work as expected, implementing features or bug fixes, or expanding on the vader tests. 
+
+## Miscellaneous
+
+This plugin is still a work in progress, and does not protect 100% against misuse at the moment. There's no risk of anything awful happening (the worst that could happen is accidentally deleting a comment), but if something happens that you weren't expecting, please create an issue. 
