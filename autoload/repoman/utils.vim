@@ -11,7 +11,7 @@ let s:constants = function('repoman#constants#Constants')()
 
 function! repoman#utils#Decorations() abort
     let decorations = {
-        \'spacer': repeat('─ ', min([27, winwidth(0)])),
+        \'spacer': repeat('°°', min([27, winwidth(0)])),
         \'spacer_small': repeat('─', min([33, winwidth(0)])),
         \'comment_header_start': '╔' . repeat('═', min([52, winwidth(0)]) - 1) . '╗',
         \'comment_header_end': '╚' . repeat('═', min([52, winwidth(0)]) - 1) . '╝',

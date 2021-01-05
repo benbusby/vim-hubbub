@@ -151,10 +151,10 @@ let g:repoman_default_host = 'gitlab'
 ```
 
 ```vim
-" Spanish, use older OpenSSL, hide footer 😢
+" Spanish, use older OpenSSL, show footer
 let g:repoman_language = 'es'
 let g:repoman_openssl_old = 1
-let g:repoman_footer = 0
+let g:repoman_footer = 1
 ```
 
 ## Contributing

@@ -645,7 +645,7 @@ endfunction
 function! CloseItem(number, pr) abort
     let s:repoman.number = a:number
     let s:repoman.pr_diff = a:pr
-    call s:api().CloseItem(s:repoman)
+    call s:api.CloseItem(s:repoman)
 endfunction
 
 " =========================================================================

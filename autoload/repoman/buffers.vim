@@ -443,12 +443,12 @@ function! repoman#buffers#Buffers(repoman) abort
         " Set up the ability to hit Enter on any repo under the cursor
         " position to open an issues list buffer for that repo
         call cursor(s:results_line, 1)
-        nnoremap <buffer> <silent> <CR> :call
-            \repoman#buffers#Buffers({
-                \'page': 1,
+        nnoremap <buffer> <silent> <CR> :call 
+            \repoman#buffers#Buffers(
+                \{'page': 1,
                 \'repo': b:repo_lookup[getcurpos()[1]]['path']
-            \}).CreateIssueListBuffer(IssueListQuery(
-                \b:repo_lookup[getcurpos()[1]]['path'])
+            \}).CreateIssueListBuffer(
+                \IssueListQuery(b:repo_lookup[getcurpos()[1]]['path'])
             \)<cr>
 
         call FinishOutput()

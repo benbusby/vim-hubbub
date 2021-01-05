@@ -6,7 +6,7 @@
 " Description: A constructor and collection of functions for interacting
 " with the GitHub API.
 " =========================================================================
-let s:footer = '\n\n___\n<sub>_%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
+let s:footer = '\n\n<sub>— _%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
 
 " =========================================================================
 " GitHub API
@@ -103,7 +103,7 @@ function! repoman#github#API(token_pw) abort
 
     function! request.PostComment(repoman) abort
         let l:footer = ''
-        if !exists('g:repoman_footer') || g:repoman_footer
+        if exists('g:repoman_footer') && g:repoman_footer
             let l:footer = printf(s:footer, 'Posted')
         endif
 
@@ -152,7 +152,7 @@ function! repoman#github#API(token_pw) abort
     function! request.NewItem(repoman) abort
         let l:type = 'issues'
         let l:footer = ''
-        if !exists('g:repoman_footer') || g:repoman_footer
+        if exists('g:repoman_footer') && g:repoman_footer
             let l:footer = printf(s:footer, 'Created')
         endif
 
