@@ -8,26 +8,9 @@
 " ============================================================================
 scriptencoding utf-8
 let s:constants = function('repoman#constants#Constants')()
+let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
+let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
 
-function! repoman#utils#Decorations() abort
-    let decorations = {
-        \'spacer': repeat('°°', min([27, winwidth(0)])),
-        \'spacer_small': repeat('─', min([33, winwidth(0)])),
-        \'comment_header_start': '╔' . repeat('═', min([52, winwidth(0)]) - 1) . '╗',
-        \'comment_header_end': '╚' . repeat('═', min([52, winwidth(0)]) - 1) . '╝',
-        \'comment': '    ',
-        \'new_review_comment': '├' . repeat('─', min([51, winwidth(0)])),
-        \'review_comment': '│···· ',
-        \'review_reply': '    ├' . repeat('─', min([47, winwidth(0)])),
-        \'end_review_comment': '└' . repeat('─', min([51, winwidth(0)])),
-        \'end_first_comment': '└───┬' . repeat('─', min([47, winwidth(0)])),
-        \'end_review_reply': '    └' . repeat('─', min([47, winwidth(0)])),
-        \'end_first_reply': '    ├' . repeat('─', min([47, winwidth(0)])),
-        \'buffer_comment': '▓▓▓▓▓ '
-    \}
-
-    return decorations
-endfunction
 
 " ============================================================================
 " Syntax
@@ -65,25 +48,27 @@ function! TextEnableCodeSnip(filetype, start, end, textSnipHl) abort
 endfunction
 
 function! repoman#utils#LoadSyntaxColoring() abort
+    " Color code blocks
     for type in s:syntax_types
         call TextEnableCodeSnip(type, '```' . type, '```', 'SpecialComment')
     endfor
 
-    " Color UI decorations as comments
-    let l:spacer_color = '#aaaaaa'
-    let l:comment_colors = filter(split(execute(':hi Comment')), 'v:val =~? "guifg="')
-    if len(l:comment_colors) > 0
-        let l:spacer_color = l:comment_colors[0]
-    endif
+    " Color the UI
+    let l:deco = repoman#decorations#Decorations()
 
-    exe 'hi repoman_spacer gui=bold guifg=' . substitute(l:spacer_color, 'guifg=', '', 'ge')
-    for val in values(repoman#utils#Decorations())
+    echo l:deco.colors.issue
+
+    exe 'hi repoman_spacer gui=bold ' . l:deco.colors.ui
+    for val in values(repoman#decorations#Decorations().ui)
         exe 'syn match repoman_spacer /' . val . '/'
     endfor
 
-    " Highlight stars as yellow
-    exe 'hi star_color guifg=#ffff00'
+    exe 'hi repoman_issues ' . l:deco.colors.issue
+    exe 'hi repoman_prs ' . l:deco.colors.pr
+    exe 'hi star_color ' . l:deco.colors.star
     exe 'syn match star_color /★/'
+    exe 'syn match repoman_issues /\[' . s:strings.issue . '\]/'
+    exe 'syn match repoman_prs /\[' . s:strings.pr . '\]/'
 endfunction
 
 " ============================================================================

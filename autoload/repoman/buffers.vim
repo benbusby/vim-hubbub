@@ -10,7 +10,7 @@ scriptencoding utf-8
 
 let s:constants = function('repoman#constants#Constants')()
 let s:r_keys = response_keys[repoman#utils#GetRepoHost()]
-let s:decorations = repoman#utils#Decorations()
+let s:ui = repoman#decorations#Decorations().ui
 let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
 
 " =========================================================================
@@ -252,7 +252,7 @@ function! InsertComment(comment) abort
         set syntax=diff
         call InsertReviewComments(a:comment)
     else
-        call WriteLine(s:decorations.comment_header_start)
+        call WriteLine(s:ui.comment_header_start)
         let l:created = FormatTime(a:comment[s:r_keys.created_at])
         let l:updated = FormatTime(a:comment[s:r_keys.updated_at])
         let l:time = FormatTime(l:created) .
@@ -260,17 +260,17 @@ function! InsertComment(comment) abort
         let l:line_idx = WriteLine('  ' . l:time)
         let l:start_idx = l:line_idx
         call WriteLine('  ' . commenter . ': ')
-        call WriteLine(s:decorations.comment_header_end)
+        call WriteLine(s:ui.comment_header_end)
 
         " Split comment body on line breaks for proper formatting
         for comment_line in split(a:comment[s:r_keys.body], '\n')
-            let l:line_idx = WriteLine(s:decorations.comment . comment_line)
+            let l:line_idx = WriteLine(s:ui.comment . comment_line)
         endfor
 
         let l:reactions_str = GenerateReactionsStr(a:comment)
         if !empty(l:reactions_str)
-            call WriteLine(s:decorations.comment . '')
-            let l:line_idx = WriteLine(s:decorations.comment . '[ ' . l:reactions_str . ']')
+            call WriteLine(s:ui.comment . '')
+            let l:line_idx = WriteLine(s:ui.comment . '[ ' . l:reactions_str . ']')
         endif
 
         call add(b:jump_guide, l:line_idx)
@@ -325,11 +325,11 @@ function! InsertReviewComments(comment) abort
         let a:comment['review_comments'] = [l:self]
     endif
     for review_comment in a:comment['review_comments']
-        let l:comment_decor = s:decorations.review_comment
+        let l:comment_decor = s:ui.review_comment
         if l:level ==# 1
-            call WriteLine(s:decorations.new_review_comment)
+            call WriteLine(s:ui.new_review_comment)
         else
-            call WriteLine(s:decorations.review_reply)
+            call WriteLine(s:ui.review_reply)
             let l:comment_decor = '    ' . l:comment_decor
         endif
 
@@ -368,14 +368,14 @@ function! InsertReviewComments(comment) abort
         endwhile
 
         if l:level > 1 && l:level != len(a:comment['review_comments'])
-            call WriteLine(s:decorations.end_first_reply)
+            call WriteLine(s:ui.end_first_reply)
         elseif l:level > 1 && l:level == len(a:comment['review_comments'])
-            call WriteLine(s:decorations.end_review_reply)
+            call WriteLine(s:ui.end_review_reply)
         else
             if l:level == len(a:comment['review_comments'])
-                call WriteLine(s:decorations.end_review_comment)
+                call WriteLine(s:ui.end_review_comment)
             else
-                call WriteLine(s:decorations.end_first_comment)
+                call WriteLine(s:ui.end_first_comment)
             endif
         endif
         let l:level += 1
@@ -421,15 +421,15 @@ function! repoman#buffers#Buffers(repoman) abort
             let l:start_idx = WriteLine(item['full_name'] . (item['private'] ? ' (Private)' : ''))
             call add(b:jump_guide, l:start_idx)
 
-            call WriteLine(s:decorations.spacer_small)
+            call WriteLine(s:ui.spacer_small)
             call WriteLine(item['description'])
             call WriteLine(s:strings.updated . FormatTime(item[s:r_keys.updated_at]))
             call WriteLine(s:strings.issues . item['open_issues_count'])
             call WriteLine(s:constants.symbols.star . item['stargazers_count'])
-            call WriteLine(s:decorations.spacer_small)
+            call WriteLine(s:ui.spacer_small)
 
             let l:line_idx = WriteLine('')
-            call WriteLine(s:decorations.spacer)
+            call WriteLine(s:ui.spacer)
             call WriteLine('')
 
             while l:start_idx <= l:line_idx
@@ -474,14 +474,14 @@ function! repoman#buffers#Buffers(repoman) abort
         for item in a:results
             " Set title and indicator for whether or not the item is a Pull
             " Request
-            let l:item_name = '(' . (has_key(item, 'pull_request')
-                \? s:strings.pr : s:strings.issue) . ') ' .
+            let l:item_name = '[' . (has_key(item, 'pull_request')
+                \? s:strings.pr : s:strings.issue) . '] ' .
                 \'#' . item[s:r_keys.number] . ': ' . item[s:r_keys.title]
             let l:start_idx = WriteLine(l:item_name)
             call add(b:jump_guide, l:start_idx)
 
             " Draw boundary between title and body
-            let l:line_idx = WriteLine(s:decorations.spacer_small)
+            let l:line_idx = WriteLine(s:ui.spacer_small)
 
             let l:label_list = ParseLabels(item[s:r_keys.labels])
             call WriteLine(s:strings.comments . item[s:r_keys.comments])
@@ -490,7 +490,7 @@ function! repoman#buffers#Buffers(repoman) abort
 
             " Mark line number where the issue interaction should stop
             let l:line_idx = WriteLine('')
-            call WriteLine(s:decorations.spacer)
+            call WriteLine(s:ui.spacer)
             call WriteLine('')
 
             " Store issue number and title to use for viewing issue details later
@@ -529,17 +529,17 @@ function! repoman#buffers#Buffers(repoman) abort
         " Write issue and comments to buffer
         let l:type = '(' . (self.pr_diff ? s:strings.pr : s:strings.issue) . ') '
         call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
-        let l:line_idx = WriteLine(s:decorations.spacer_small)
+        let l:line_idx = WriteLine(s:ui.spacer_small)
 
         " Split body on line breaks for proper formatting
         let l:line_idx += InsertBodyText(a:contents[s:r_keys.desc])
 
-        call WriteLine(s:decorations.spacer_small)
+        call WriteLine(s:ui.spacer_small)
         call WriteLine(s:strings.created . FormatTime(a:contents[s:r_keys.created_at]))
         call WriteLine(s:strings.updated . FormatTime(a:contents[s:r_keys.updated_at]))
         call WriteLine(s:strings.author . a:contents[s:r_keys.user][s:r_keys.login])
         call WriteLine(s:strings.labels . ParseLabels(a:contents[s:r_keys.labels]))
-        call WriteLine(s:decorations.spacer_small)
+        call WriteLine(s:ui.spacer_small)
 
         " Add reactions to issue (important)
         let l:reactions_str = GenerateReactionsStr(a:contents)
@@ -547,7 +547,7 @@ function! repoman#buffers#Buffers(repoman) abort
             call WriteLine(l:reactions_str)
         endif
 
-        call WriteLine(s:decorations.spacer_small)
+        call WriteLine(s:ui.spacer_small)
         call WriteLine('')
 
         let l:line_idx = WriteLine(s:strings.comments_alt . '(' . len(a:contents[s:r_keys.comments]) . ')')
@@ -780,7 +780,7 @@ function! repoman#buffers#Buffers(repoman) abort
                 if l:comment_lines >= 0
                     call setline(
                         \l:line_nr,
-                        \s:decorations.buffer_comment . a:comment[l:comment_lines]
+                        \s:ui.buffer_comment . a:comment[l:comment_lines]
                     \)
                     call remove(b:review_lookup, l:line_nr)
                     let b:review_comment_lookup[l:line_nr] = l:comment_id
