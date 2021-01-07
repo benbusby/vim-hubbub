@@ -5,6 +5,7 @@
 " Website: https://github.com/benbusby/vim-repoman
 " Description: UI spacers/colors/etc
 " ============================================================================
+scriptencoding utf-8
 
 function! GetColor(type) abort
     let l:color_fg = '"ctermfg="'

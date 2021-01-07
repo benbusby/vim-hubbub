@@ -147,7 +147,7 @@ endfunction
 function! FinishOutput() abort
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
-    call repoman#utils#LoadSyntaxColoring()
+    call repoman#utils#LoadSyntaxColoring(s:strings)
 
     " Add HJKL shortcuts if in the buffer supports it
     if exists('b:jump_guide') && len(b:jump_guide) > 0

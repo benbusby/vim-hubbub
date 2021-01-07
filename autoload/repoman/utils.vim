@@ -8,9 +8,6 @@
 " ============================================================================
 scriptencoding utf-8
 let s:constants = function('repoman#constants#Constants')()
-let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
-let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
-
 
 " ============================================================================
 " Syntax
@@ -47,7 +44,7 @@ function! TextEnableCodeSnip(filetype, start, end, textSnipHl) abort
         \ contains=@'.group
 endfunction
 
-function! repoman#utils#LoadSyntaxColoring() abort
+function! repoman#utils#LoadSyntaxColoring(strings) abort
     " Color code blocks
     for type in s:syntax_types
         call TextEnableCodeSnip(type, '```' . type, '```', 'SpecialComment')
@@ -67,8 +64,8 @@ function! repoman#utils#LoadSyntaxColoring() abort
     exe 'hi repoman_prs ' . l:deco.colors.pr
     exe 'hi star_color ' . l:deco.colors.star
     exe 'syn match star_color /★/'
-    exe 'syn match repoman_issues /\[' . s:strings.issue . '\]/'
-    exe 'syn match repoman_prs /\[' . s:strings.pr . '\]/'
+    exe 'syn match repoman_issues /\[' . a:strings.issue . '\]/'
+    exe 'syn match repoman_prs /\[' . a:strings.pr . '\]/'
 endfunction
 
 " ============================================================================
