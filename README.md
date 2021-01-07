@@ -20,48 +20,26 @@ Create and manage GitHub issues, pull requests, comments, code reviews, and more
 - [Miscellaneous](#miscellaneous)
 
 ## Features
-The plugin supports a wide variety of actions on GitHub, as well as a few in-progress features for GitLab:
+Repoman supports a wide variety of features and GitHub API interactions, including:
 
-#### Issues
-Action | GitHub | GitLab
---- | --- | ---
-View | :heavy_check_mark: | :heavy_check_mark:
-Create | :heavy_check_mark: | :heavy_check_mark:
-Comment | :heavy_check_mark: | :heavy_check_mark:
-Label | :heavy_check_mark: | :no_entry_sign:
-Delete | :heavy_check_mark: | :heavy_check_mark:
-
-#### Comments
-Action | GitHub | GitLab
---- | --- | ---
-React* | :heavy_check_mark: | :no_entry_sign:
-Reply | :heavy_check_mark: | :no_entry_sign:
-Edit | :heavy_check_mark: | :no_entry_sign:
-Delete | :heavy_check_mark: | :no_entry_sign:
-
-<sup>* 👍, 👎, 👀, etc.</sup>
-
-#### Pull Requests / Merge Requests
-Action | GitHub | GitLab
---- | --- | ---
-Create | :heavy_check_mark: | :heavy_check_mark:
-View | :heavy_check_mark: | :heavy_check_mark:
-Review* | :heavy_check_mark: | :no_entry_sign:
-Comment | :heavy_check_mark: | :heavy_check_mark:
-Merge** | :heavy_check_mark: | :heavy_check_mark:
-Delete | :heavy_check_mark: | :heavy_check_mark:
-
-<sup>* PR review supports both single-line and multi-line comments and suggestions<br>** Includes merge commits, as well as squash and rebase merges.</sup>
-
-#### Other
-    
-The plugin's interface supports multiple languages ([see Configuration](#configuration)), with a simple process for adding translations.
+- Viewing/creating/editing/closing issues and pull requests
+- Commenting on and reacting to issues and pull requests
+- Creating and submitting PR reviews
+    - Includes multi-line comment and suggestion support, as well as replying to existing review comments
+- Quick setup process
+- Code block syntax highlighting
+- Integration with your Vim theme
+- Support for alternative interface languages
+    - See [the repoman wiki config page](https://github.com/benbusby/vim-repoman/wiki/Configuration#appearanceui) for details
+    - Straightforward process for [contributing new translations](#interface-translations)
+- Intuitive keybindings for quickly navigating issues/repos/etc
+- And more -- please refer to [the repoman wiki](https://github.com/benbusby/vim-repoman/wiki) for a comprehensive list of features and guides for using the plugin.
 
 ## Dependencies
 - `vim` >= 8.0 / `neovim`
 - `curl`
 - `openssl`
-  - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` must be added to your `.vimrc`*
+  - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` needs to be included in your `.vimrc`*
 
 ## Install
 #### Vundle
@@ -71,7 +49,7 @@ The plugin's interface supports multiple languages ([see Configuration](#configu
 #### DIY
   1. Clone the repo to your vim plugin directory
       - Ex: `git clone https://github.com/benbusby/vim-repoman.git ~/.vim/bundle/vim-repoman`
-  2. Update your runtime path in your .vimrc file
+  2. Ensure the plugin's path is included in your Vim runtime path
       - Ex: `:set rtp+=~/.vim/bundle/vim-repoman`
 
 ## Setup
@@ -87,53 +65,17 @@ The plugin's interface supports multiple languages ([see Configuration](#configu
 
 ## Usage
 
-**Note:** This is not an exhaustive list. Please refer to `:h repoman` for a full list of documented features.
+For information and comprehensive guides on how to use the plugin, please refer to [the repoman wiki](https://github.com/benbusby/vim-repoman/wiki)
 
-#### Vim Commands
-Vim Command | Action | Notes
---- | --- | --- |
-`:RepoManInit` | Initializes the plugin | 
-`:RepoMan` | **If in a git repo:**<br>Opens a list of issues/PRs if in a git repo.<br>**If not in a git repo:**<br>Opens a list of repositories for the user | *Will prompt for token password*
-`:RepoManComment` | Open a comment buffer for the current issue |
-`:RepoManLabel` | View/update labels for the current issue |
-`:RepoManPost` | Posts an update to the issue | *Works for <br>`:RepoManComment` and <br>`:RepoManLabel` buffers*
-`:RepoManNew <type>` | Create a new issue or PR | *`type` can be "issue" or "pr"*
-`:RepoManClose` | Closes the current issue | 
+See also [configuration](https://github.com/benbusby/vim-repoman/wiki/Configuration) and [keybindings](https://github.com/benbusby/vim-repoman/wiki/Keybindings) in the wiki.
 
-#### Keyboard Shortcuts
-Keyboard Shortcut | Action | Notes
---- | --- | --- |
-`<Enter>` | Open the selected repository or issue | *Current repo/issue is determined by cursor line position*
-`<Backspace>` or `gi` | Navigates back to the issue/repo list | 
-`J` and `K` | Jumps between issues/repositories in the list | `J`: next item<br>`K`: prev item
-`H` and `L` | Navigates between pages of issues/repositories |`H`: prev page<br>`L`: next page 
+For the repoman docs, please refer to `:h repoman`
 
 ## Configuration
-#### (Optional) Global Variables
-There are a few additional variables you can include in your `.vimrc` file to tweak vim-repoman to your preference:
 
-- `g:repoman_show_outdated` - Show/hide outdated diffs and comments on pull requests
-  - `0`: (Default) Disabled
-  - `1`: Enabled
-- `g:repoman_language` - Set the language for the plugin UI
-  - `en`: (Default) English
-  - `es`: Spanish
-  - `fr`: French
-  - `cn_sm`: Chinese (Simplified)
-  - `cn_tr`: Chinese (Traditional)
-- `g:repoman_default_host` - Set the default host to prefer if outside of a git repo
-  - `'github'`: Use GitHub as primary
-  - `'gitlab'`: Use GitLab as primary
-  - *Note: This only needs to be set if you set both GitHub and GitLab tokens*
-- `g:repoman_openssl_old` - Rely on commands that work with older versions of OpenSSL / LibreSSL
-  - `0`: (Default) Disabled
-  - `1`: Enabled
-- `g:repoman_footer` - Include/exclude the vim-repoman footer from comments/issues
-  - `0`: Exclude
-  - `1`: (Default) Include
-- `g:repoman_emojis` - Show/hide emoji reactions on issues and comments
-  - `0`: Hide (use ascii alternatives)
-  - `1`: (Default) Show emojis
+A full list of the available (optional) global variables for repoman are located [here](https://github.com/benbusby/vim-repoman/wiki/Configuration)
+
+<hr>
   
 Example `.vimrc` settings:
 ```vim
@@ -161,6 +103,11 @@ let g:repoman_footer = 1
 
 Any type of contribution is welcome and appreciated, whether its just using the plugin and validating that the available features work as expected, implementing features or bug fixes, or expanding on the vader tests. 
 
+#### Interface Translations
+If you would like to improve the UI translation support, please edit [assets/strings.json](assets/strings.json) accordingly and create a new PR with your changes.
+
+Note that the existing languages have certain sections formatted to align cleanly in the repo and issue list views. Please try to conform to this alignment when adding/editing existing translations.
+
 ## Miscellaneous
 
-This plugin is still a work in progress, and does not protect 100% against misuse at the moment. There's no risk of anything awful happening (the worst that could happen is accidentally deleting a comment), but if something happens that you weren't expecting, please create an issue. 
+This plugin is currently in a "beta" release state. If you experience any unexpected behavior, please open an issue.

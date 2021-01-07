@@ -53,8 +53,6 @@ function! repoman#utils#LoadSyntaxColoring(strings) abort
     " Color the UI
     let l:deco = repoman#decorations#Decorations()
 
-    echo l:deco.colors.issue
-
     exe 'hi repoman_spacer gui=bold ' . l:deco.colors.ui
     for val in values(repoman#decorations#Decorations().ui)
         exe 'syn match repoman_spacer /' . val . '/'
