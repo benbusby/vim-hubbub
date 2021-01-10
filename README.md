@@ -101,7 +101,28 @@ let g:repoman_footer = 1
 
 ## Contributing
 
-Any type of contribution is welcome and appreciated, whether its just using the plugin and validating that the available features work as expected, implementing features or bug fixes, or expanding on the vader tests. 
+Any type of contribution is welcome and appreciated, whether its just using the plugin and validating that the available features work as expected, implementing features or bug fixes, or expanding on the vader tests.
+
+The project has the following general structure:
+
+```
+├── assets
+│   ├── header.txt          # The "header" that appears on nearly every page in the UI 
+│   ├── img
+│   ├── response_keys.json  # A combined json mapping of GitHub and GitLab response keys
+│   └── strings.json        # Translations/UI strings
+├── autoload
+│   ├── repoman             # Utilities and helper classes (API, crypto, buffers, etc)
+│   └── repoman.vim         # User command implementations and hooks into API/buffer calls
+├── doc
+│   └── repoman.txt         # Repoman documentation
+├── LICENSE
+├── plugin
+│   └── repoman.vim         # A "header file" of all user accessible plugin commands
+├── README.md
+├── test
+│   └── repoman.vader       # Plugin tests
+```
 
 #### Interface Translations
 If you would like to improve the UI translation support, please edit [assets/strings.json](assets/strings.json) accordingly and create a new PR with your changes.
@@ -111,3 +132,11 @@ Note that the existing languages have certain sections formatted to align cleanl
 ## Miscellaneous
 
 This plugin is currently in a "beta" release state. If you experience any unexpected behavior, please open an issue.
+
+There are a number of GitHub features that either are missing some elements or are entirely undeveloped. In case you rely heavily on particular features of GitHub, here are just a few of them:
+
+- Creating issues/PRs from issue/PR templates
+- Adding/removing assignees for issues/PRs
+- Milestones
+- Filtering issues by any criteria
+- Merging PRs with a custom commit message
