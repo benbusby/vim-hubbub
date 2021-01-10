@@ -283,10 +283,10 @@ function! InsertComment(comment) abort
         endwhile
     endif
 
-    nnoremap <buffer> <silent> <C-d> :call DeleteComment(
-        \b:comment_lookup[getcurpos()[1]])<CR>
-    nnoremap <buffer> <silent> <C-e> :call EditCommentBuffer(
-        \b:comment_lookup[getcurpos()[1]])<CR>
+    "nnoremap <buffer> <silent> <C-d> :call DeleteComment(
+        "\b:comment_lookup[getcurpos()[1]])<CR>
+    "nnoremap <buffer> <silent> <C-e> :call EditCommentBuffer(
+        "\b:comment_lookup[getcurpos()[1]])<CR>
 endfunction
 
 " Inserts a set of comments for a Pull Request review

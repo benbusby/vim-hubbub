@@ -6,6 +6,7 @@
 " Description: A constructor and collection of functions for interacting
 " with the GitHub API.
 " =========================================================================
+scriptencoding utf-8
 let s:footer = '\n\n<sub>— _%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
 
 " =========================================================================
