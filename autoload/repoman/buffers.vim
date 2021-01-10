@@ -56,7 +56,7 @@ function! OpenBuffer(buf_name, header_mode, state) abort
         endif
     endif
 
-    execute 'file ' . fnameescape(a:buf_name)
+    silent! execute 'file ' . fnameescape(a:buf_name)
     setlocal bufhidden=hide noswapfile wrap
 
     " Set up jump guide for skipping through content
@@ -527,7 +527,7 @@ function! repoman#buffers#Buffers(repoman) abort
         let s:results_line = l:line_idx
 
         " Write issue and comments to buffer
-        let l:type = '(' . (self.pr_diff ? s:strings.pr : s:strings.issue) . ') '
+        let l:type = '[' . (self.pr_diff ? s:strings.pr : s:strings.issue) . '] '
         call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
         let l:line_idx = WriteLine(s:ui.spacer_small)
 

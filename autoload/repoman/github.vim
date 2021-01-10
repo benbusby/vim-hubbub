@@ -273,8 +273,11 @@ function! repoman#github#API(token_pw) abort
                 \repoman#utils#ReadToken(self.token_pw),
                 \self.api_path . '/issues/comments/' . a:repoman.id . '/reactions',
                 \'{"content": "' . a:repoman.reaction . '"}', 'POST')
-        else
-            echom 'Reaction error: Unknown type'
+        elseif a:repoman.type ==# 'issue'
+            call s:curl.Send(
+                \repoman#utils#ReadToken(self.token_pw),
+                \self.api_path . '/issues/' . a:repoman.id . '/reactions',
+                \'{"content": "' . a:repoman.reaction . '"}', 'POST')
         endif
     endfunction
 

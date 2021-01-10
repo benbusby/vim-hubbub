@@ -259,7 +259,9 @@ function! repoman#RepoManReact(reaction) abort
     endif
 
     if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
-        call NewReaction('comment', a:reaction, b:comment_lookup[getcurpos()[1]])
+        call NewReaction('comment', a:reaction, b:comment_lookup[getcurpos()[1]]['id'])
+    elseif bufwinnr(s:constants.buffers.issue) > 0 && s:repoman.current_issue > 0
+        call NewReaction('issue', a:reaction, s:repoman.current_issue)
     endif
 endfunction
 
