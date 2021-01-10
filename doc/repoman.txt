@@ -9,10 +9,10 @@ This plugin is only available if 'compatible' is not set.
 ==============================================================================
 INTRODUCTION                                    *repoman*
 
-Repoman is a plugin for creating and managing issues, pull requests, code
-reviews, and more. "Managing" in this context can include commenting on,
-reacting to, replying to, editing, closing, labeling, and so on. The intent
-is to mirror the core functionality of GitHub in a Vim plugin.
+Repoman is a repository manager plugin that nobody asked for, but everyone 
+needed. "Managing" in this context can include commenting on, reacting to, 
+replying to, editing, closing, labeling, and so on. The intent is to mirror
+the core functionality of GitHub in a Vim plugin.
 
 ==============================================================================
 COMMANDS                                        *repoman-commands*
