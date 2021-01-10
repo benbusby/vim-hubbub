@@ -15,7 +15,7 @@ let s:constants = function('repoman#constants#Constants')()
 let s:repoman = {
     \'token_pw': '',
     \'current_issue': -1,
-    \'pr_diff': 0,
+    \'pr': 0,
     \'page': 1,
     \'repo': repoman#utils#GetRepoPath()
 \}
@@ -146,7 +146,7 @@ function! repoman#RepoMan() abort
         call s:buffers(s:repoman).CreateIssueListBuffer(l:results)
         if s:repoman.current_issue > 0 && l:issue_open
             call s:buffers(s:repoman).CreateIssueBuffer(
-                \IssueQuery(s:repoman.current_issue, s:repoman.pr_diff))
+                \IssueQuery(s:repoman.current_issue, s:repoman.pr))
         else
             let s:repoman.current_issue = -1
         endif
@@ -191,7 +191,7 @@ function! repoman#RepoManBack() abort
 
     " Reset issue number
     let s:repoman.current_issue = -1
-    let s:repoman.pr_diff = 0
+    let s:repoman.pr = 0
 endfunction
 
 " :RepoManPage is used to navigate to fetch the next page
@@ -266,7 +266,7 @@ function! repoman#RepoManReact(reaction) abort
 endfunction
 
 function! repoman#RepoManMerge(...) abort
-    if !s:repoman.pr_diff
+    if !s:repoman.pr
         echo s:strings.error . 'Must have a PR open to merge'
         return
     endif
@@ -286,7 +286,7 @@ function! repoman#RepoManReview(action) abort
     let l:actions = ['new', 'approve', 'request_changes', 'comment', 'pending']
     let l:body = ''
 
-    if !s:repoman.pr_diff
+    if !s:repoman.pr
         echo s:strings.error . 'Must have a PR open to review'
         return
     elseif index(l:actions, a:action) < 0
@@ -383,8 +383,8 @@ function! repoman#RepoManEdit() abort
         call s:buffers(s:repoman).EditCommentBuffer(b:review_comments[
             \b:review_comment_lookup[getcurpos()[1]]])
         return
-    elseif s:repoman.current_issue > 0
-        echo 'todo'
+    elseif s:repoman.current_issue > 0 && exists('b:details')
+        call s:buffers(s:repoman).EditItemBuffer(b:details)
         return
     endif
 
@@ -394,7 +394,7 @@ endfunction
 function! repoman#RepoManLabel() abort
     if exists('b:issue_lookup') && has_key(b:issue_lookup, getcurpos()[1])
         let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]]['number']
-        let s:repoman.pr_diff = b:issue_lookup[getcurpos()[1]]['pr_diff']
+        let s:repoman.pr = b:issue_lookup[getcurpos()[1]]['pr']
     endif
 
     if s:repoman.current_issue <= 0
@@ -412,77 +412,17 @@ endfunction
 " comment section for whichever issue/PR/MR is currently open.
 function! repoman#RepoManPost() abort
     if exists('b:review_data') && bufexists(bufnr(s:constants.buffers.review))
-        let l:comment = getline(1, '$')
-        let l:data = b:review_data
-
-        if bufexists(bufnr(s:constants.buffers.edit)) && exists('b:edit_values')
-            let l:edit_values = b:edit_values
-            execute 'bw! ' . fnameescape(s:constants.buffers.edit)
-
-            " Edit existing review comment in the buffer
-            call s:buffers(s:repoman).RemoveReviewBufferComment(l:edit_values)
-        else
-            execute 'bw! ' . fnameescape(s:constants.buffers.comment)
-        endif
-
-        " Add review comment to the review buffer
-        call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data)
+        call PostReviewData()
         return
-    elseif bufexists(bufnr(s:constants.buffers.edit))
-        if !exists('b:edit_values')
-            return
-        endif
-
-        if b:edit_values.edit ==# 'comment'
-            let b:edit_values.body = join(getline(1, '$'), '\n')
-            call EditComment(b:edit_values)
-        endif
-        execute 'bw! ' . fnameescape(s:constants.buffers.edit)
+    elseif bufexists(bufnr(s:constants.buffers.edit)) && exists('b:edit_values')
+        call PostEdit()
     elseif bufexists(bufnr(s:constants.buffers.new_issue)) > 0
             \|| bufexists(bufnr(s:constants.buffers.new_req))
-        " Determine which buffer to use for the post
-        let l:post_buf = s:constants.buffers.new_issue
-        let l:pr = 0
-        let l:line_offset = 0
-        let l:post_data = {}
-        if bufexists(bufnr(s:constants.buffers.new_req))
-            let l:post_buf = s:constants.buffers.new_req
-            let l:pr = 1
-            let l:line_offset = 3
-            let l:post_data.head = substitute(getline(1), s:strings.head . ': ', '', 'ge')
-            let l:post_data.base = substitute(getline(2), s:strings.base . ': ', '', 'ge')
-        endif
-
-        " Focus on active buffer for issue/request creation
-        execute 'b ' . fnameescape(l:post_buf)
-
-        " Extract title and body segments
-        let l:post_data.title = getline(1 + l:line_offset)
-        let l:post_data.body = join(getline(3 + l:line_offset, '$'), '\n')
-        call NewItem(l:pr, l:post_data)
-        execute 'bw! ' . fnameescape(l:post_buf)
+        call PostNewIssue()
     elseif bufexists(bufnr(s:constants.buffers.comment)) > 0
-        execute 'b ' . fnameescape(s:constants.buffers.comment)
-
-        " Condense buffer into a single line with line break chars
-        let l:comment_text = join(getline(1, '$'), '\n')
-
-        call PostComment(l:comment_text, exists('b:parent_id') ? b:parent_id : -1)
-        execute 'bw! ' . fnameescape(s:constants.buffers.comment)
+        call PostNewComment()
     elseif bufexists(bufnr(s:constants.buffers.labels)) > 0
-        execute 'b ' . fnameescape(s:constants.buffers.labels)
-
-        " Determine which labels are active
-        let active_labels = []
-        for label in getline(1, '$')
-            if stridx(label, '[x]') == 0
-                let label_name = substitute(label, '\[x\] ', '', '')
-                call add(active_labels, label_name)
-            endif
-        endfor
-
-        call UpdateLabels(s:repoman.current_issue, l:active_labels)
-        execute 'bw! ' . fnameescape(s:constants.buffers.labels)
+        call PostNewLabels()
     else
         echom s:strings.error . 'No buffers open to post'
         return
@@ -512,14 +452,14 @@ endfunction
 " on the current active buffer.
 function! repoman#RepoManClose() abort
     let l:number_to_close = s:repoman.current_issue
-    let l:pr = s:repoman.pr_diff
+    let l:pr = s:repoman.pr
     let l:reset_current = 1
 
     " Check to see if the user is not in an issue buffer, and
     " if not, close the issue under their cursor
     if expand('%:p') =~ s:constants.buffers.issue_list
         let l:number_to_close = b:issue_lookup[getcurpos()[1]]['number']
-        let l:pr = b:issue_lookup[getcurpos()[1]]['pr_diff']
+        let l:pr = b:issue_lookup[getcurpos()[1]]['pr']
         let l:reset_current = 0
     endif
 
@@ -569,12 +509,18 @@ endfunction
 
 function! IssueQuery(number, pr) abort
     let s:repoman.number = a:number
-    let s:repoman.pr_diff = a:pr
+    let s:repoman.pr = a:pr
     let l:response = s:api.View(s:repoman)
     call repoman#crypto#Encrypt(
         \repoman#utils#SanitizeText(json_encode(l:response)),
         \s:constants.local_files.issue, s:repoman.token_pw)
     return l:response
+endfunction
+
+function! EditIssue(details) abort
+    let s:repoman.title = a:details[s:r_keys.title]
+    let s:repoman.body = a:details[s:r_keys.body]
+    call s:api.UpdateIssue(a:details)
 endfunction
 
 function! LabelsQuery(number) abort
@@ -586,11 +532,11 @@ function! LabelsQuery(number) abort
     return l:response
 endfunction
 
-function! PostComment(comment, parent_id) abort
+function! NewComment(comment, parent_id) abort
     let s:repoman.body = a:comment
     let s:repoman.parent_id = a:parent_id
     let s:repoman.number = s:repoman.current_issue
-    let s:repoman.pr_diff = s:repoman.pr_diff
+    let s:repoman.pr = s:repoman.pr
     call s:api.PostComment(s:repoman)
 endfunction
 
@@ -640,13 +586,13 @@ endfunction
 
 function! NewItem(pr, data) abort
     call extend(s:repoman, a:data)
-    let s:repoman.pr_diff = a:pr
+    let s:repoman.pr = a:pr
     call s:api.NewItem(s:repoman)
 endfunction
 
 function! CloseItem(number, pr) abort
     let s:repoman.number = a:number
-    let s:repoman.pr_diff = a:pr
+    let s:repoman.pr = a:pr
     call s:api.CloseItem(s:repoman)
 endfunction
 
@@ -655,13 +601,14 @@ endfunction
 " =========================================================================
 
 " Open issue based on the provided issue number
-function! ViewIssue(issue_number, pr_diff) abort
-    let s:repoman.pr_diff = a:pr_diff
+function! ViewIssue(issue_number, pr) abort
+    let s:repoman.pr = a:pr
     set cmdheight=4
     echo s:strings.load
 
-    call s:buffers(s:repoman).CreateIssueBuffer(
-        \IssueQuery(a:issue_number, a:pr_diff))
+    let l:result = IssueQuery(a:issue_number, a:pr)
+    call s:buffers(s:repoman).CreateIssueBuffer(l:result)
+    let b:details = l:result
 endfunction
 
 " Resets the RepoMan script dictionary
@@ -669,7 +616,7 @@ function! ResetState() abort
     let s:repoman = {
         \'token_pw': s:repoman.token_pw,
         \'current_issue': s:repoman.current_issue,
-        \'pr_diff': s:repoman.pr_diff,
+        \'pr': s:repoman.pr,
         \'page': s:repoman.page,
         \'repo': s:repoman.repo
     \}
@@ -695,6 +642,89 @@ function! SoftReload() abort
             \repoman#crypto#Decrypt(
             \s:constants.local_files.issue, s:repoman.token_pw)))
     endif
+endfunction
+
+" =========================================================================
+" Post handlers
+" =========================================================================
+function! PostReviewData() abort
+    let l:comment = getline(1, '$')
+    let l:data = b:review_data
+
+    if bufexists(bufnr(s:constants.buffers.edit)) && exists('b:edit_values')
+        let l:edit_values = b:edit_values
+        execute 'bw! ' . fnameescape(s:constants.buffers.edit)
+
+        " Edit existing review comment in the buffer
+        call s:buffers(s:repoman).RemoveReviewBufferComment(l:edit_values)
+    else
+        execute 'bw! ' . fnameescape(s:constants.buffers.comment)
+    endif
+
+    " Add review comment to the review buffer
+    call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data)
+endfunction
+
+function! PostEdit() abort
+    if b:edit_values.edit ==# 'comment'
+        let b:edit_values.body = join(getline(1, '$'), '\n')
+        call EditComment(b:edit_values)
+    elseif b:edit_values.edit ==# 'issue'
+        let b:edit_values.title = getline(1)
+        let b:edit_values.body = join(getline(3, '$'), '\n')
+        call EditIssue(b:edit_values)
+    endif
+    execute 'bw! ' . fnameescape(s:constants.buffers.edit)
+endfunction
+
+function! PostNewIssue() abort
+    " Determine which buffer to use for the post
+    let l:post_buf = s:constants.buffers.new_issue
+    let l:pr = 0
+    let l:line_offset = 0
+    let l:post_data = {}
+    if bufexists(bufnr(s:constants.buffers.new_req))
+        let l:post_buf = s:constants.buffers.new_req
+        let l:pr = 1
+        let l:line_offset = 3
+        let l:post_data.head = substitute(getline(1), s:strings.head . ': ', '', 'ge')
+        let l:post_data.base = substitute(getline(2), s:strings.base . ': ', '', 'ge')
+    endif
+
+    " Focus on active buffer for issue/request creation
+    execute 'b ' . fnameescape(l:post_buf)
+
+    " Extract title and body segments
+    let l:post_data.title = getline(1 + l:line_offset)
+    let l:post_data.body = join(getline(3 + l:line_offset, '$'), '\n')
+    call NewItem(l:pr, l:post_data)
+    execute 'bw! ' . fnameescape(l:post_buf)
+endfunction
+
+function! PostNewComment() abort
+    execute 'b ' . fnameescape(s:constants.buffers.comment)
+
+    " Condense buffer into a single line with line break chars
+    let l:comment_text = join(getline(1, '$'), '\n')
+
+    call NewComment(l:comment_text, exists('b:parent_id') ? b:parent_id : -1)
+    execute 'bw! ' . fnameescape(s:constants.buffers.comment)
+endfunction
+
+function! PostNewLabels() abort
+    execute 'b ' . fnameescape(s:constants.buffers.labels)
+
+    " Determine which labels are active
+    let active_labels = []
+    for label in getline(1, '$')
+        if stridx(label, '[x]') == 0
+            let label_name = substitute(label, '\[x\] ', '', '')
+            call add(active_labels, label_name)
+        endif
+    endfor
+
+    call UpdateLabels(s:repoman.current_issue, l:active_labels)
+    execute 'bw! ' . fnameescape(s:constants.buffers.labels)
 endfunction
 
 nnoremap <script> <silent> <BS> :RepoManBack<CR>

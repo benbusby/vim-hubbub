@@ -59,7 +59,7 @@ function! repoman#github#API(token_pw) abort
     endfunction
 
     function! request.View(repoman) abort
-        let l:path_type = (a:repoman.pr_diff ? 'pulls' : 'issues')
+        let l:path_type = (a:repoman.pr ? 'pulls' : 'issues')
         let l:token = repoman#utils#ReadToken(self.token_pw)
 
         let l:issue_result = json_decode(s:curl.Send(
@@ -72,7 +72,7 @@ function! repoman#github#API(token_pw) abort
 
         " If this is a pull request, we need to format the comments so that
         " comments on the same code changes appear grouped together
-        if a:repoman.pr_diff
+        if a:repoman.pr
             let l:idx = 0
             while l:idx < len(l:comments_result)
                 let l:comment = l:comments_result[l:idx]
@@ -161,7 +161,7 @@ function! repoman#github#API(token_pw) abort
             \"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer . '"
         \'
 
-        if a:repoman.pr_diff
+        if a:repoman.pr
             let l:type = 'pulls'
             let l:item_data = '{' . l:item_data . '
                 \,"head": "' . a:repoman.head . '","base":"' . a:repoman.base . '"}'
@@ -173,6 +173,15 @@ function! repoman#github#API(token_pw) abort
             \repoman#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . l:type,
             \l:item_data, 'POST')
+    endfunction
+
+    function! request.UpdateIssue(repoman) abort
+        call s:curl.Send(
+            \repoman#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/' . a:repoman.number,
+            \'{"title": "' . repoman#utils#SanitizeText(a:repoman.title, 1) . '",' .
+            \'"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . '"}',
+            \'PATCH')
     endfunction
 
     function! request.CloseItem(repoman) abort
