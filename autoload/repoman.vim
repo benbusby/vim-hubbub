@@ -292,6 +292,7 @@ function! repoman#RepoManReview(action) abort
     elseif index(l:actions, a:action) < 0
         echo s:strings.error .
             \'Invalid action -- must be one of ' . string(l:actions)
+        return
     elseif bufexists(bufnr(s:constants.buffers.review)) && a:action ==# 'new'
         echo s:strings.error .
             \'Cannot create a new review while one is already open'

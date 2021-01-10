@@ -120,8 +120,8 @@ The project has the following general structure:
 ├── plugin
 │   └── repoman.vim         # A "header file" of all user accessible plugin commands
 ├── README.md
-├── test
-│   └── repoman.vader       # Plugin tests
+└── test
+    └── repoman.vader       # Plugin tests
 ```
 
 #### Interface Translations
@@ -131,12 +131,15 @@ Note that the existing languages have certain sections formatted to align cleanl
 
 ## Miscellaneous
 
-This plugin is currently in a "beta" release state. If you experience any unexpected behavior, please open an issue.
+The plugin is currently in a usable state, but is still a work in progress. If you experience any unexpected behavior, please open an issue.
 
-There are a number of GitHub features that either are missing some elements or are entirely undeveloped. In case you rely heavily on particular features of GitHub, here are just a few of them:
+At the moment, there are quite a few GitHub features that are either only partially implemented or are entirely absent from the plugin. If you're a GitHub "power user", then this plugin is likely not ready for you, as it is currently lacking features like:
 
-- Creating issues/PRs from issue/PR templates
+- Using issue/PR templates for new issues/PRs
 - Adding/removing assignees for issues/PRs
 - Milestones
 - Filtering issues by any criteria
 - Merging PRs with a custom commit message
+- Probably quite a few others
+
+The project started as a fun way for me to learn Vimscript, and was initially built for replying to comments on GitHub. It eventually snowballed into its current form, which I find to be somewhat useful as a quick and easy way to manage issues, reply to comments, review (small) PRs, etc.
