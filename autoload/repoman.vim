@@ -430,9 +430,6 @@ function! repoman#RepoManPost() abort
 
     set modifiable
     call repoman#RepoMan()
-    " TODO: Not sure if this feature should be supported
-    " until there are reasonable error messages when it fails
-    "call SoftReload()
 endfunction
 
 " :RepoManNew creates a new issue/PR/MR.
