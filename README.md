@@ -106,21 +106,21 @@ Any type of contribution is welcome and appreciated, whether its just using the 
 The project has the following general structure:
 
 ```
-├── assets
+├── assets/
 │   ├── header.txt          # The "header" that appears on nearly every page in the UI 
-│   ├── img
+│   ├── img/
 │   ├── response_keys.json  # A combined json mapping of GitHub and GitLab response keys
 │   └── strings.json        # Translations/UI strings
-├── autoload
-│   ├── repoman             # Utilities and helper classes (API, crypto, buffers, etc)
+├── autoload/
+│   ├── repoman/            # Utilities and helper classes (API, crypto, buffers, etc)
 │   └── repoman.vim         # User command implementations and hooks into API/buffer calls
-├── doc
+├── doc/
 │   └── repoman.txt         # Repoman documentation
 ├── LICENSE
-├── plugin
+├── plugin/
 │   └── repoman.vim         # A "header file" of all user accessible plugin commands
 ├── README.md
-└── test
+└── test/
     └── repoman.vader       # Plugin tests
 ```
 

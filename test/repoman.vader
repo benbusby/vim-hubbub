@@ -4,6 +4,9 @@ Execute (init):
   let g:branch_file = '.branch.repoman'
   let g:token_file = '.github.repoman'
   let g:password = 'p@s$w0rD'
+  let g:repoman_issue = 23
+  let g:repoman_issue_title = 'Vader Test'
+  let g:repoman_comment = '[VADER TEST] ' . strftime('%c')
 
   call repoman#crypto#Encrypt(join(readfile(g:token_file)), g:token_file, g:password)
 
@@ -29,3 +32,19 @@ Execute (validate api):
   let api_path = 'https://api.github.com/repos/'
   let github_api = repoman#github#API(g:password)
   AssertEqual github_api.api_path, api_path . repoman#utils#GetRepoPath()
+
+  call system('cp ' . g:token_file . ' ' . g:repoman_dir)
+
+  let issues = github_api.ViewAll({'page': 1})
+  Assert len(issues) > 0
+
+  let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
+  Assert has_key(issue, 'title') && issue.title ==# g:repoman_issue_title
+
+  call github_api.PostComment({'number': g:repoman_issue, 'body': g:repoman_comment, 'parent_id': -1})
+  let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
+  Assert has_key(issue, 'comments') && len(issue.comments) > 0
+
+  call github_api.DeleteComment({'type': 'issues', 'comment_id': issue.comments[0].id})
+  let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 0
