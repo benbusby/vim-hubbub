@@ -7,7 +7,7 @@
 
 Create and manage GitHub issues, pull requests, comments, code reviews, and more using Vim.
 
-![Demo Gif](assets/img/home-demo.gif)
+![Demo Gif](assets/img/repoman.gif)
 
 ## Table of Contents
 - [Features](#features)
