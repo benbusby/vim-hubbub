@@ -53,8 +53,6 @@ function! repoman#utils#LoadSyntaxColoring(strings) abort
     " Color the UI
     let l:deco = repoman#decorations#Decorations()
 
-    echo l:deco.colors.issue
-
     exe 'hi repoman_spacer gui=bold ' . l:deco.colors.ui
     for val in values(repoman#decorations#Decorations().ui)
         exe 'syn match repoman_spacer /' . val . '/'
@@ -73,15 +71,16 @@ endfunction
 " ============================================================================
 function! repoman#utils#SanitizeText(text, ...) abort
     let l:replacements = [[system('echo ""'), '\\n'], ["'", "'\"'\"'"]]
+    let l:result = a:text
     if a:0 > 0 && a:1
-        let l:replacements += ['"', '\\"']
+        let l:result = substitute(l:result, '"', '\\"', 'ge')
     endif
-    let l:text = a:text
 
     for item in l:replacements
-        let l:text = substitute(l:text, item[0], item[1], 'ge')
+        let l:result = substitute(l:result, item[0], item[1], 'ge')
     endfor
-    return l:text
+
+    return l:result
 endfunction
 
 function! repoman#utils#ReadFile(name, password) abort

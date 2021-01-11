@@ -56,7 +56,7 @@ function! OpenBuffer(buf_name, header_mode, state) abort
         endif
     endif
 
-    execute 'file ' . fnameescape(a:buf_name)
+    silent! execute 'file ' . fnameescape(a:buf_name)
     setlocal bufhidden=hide noswapfile wrap
 
     " Set up jump guide for skipping through content
@@ -283,10 +283,10 @@ function! InsertComment(comment) abort
         endwhile
     endif
 
-    nnoremap <buffer> <silent> <C-d> :call DeleteComment(
-        \b:comment_lookup[getcurpos()[1]])<CR>
-    nnoremap <buffer> <silent> <C-e> :call EditCommentBuffer(
-        \b:comment_lookup[getcurpos()[1]])<CR>
+    "nnoremap <buffer> <silent> <C-d> :call DeleteComment(
+        "\b:comment_lookup[getcurpos()[1]])<CR>
+    "nnoremap <buffer> <silent> <C-e> :call EditCommentBuffer(
+        "\b:comment_lookup[getcurpos()[1]])<CR>
 endfunction
 
 " Inserts a set of comments for a Pull Request review
@@ -495,11 +495,10 @@ function! repoman#buffers#Buffers(repoman) abort
 
             " Store issue number and title to use for viewing issue details later
             while l:start_idx <= l:line_idx
-                let l:is_pr = has_key(item, 'pull_request')
                 let b:issue_lookup[l:start_idx] = {
                     \'number': item[s:r_keys.number],
                     \'title': item[s:r_keys.title],
-                    \'pr_diff': l:is_pr ? '1' . item['pull_request']['diff_url'] : ''
+                    \'pr': has_key(item, 'pull_request')
                 \}
                 let l:start_idx += 1
             endwhile
@@ -510,7 +509,7 @@ function! repoman#buffers#Buffers(repoman) abort
         call cursor(s:results_line, 1)
         nnoremap <buffer> <silent> <CR> :call ViewIssue(
             \b:issue_lookup[getcurpos()[1]]['number'],
-            \b:issue_lookup[getcurpos()[1]]['pr_diff'])<cr>
+            \b:issue_lookup[getcurpos()[1]]['pr'])<cr>
 
         call FinishOutput()
     endfunction
@@ -527,7 +526,7 @@ function! repoman#buffers#Buffers(repoman) abort
         let s:results_line = l:line_idx
 
         " Write issue and comments to buffer
-        let l:type = '(' . (self.pr_diff ? s:strings.pr : s:strings.issue) . ') '
+        let l:type = '[' . (self.pr ? s:strings.pr : s:strings.issue) . '] '
         call WriteLine(l:type . '#' . a:contents[s:r_keys.number] . ': ' . a:contents[s:r_keys.title])
         let l:line_idx = WriteLine(s:ui.spacer_small)
 
@@ -594,6 +593,31 @@ function! repoman#buffers#Buffers(repoman) abort
         call FinishOutput()
 
         " Re-enable modifiable so that we can write something
+        set modifiable
+    endfunction
+
+    " Edit a buffer related to an item (issue or pull request)
+    "
+    " Args:
+    " - type: a str indicator of the type of item to edit
+    " - details: the issue/pr details for editing
+    "
+    " Returns:
+    " - none
+    function! state.EditItemBuffer(details) abort
+        set splitbelow
+        call OpenBuffer(s:constants.buffers.edit, -1, self)
+
+        call WriteLine(a:details[s:r_keys.title])
+        call WriteLine(repeat('-', 20))
+        for line in split(a:details[s:r_keys.body], '\n')
+            call WriteLine(line)
+        endfor
+        call FinishOutput()
+
+        let b:edit_values = deepcopy(a:details)
+        let b:edit_values.edit = 'issue'
+
         set modifiable
     endfunction
 
