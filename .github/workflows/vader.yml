@@ -16,7 +16,7 @@ jobs:
     - name: Set up Vader tests
       run: |
         # Set up test files for vader
-        echo "${{ secrets.GITHUB_TOKEN }}" > .github.repoman
+        echo "${{ secrets.REPOMAN_TOKEN }}" > .github.repoman
         echo "${GITHUB_REF##*/}" > .branch.repoman
 
         # Install vader

@@ -4,9 +4,9 @@ Execute (init):
   let g:branch_file = '.branch.repoman'
   let g:token_file = '.github.repoman'
   let g:password = 'p@s$w0rD'
-  let g:repoman_issue = 23
+  let g:repoman_issue = 25
   let g:repoman_issue_title = 'Vader Test'
-  let g:repoman_comment = '[VADER TEST] ' . strftime('%c')
+  let g:repoman_comment = '**[VADER TEST]**\nPassed: ' . strftime('%c')
 
   call repoman#crypto#Encrypt(join(readfile(g:token_file)), g:token_file, g:password)
 
@@ -36,19 +36,16 @@ Execute (validate api):
   call system('cp ' . g:token_file . ' ' . g:repoman_dir)
 
   let issues = github_api.ViewAll({'page': 1})
-  Log 'Issue list: ' . string(issues)
   Assert len(issues) > 0
 
   let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
-  Log 'Issue: ' . string(issue)
   Assert has_key(issue, 'title') && issue.title ==# g:repoman_issue_title
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 1
+
+  call github_api.DeleteComment({'type': 'issues', 'comment_id': issue.comments[0].id})
+  let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 0
 
   call github_api.PostComment({'number': g:repoman_issue, 'body': g:repoman_comment, 'parent_id': -1})
   let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
-  Log 'Issue w/ comment: ' . string(issue)
-  Assert has_key(issue, 'comments') && len(issue.comments) > 0
-
-  "call github_api.DeleteComment({'type': 'issues', 'comment_id': issue.comments[0].id})
-  "let issue = github_api.View({'pr': 0, 'number': g:repoman_issue})
-  "Log 'Issue w/ deleted comment: ' . string(issue)
-  "Assert has_key(issue, 'comments') && len(issue.comments) ==# 0
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 1
