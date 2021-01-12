@@ -53,13 +53,9 @@ Repoman supports a wide variety of features and GitHub API interactions, includi
       - Ex: `:set rtp+=~/.vim/bundle/vim-repoman`
 
 ## Setup
-1. Create a personal access token
-    - GitHub
-      - Settings > Developer Settings > Personal Access Tokens
-      - Generate new token with the "repo" box checked
-    - GitLab (In Progress)
-      - Settings > Access Tokens
-      - Generate new token with the "api", "read_repository" and "write_repository" boxes checked
+1. Create a GitHub personal access token
+    - Settings > Developer Settings > Personal Access Tokens
+    - Generate new token with the "repo" box checked
 2. After installing vim-repoman, run `:RepoManInit`
     - You will be prompted for your token(s) and a password to encrypt them
 
@@ -123,6 +119,13 @@ The project has the following general structure:
 └── test/
     └── repoman.vader       # Plugin tests
 ```
+
+#### GitLab Support
+If you're interested in contributing to GitLab support, the main file you'll want to edit is `autoload/repoman/gitlab.vim`. It will likely involve a decent amount of work to match feature functionality between GitHub and GitLab, but I'm happy with even small, incremental PRs.
+
+To set up a repoman token on GitLab:
+    - Settings > Access Tokens
+    - Generate new token with the "api", "read_repository" and "write_repository" boxes checked
 
 #### Interface Translations
 If you would like to improve the UI translation support, please edit [assets/strings.json](assets/strings.json) accordingly and create a new PR with your changes.
