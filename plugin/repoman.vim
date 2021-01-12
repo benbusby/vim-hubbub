@@ -30,3 +30,21 @@ command! -nargs=0 RepoManDelete  call repoman#RepoManDelete()
 " Range methods
 command! -range RepoManSuggest <line1>,<line2>call repoman#RepoManSuggest()
 command! -range RepoManComment <line1>,<line2>call repoman#RepoManComment()
+
+" Short versions of commands (same command interaction commands, but without
+" the RepoMan prefix)
+if exists('g:repoman_short_commands') && g:repoman_short_commands
+    command! -nargs=1 React   call repoman#RepoManReact('<args>')
+    command! -nargs=0 Edit    call repoman#RepoManEdit()
+    command! -nargs=0 Post    call repoman#RepoManPost()
+    command! -nargs=0 Close   call repoman#RepoManClose()
+    command! -nargs=0 Label   call repoman#RepoManLabel()
+    command! -nargs=1 New     call repoman#RepoManNew('<args>')
+    command! -nargs=? Merge   call repoman#RepoManMerge('<args>')
+    command! -nargs=1 Review  call repoman#RepoManReview('<args>')
+    command! -nargs=0 Save    call repoman#RepoManSave()
+    command! -nargs=0 Reply   call repoman#RepoManReply()
+    command! -nargs=0 Delete  call repoman#RepoManDelete()
+    command! -range Suggest <line1>,<line2>call repoman#RepoManSuggest()
+    command! -range Comment <line1>,<line2>call repoman#RepoManComment()
+endif

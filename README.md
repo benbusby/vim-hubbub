@@ -82,10 +82,10 @@ let g:repoman_openssl_old = 0
 ```
 
 ```vim
-" French, show outdated, use GitLab by default
-let g:repoman_show_outdated = 1
+" French, show outdated, use short command alternatives
 let g:repoman_language = 'fr'
-let g:repoman_default_host = 'gitlab'
+let g:repoman_show_outdated = 1
+let g:repoman_short_commands = 1
 ```
 
 ```vim
