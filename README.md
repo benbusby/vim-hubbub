@@ -1,4 +1,4 @@
-![Repoman Banner](assets/img/repoman-banner.png)
+![Repoman Banner](https://raw.githubusercontent.com/wiki/benbusby/vim-repoman/images/repoman-banner.png)
 
 [![vint](https://github.com/benbusby/vim-repoman/workflows/vint/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avint)
 [![vader](https://github.com/benbusby/vim-repoman/workflows/vader/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avader)
@@ -7,7 +7,7 @@
 
 Create and manage GitHub issues, pull requests, comments, code reviews, and more using Vim.
 
-![Demo Gif](assets/img/repoman.gif)
+![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-repoman/images/repoman.gif)
 
 ## Table of Contents
 - [Features](#features)
