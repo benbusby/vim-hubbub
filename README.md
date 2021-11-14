@@ -1,4 +1,4 @@
-![Repoman Banner](https://raw.githubusercontent.com/wiki/benbusby/vim-repoman/images/repoman-banner.png)
+![Repoman Banner](doc/repoman-banner.svg)
 
 [![vint](https://github.com/benbusby/vim-repoman/workflows/vint/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avint)
 [![vader](https://github.com/benbusby/vim-repoman/workflows/vader/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avader)
