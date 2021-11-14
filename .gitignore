@@ -1,3 +1,3 @@
-# Ignore files created by vim-repoman
-*.repoman*
+# Ignore files created by vim-hubbub
+*.hubbub*
 tags

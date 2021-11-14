@@ -1,8 +1,8 @@
 " ============================================================================
-" File:    autoload/repoman/decorations.vim
+" File:    autoload/hubbub/decorations.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
+" Website: https://github.com/benbusby/vim-hubbub
 " Description: UI spacers/colors/etc
 " ============================================================================
 scriptencoding utf-8
@@ -24,7 +24,7 @@ function! GetColor(type) abort
     return 'none'
 endfunction
 
-function! repoman#decorations#Decorations() abort
+function! hubbub#decorations#Decorations() abort
     let decorations = {
         \'fg_prop': has('termguicolors') ? 'guifg=' : 'ctermfg=',
         \'ui': {

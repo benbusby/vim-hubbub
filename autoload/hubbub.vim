@@ -1,37 +1,37 @@
 " =========================================================================
-" File:    autoload/repoman.vim
+" File:    autoload/hubbub.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
+" Website: https://github.com/benbusby/vim-hubbub
 " Description: A set of functions for handling user input, buffer
 " modifications, and interaction with the host API.
 " =========================================================================
 scriptencoding utf-8
 
-let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
-let g:repoman_open = 0
-let s:buffers = function('repoman#buffers#Buffers')
-let s:constants = function('repoman#constants#Constants')()
+let g:hubbub_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+let g:hubbub_open = 0
+let s:buffers = function('hubbub#buffers#Buffers')
+let s:constants = function('hubbub#constants#Constants')()
 
-let s:repoman = {
+let s:hubbub = {
     \'token_pw': '',
     \'current_issue': -1,
     \'pr': 0,
     \'page': 1,
-    \'repo': repoman#utils#GetRepoPath()
+    \'repo': hubbub#utils#GetRepoPath()
 \}
 
-let s:repoman_max_page = -1
+let s:hubbub_max_page = -1
 
 " Set language and response keys
-let response_keys = json_decode(join(readfile(g:repoman_dir . '/assets/response_keys.json')))
-let s:r_keys = response_keys[repoman#utils#GetRepoHost()]
+let response_keys = json_decode(join(readfile(g:hubbub_dir . '/assets/response_keys.json')))
+let s:r_keys = response_keys[hubbub#utils#GetRepoHost()]
 
-let lang_dict = json_decode(join(readfile(g:repoman_dir . '/assets/strings.json')))
-let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
+let lang_dict = json_decode(join(readfile(g:hubbub_dir . '/assets/strings.json')))
+let s:strings = lang_dict[(exists('g:hubbub_language') ? g:hubbub_language : 'en')]
 
-let s:gh_token_path = g:repoman_dir . '/.github.repoman'
-let s:gl_token_path = g:repoman_dir . '/.gitlab.repoman'
+let s:gh_token_path = g:hubbub_dir . '/.github.hubbub'
+let s:gl_token_path = g:hubbub_dir . '/.gitlab.hubbub'
 let s:api = {}
 
 " =========================================================================
@@ -41,9 +41,9 @@ let s:api = {}
 " --------------------------------------------------------------
 " Init ---------------------------------------------------------
 " --------------------------------------------------------------
-" :RepoManInit allows the user to set up using their tokens to
+" :HubbubInit allows the user to set up using their tokens to
 " access the GitHub and/or GitLab API
-function! repoman#RepoManInit() abort
+function! hubbub#HubbubInit() abort
     call inputsave()
     let l:token_gh = input('GitHub Token: ')
 
@@ -54,11 +54,11 @@ function! repoman#RepoManInit() abort
     call inputrestore()
 
     if !empty(l:token_gh)
-        call repoman#crypto#Encrypt(l:token_gh, s:gh_token_path, l:token_pw)
+        call hubbub#crypto#Encrypt(l:token_gh, s:gh_token_path, l:token_pw)
     endif
 
     if !empty(l:token_gl)
-        call repoman#crypto#Encrypt(l:token_gl, s:gl_token_path, l:token_pw)
+        call hubbub#crypto#Encrypt(l:token_gl, s:gl_token_path, l:token_pw)
     endif
 
     if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
@@ -72,44 +72,44 @@ endfunction
 " --------------------------------------------------------------
 " Navigation ---------------------------------------------------
 " --------------------------------------------------------------
-" :RepoMan can either:
-"   - Open a new instance of RepoMan to the 'home' view. If
-"     there's already a RepoMan buffer open, it will:
-"   - Refresh the currently active RepoMan buffer(s)
-function! repoman#RepoMan() abort
-    let l:repo_host = repoman#utils#GetRepoHost()
-    let s:in_repo = repoman#utils#InGitRepo()
+" :Hubbub can either:
+"   - Open a new instance of Hubbub to the 'home' view. If
+"     there's already a Hubbub buffer open, it will:
+"   - Refresh the currently active Hubbub buffer(s)
+function! hubbub#Hubbub() abort
+    let l:repo_host = hubbub#utils#GetRepoHost()
+    let s:in_repo = hubbub#utils#InGitRepo()
 
     if !filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
         " At least one token should exist
-        echo 'No tokens found -- have you run :RepoManInit?'
+        echo 'No tokens found -- have you run :HubbubInit?'
         return
-    elseif !s:in_repo && !exists('g:repoman_default_host')
+    elseif !s:in_repo && !exists('g:hubbub_default_host')
         if filereadable(s:gh_token_path) && !filereadable(s:gl_token_path)
-            let g:repoman_default_host = 'github'
+            let g:hubbub_default_host = 'github'
         elseif filereadable(s:gl_token_path) && !filereadable(s:gh_token_path)
-            let g:repoman_default_host = 'gitlab'
+            let g:hubbub_default_host = 'gitlab'
         else
             " If user hasn't set their default host, and is using both tokens, so there's nothing to do
-            echo 'Not in git repo -- run :RepoMan from within a repository, or set g:repoman_default_host'
+            echo 'Not in git repo -- run :Hubbub from within a repository, or set g:hubbub_default_host'
             return
         endif
     endif
 
-    if !s:in_repo && g:repoman_default_host
-        let l:repo_host = g:repoman_default_host
+    if !s:in_repo && g:hubbub_default_host
+        let l:repo_host = g:hubbub_default_host
     endif
 
     let l:issue_open = 0
 
     " Skip password if the user has not set one
-    let l:nopass = function('repoman#utils#' . l:repo_host . '_NoPass')()
+    let l:nopass = function('hubbub#utils#' . l:repo_host . '_NoPass')()
 
-    if g:repoman_open
+    if g:hubbub_open
         set cmdheight=4
         echo s:strings.refresh
 
-        " User is already using RepoMan, treat as a refresh
+        " User is already using Hubbub, treat as a refresh
         if bufexists(bufnr(s:constants.buffers.issue_list)) > 0
             execute 'bw! ' . fnameescape(s:constants.buffers.issue_list)
         endif
@@ -121,43 +121,43 @@ function! repoman#RepoMan() abort
     elseif !l:nopass
         " New session, prompt for token pw
         call inputsave()
-        let s:repoman.token_pw = inputsecret(s:strings.pw_prompt)
+        let s:hubbub.token_pw = inputsecret(s:strings.pw_prompt)
         call inputrestore()
     else
         " No password, continue without one
-        let s:repoman.token_pw = ''
+        let s:hubbub.token_pw = ''
     endif
 
     " Initialize script API object
-    let s:api = function('repoman#' . l:repo_host . '#API')(s:repoman.token_pw)
+    let s:api = function('hubbub#' . l:repo_host . '#API')(s:hubbub.token_pw)
 
     " Recreate home buffer, and optionally the issue buffer
     " as well
-    let l:results = s:in_repo || !empty(s:repoman.repo) ?
+    let l:results = s:in_repo || !empty(s:hubbub.repo) ?
         \IssueListQuery() : RepoListQuery()
     if len(l:results) < 10
-        let s:repoman_max_page = 1
+        let s:hubbub_max_page = 1
     endif
 
-    if !s:in_repo && empty(s:repoman.repo)
-        call s:buffers(s:repoman).CreateRepoListBuffer(l:results)
+    if !s:in_repo && empty(s:hubbub.repo)
+        call s:buffers(s:hubbub).CreateRepoListBuffer(l:results)
     else
-        call s:buffers(s:repoman).CreateIssueListBuffer(l:results)
-        if s:repoman.current_issue > 0 && l:issue_open
-            call s:buffers(s:repoman).CreateIssueBuffer(
-                \IssueQuery(s:repoman.current_issue, s:repoman.pr))
+        call s:buffers(s:hubbub).CreateIssueListBuffer(l:results)
+        if s:hubbub.current_issue > 0 && l:issue_open
+            call s:buffers(s:hubbub).CreateIssueBuffer(
+                \IssueQuery(s:hubbub.current_issue, s:hubbub.pr))
         else
-            let s:repoman.current_issue = -1
+            let s:hubbub.current_issue = -1
         endif
     endif
 
     " Plugin is now initialized
-    let g:repoman_open = 1
+    let g:hubbub_open = 1
 endfunction
 
-" :RepoManBack can be used to navigate back to the home page buffer
+" :HubbubBack can be used to navigate back to the home page buffer
 " in instances where the issue buffer was opened on top of it.
-function! repoman#RepoManBack() abort
+function! hubbub#HubbubBack() abort
     let l:post_bufs = [
         \s:constants.buffers.comment,
         \s:constants.buffers.new_issue,
@@ -173,7 +173,7 @@ function! repoman#RepoManBack() abort
 
     " Navigate back to issue list buffer if the buffer is open, or if currently
     " viewing an issue
-    if bufwinnr(s:constants.buffers.issue) > 0 || s:repoman.current_issue > 0
+    if bufwinnr(s:constants.buffers.issue) > 0 || s:hubbub.current_issue > 0
         for buffer in l:post_bufs
             if bufexists(bufnr(buffer))
                 echo s:strings.error . ' Cannot close issue while updating'
@@ -185,23 +185,23 @@ function! repoman#RepoManBack() abort
     elseif bufwinnr(s:constants.buffers.issue_list) > 0 && !s:in_repo
         " Reset view to repo list
         set modifiable
-        let s:repoman.repo = ''
-        let s:repoman.page = 1
-        let s:repoman_max_page = -1
-        call repoman#RepoMan()
+        let s:hubbub.repo = ''
+        let s:hubbub.page = 1
+        let s:hubbub_max_page = -1
+        call hubbub#Hubbub()
     endif
 
     " Reset issue number
-    let s:repoman.current_issue = -1
-    let s:repoman.pr = 0
+    let s:hubbub.current_issue = -1
+    let s:hubbub.pr = 0
 endfunction
 
-" :RepoManPage is used to navigate to fetch the next page
+" :HubbubPage is used to navigate to fetch the next page
 " of results in the issues/requests list
-function! repoman#RepoManPage(...) abort
-    if a:1 < 1 && s:repoman.page == 1
+function! hubbub#HubbubPage(...) abort
+    if a:1 < 1 && s:hubbub.page == 1
         return
-    elseif s:repoman.page == s:repoman_max_page && a:1 > 0
+    elseif s:hubbub.page == s:hubbub_max_page && a:1 > 0
         echo 'Max page reached'
         return
     endif
@@ -210,22 +210,22 @@ function! repoman#RepoManPage(...) abort
         execute 'bw! ' . fnameescape(s:constants.buffers.issue_list)
     endif
 
-    let s:repoman.page += a:1
-    let l:page_issues = s:in_repo || !empty(s:repoman.repo)
+    let s:hubbub.page += a:1
+    let l:page_issues = s:in_repo || !empty(s:hubbub.repo)
     let l:response = l:page_issues ? IssueListQuery() : RepoListQuery()
 
     if len(l:response) < 10
-        let s:repoman_max_page = s:repoman.page
+        let s:hubbub_max_page = s:hubbub.page
     endif
     let s:buf_create = l:page_issues ?
-        \s:buffers(s:repoman).CreateIssueListBuffer :
-        \s:buffers(s:repoman).CreateRepoListBuffer
+        \s:buffers(s:hubbub).CreateIssueListBuffer :
+        \s:buffers(s:hubbub).CreateRepoListBuffer
     call s:buf_create(l:response)
 endfunction
 
-" :RepoManJump can be used on buffers to jump between
+" :HubbubJump can be used on buffers to jump between
 " items by direction (1 for forwards, -1 for backwards)
-function! repoman#RepoManJump(...) abort
+function! hubbub#HubbubJump(...) abort
     let l:current_line = getcurpos()[1]
     let l:direction = a:1
     let l:idx = 0
@@ -254,7 +254,7 @@ endfunction
 " --------------------------------------------------------------
 " Interaction --------------------------------------------------
 " --------------------------------------------------------------
-function! repoman#RepoManReact(reaction) abort
+function! hubbub#HubbubReact(reaction) abort
     if index(keys(s:constants.reactions), a:reaction) < 0
         echo 'Invalid arg: must be one of ' . string(keys(s:constants.reactions))
         return
@@ -262,13 +262,13 @@ function! repoman#RepoManReact(reaction) abort
 
     if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
         call NewReaction('comment', a:reaction, b:comment_lookup[getcurpos()[1]]['id'])
-    elseif bufwinnr(s:constants.buffers.issue) > 0 && s:repoman.current_issue > 0
-        call NewReaction('issue', a:reaction, s:repoman.current_issue)
+    elseif bufwinnr(s:constants.buffers.issue) > 0 && s:hubbub.current_issue > 0
+        call NewReaction('issue', a:reaction, s:hubbub.current_issue)
     endif
 endfunction
 
-function! repoman#RepoManMerge(...) abort
-    if !s:repoman.pr
+function! hubbub#HubbubMerge(...) abort
+    if !s:hubbub.pr
         echo s:strings.error . 'Must have a PR open to merge'
         return
     endif
@@ -284,11 +284,11 @@ function! repoman#RepoManMerge(...) abort
     call Merge(l:merge_method)
 endfunction
 
-function! repoman#RepoManReview(action) abort
+function! hubbub#HubbubReview(action) abort
     let l:actions = ['new', 'approve', 'request_changes', 'comment', 'pending']
     let l:body = ''
 
-    if !s:repoman.pr
+    if !s:hubbub.pr
         echo s:strings.error . 'Must have a PR open to review'
         return
     elseif index(l:actions, a:action) < 0
@@ -302,7 +302,7 @@ function! repoman#RepoManReview(action) abort
     endif
 
     if a:action =~# 'new'
-        call s:buffers(s:repoman).CreateReviewBuffer(Review(a:action, l:body))
+        call s:buffers(s:hubbub).CreateReviewBuffer(Review(a:action, l:body))
         return
     elseif a:action =~# 'request_changes' || a:action =~# 'comment'
         let l:body = input('Comment (required -- use \n for line breaks): ')
@@ -314,10 +314,10 @@ function! repoman#RepoManReview(action) abort
 
     call Review(toupper(a:action), l:body)
     execute 'bw! ' . s:constants.buffers.review
-    call repoman#RepoMan()
+    call hubbub#Hubbub()
 endfunction
 
-function! repoman#RepoManSuggest() range
+function! hubbub#HubbubSuggest() range
     if !bufexists(bufnr(s:constants.buffers.review))
         echo s:strings.error .
             \'Cannot make a suggestion outside of a code review'
@@ -329,10 +329,10 @@ function! repoman#RepoManSuggest() range
         call add(l:code, substitute(line, '^[^ ]', '', ''))
     endfor
 
-    call s:buffers(s:repoman).CreateSuggestionBuffer(l:code, a:firstline, a:lastline)
+    call s:buffers(s:hubbub).CreateSuggestionBuffer(l:code, a:firstline, a:lastline)
 endfunction
 
-function! repoman#RepoManSave() abort
+function! hubbub#HubbubSave() abort
     if @% !=# s:constants.buffers.review
         echo s:strings.error . 'Must be in a review to save'
         return
@@ -341,12 +341,12 @@ function! repoman#RepoManSave() abort
     " TODO
 endfunction
 
-" :RepoManReply functions similarly to RepoManComment, but
+" :HubbubReply functions similarly to HubbubComment, but
 " posts a reply to an existing review comment instead of a
 " regular issue comment.
 "
-" Used in conjunction with :RepoManPost to post the reply.
-function! repoman#RepoManReply() abort
+" Used in conjunction with :HubbubPost to post the reply.
+function! hubbub#HubbubReply() abort
     if !exists('b:comment_lookup')
         echo 'No review comments to reply to'
         return
@@ -356,15 +356,15 @@ function! repoman#RepoManReply() abort
     endif
 
     let l:parent_id = b:comment_lookup[getcurpos()[1]][s:r_keys.id]
-    call s:buffers(s:repoman).CreateReplyBuffer(l:parent_id, 0)
+    call s:buffers(s:hubbub).CreateReplyBuffer(l:parent_id, 0)
 endfunction
 
-" :RepoManComment splits the issue buffer in half horizontally,
+" :HubbubComment splits the issue buffer in half horizontally,
 " and allows the user to enter a comment of any length.
 "
-" Used in conjunction with :RepoManPost to post the comment.
-function! repoman#RepoManComment() range
-    if s:repoman.current_issue <= 0
+" Used in conjunction with :HubbubPost to post the comment.
+function! hubbub#HubbubComment() range
+    if s:hubbub.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to comment!'
         return
     elseif exists('b:review_lookup') && (
@@ -373,36 +373,36 @@ function! repoman#RepoManComment() range
         return
     endif
 
-    call s:buffers(s:repoman).CreateCommentBuffer(a:firstline, a:lastline)
+    call s:buffers(s:hubbub).CreateCommentBuffer(a:firstline, a:lastline)
 endfunction
 
-" :RepoManEdit allows editing the contents of an issue or comment, depending
+" :HubbubEdit allows editing the contents of an issue or comment, depending
 " on the current location of the cursor.
-function! repoman#RepoManEdit() abort
+function! hubbub#HubbubEdit() abort
     " Edit comment if the cursor is over a comment
     if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
-        call s:buffers(s:repoman).EditCommentBuffer(b:comment_lookup[getcurpos()[1]])
+        call s:buffers(s:hubbub).EditCommentBuffer(b:comment_lookup[getcurpos()[1]])
         return
     elseif exists('b:review_comment_lookup') &&
         \has_key(b:review_comment_lookup, getcurpos()[1])
-        call s:buffers(s:repoman).EditCommentBuffer(b:review_comments[
+        call s:buffers(s:hubbub).EditCommentBuffer(b:review_comments[
             \b:review_comment_lookup[getcurpos()[1]]])
         return
-    elseif s:repoman.current_issue > 0 && exists('b:details')
-        call s:buffers(s:repoman).EditItemBuffer(b:details)
+    elseif s:hubbub.current_issue > 0 && exists('b:details')
+        call s:buffers(s:hubbub).EditItemBuffer(b:details)
         return
     endif
 
     echo 'No issue or comment available to edit'
 endfunction
 
-function! repoman#RepoManLabel() abort
+function! hubbub#HubbubLabel() abort
     if exists('b:issue_lookup') && has_key(b:issue_lookup, getcurpos()[1])
-        let s:repoman.current_issue = b:issue_lookup[getcurpos()[1]]['number']
-        let s:repoman.pr = b:issue_lookup[getcurpos()[1]]['pr']
+        let s:hubbub.current_issue = b:issue_lookup[getcurpos()[1]]['number']
+        let s:hubbub.pr = b:issue_lookup[getcurpos()[1]]['pr']
     endif
 
-    if s:repoman.current_issue <= 0
+    if s:hubbub.current_issue <= 0
         echo s:strings.error . 'Must be on an issue/PR page to label'
         return
     endif
@@ -410,12 +410,12 @@ function! repoman#RepoManLabel() abort
     set cmdheight=4
     echo s:strings.load
 
-    call s:buffers(s:repoman).CreateLabelsBuffer(LabelsQuery(s:repoman.current_issue))
+    call s:buffers(s:hubbub).CreateLabelsBuffer(LabelsQuery(s:hubbub.current_issue))
 endfunction
 
-" :RepoManPost posts the contents of the comment buffer to the
+" :HubbubPost posts the contents of the comment buffer to the
 " comment section for whichever issue/PR/MR is currently open.
-function! repoman#RepoManPost() abort
+function! hubbub#HubbubPost() abort
     if exists('b:review_data') && bufexists(bufnr(s:constants.buffers.review))
         call PostReviewData()
         return
@@ -434,15 +434,15 @@ function! repoman#RepoManPost() abort
     endif
 
     set modifiable
-    call repoman#RepoMan()
+    call hubbub#Hubbub()
     " TODO: Not sure if this feature should be supported
     " until there are reasonable error messages when it fails
     "call SoftReload()
 endfunction
 
-" :RepoManNew creates a new issue/PR/MR.
+" :HubbubNew creates a new issue/PR/MR.
 " - a:1: Either 'issue' or 'pr'/'mr'
-function! repoman#RepoManNew(type) abort
+function! hubbub#HubbubNew(type) abort
     let l:item_type = a:type
     let l:pr_branch = ''
 
@@ -450,14 +450,14 @@ function! repoman#RepoManNew(type) abort
         let l:pr_branch = s:api.RepoInfo().default_branch
     endif
 
-    call s:buffers(s:repoman).NewItemBuffer(l:item_type, l:pr_branch)
+    call s:buffers(s:hubbub).NewItemBuffer(l:item_type, l:pr_branch)
 endfunction
 
-" :RepoManClose closes the currently selected issue/PR/MR, depending
+" :HubbubClose closes the currently selected issue/PR/MR, depending
 " on the current active buffer.
-function! repoman#RepoManClose() abort
-    let l:number_to_close = s:repoman.current_issue
-    let l:pr = s:repoman.pr
+function! hubbub#HubbubClose() abort
+    let l:number_to_close = s:hubbub.current_issue
+    let l:pr = s:hubbub.pr
     let l:reset_current = 1
 
     " Check to see if the user is not in an issue buffer, and
@@ -475,18 +475,18 @@ function! repoman#RepoManClose() abort
     if s:answer ==? 'y'
         call CloseItem(l:number_to_close, l:pr)
         if l:reset_current
-            let s:repoman.current_issue = -1
+            let s:hubbub.current_issue = -1
         endif
-        call repoman#RepoMan()
+        call hubbub#Hubbub()
     endif
 endfunction
 
-function! repoman#RepoManDelete() abort
+function! hubbub#HubbubDelete() abort
     if exists('b:comment_lookup') && has_key(b:comment_lookup, getcurpos()[1])
         call DeleteComment(b:comment_lookup[getcurpos()[1]])
     elseif exists('b:review_comment_lookup') && has_key(b:review_comment_lookup, getcurpos()[1])
         let l:comment_id = b:review_comment_lookup[getcurpos()[1]]
-        call s:buffers(s:repoman).RemoveReviewBufferComment(b:review_comments[l:comment_id])
+        call s:buffers(s:hubbub).RemoveReviewBufferComment(b:review_comments[l:comment_id])
     end
 endfunction
 
@@ -494,111 +494,111 @@ endfunction
 " External Script Calls
 " =========================================================================
 function! RepoListQuery() abort
-    return s:api.ViewRepos(s:repoman)
+    return s:api.ViewRepos(s:hubbub)
 endfunction
 
 function! IssueListQuery(...) abort
     if a:0 > 0
-        let s:repoman.page = 1
-        let s:repoman_max_page = -1
-        let s:repoman.repo = a:1
+        let s:hubbub.page = 1
+        let s:hubbub_max_page = -1
+        let s:hubbub.repo = a:1
         let s:api.api_path = s:api.api_path . a:1
     endif
 
-    let l:response = s:api.ViewAll(s:repoman)
-    call repoman#crypto#Encrypt(
-        \repoman#utils#SanitizeText(json_encode(l:response)),
-        \s:constants.local_files.home, s:repoman.token_pw)
+    let l:response = s:api.ViewAll(s:hubbub)
+    call hubbub#crypto#Encrypt(
+        \hubbub#utils#SanitizeText(json_encode(l:response)),
+        \s:constants.local_files.home, s:hubbub.token_pw)
     return l:response
 endfunction
 
 function! IssueQuery(number, pr) abort
-    let s:repoman.number = a:number
-    let s:repoman.pr = a:pr
-    let l:response = s:api.View(s:repoman)
-    call repoman#crypto#Encrypt(
-        \repoman#utils#SanitizeText(json_encode(l:response)),
-        \s:constants.local_files.issue, s:repoman.token_pw)
+    let s:hubbub.number = a:number
+    let s:hubbub.pr = a:pr
+    let l:response = s:api.View(s:hubbub)
+    call hubbub#crypto#Encrypt(
+        \hubbub#utils#SanitizeText(json_encode(l:response)),
+        \s:constants.local_files.issue, s:hubbub.token_pw)
     return l:response
 endfunction
 
 function! EditIssue(details) abort
-    let s:repoman.title = a:details[s:r_keys.title]
-    let s:repoman.body = a:details[s:r_keys.body]
+    let s:hubbub.title = a:details[s:r_keys.title]
+    let s:hubbub.body = a:details[s:r_keys.body]
     call s:api.UpdateIssue(a:details)
 endfunction
 
 function! LabelsQuery(number) abort
-    let s:repoman.number = a:number
-    let l:response = s:api.ViewLabels(s:repoman)
-    call repoman#crypto#Encrypt(
-        \repoman#utils#SanitizeText(json_encode(l:response)),
-        \s:constants.local_files.labels, s:repoman.token_pw)
+    let s:hubbub.number = a:number
+    let l:response = s:api.ViewLabels(s:hubbub)
+    call hubbub#crypto#Encrypt(
+        \hubbub#utils#SanitizeText(json_encode(l:response)),
+        \s:constants.local_files.labels, s:hubbub.token_pw)
     return l:response
 endfunction
 
 function! NewComment(comment, parent_id) abort
-    let s:repoman.body = a:comment
-    let s:repoman.parent_id = a:parent_id
-    let s:repoman.number = s:repoman.current_issue
-    let s:repoman.pr = s:repoman.pr
-    call s:api.PostComment(s:repoman)
+    let s:hubbub.body = a:comment
+    let s:hubbub.parent_id = a:parent_id
+    let s:hubbub.number = s:hubbub.current_issue
+    let s:hubbub.pr = s:hubbub.pr
+    call s:api.PostComment(s:hubbub)
 endfunction
 
 function! DeleteComment(comment) abort
-    let s:repoman.comment_id = a:comment.id
-    let s:repoman.type = a:comment.type
-    call s:api.DeleteComment(s:repoman)
-    call repoman#RepoMan()
+    let s:hubbub.comment_id = a:comment.id
+    let s:hubbub.type = a:comment.type
+    call s:api.DeleteComment(s:hubbub)
+    call hubbub#Hubbub()
 endfunction
 
 function! EditComment(comment) abort
-    let s:repoman.comment_id = a:comment.id
-    let s:repoman.body = a:comment.body
-    let s:repoman.type = a:comment.type
-    call s:api.EditComment(s:repoman)
+    let s:hubbub.comment_id = a:comment.id
+    let s:hubbub.body = a:comment.body
+    let s:hubbub.type = a:comment.type
+    call s:api.EditComment(s:hubbub)
 endfunction
 
 function! NewReaction(item_type, reaction, id) abort
-    let s:repoman.id = a:id
-    let s:repoman.type = a:item_type
-    let s:repoman.reaction = a:reaction
-    call s:api.PostReaction(s:repoman)
-    call repoman#RepoMan()
+    let s:hubbub.id = a:id
+    let s:hubbub.type = a:item_type
+    let s:hubbub.reaction = a:reaction
+    call s:api.PostReaction(s:hubbub)
+    call hubbub#Hubbub()
 endfunction
 
 function! Merge(method) abort
-    let s:repoman.method = a:method
-    let s:repoman.number = s:repoman.current_issue
-    call s:api.Merge(s:repoman)
-    call repoman#RepoMan()
+    let s:hubbub.method = a:method
+    let s:hubbub.number = s:hubbub.current_issue
+    call s:api.Merge(s:hubbub)
+    call hubbub#Hubbub()
 endfunction
 
 function! Review(action, body) abort
-    let s:repoman.number = s:repoman.current_issue
-    let s:repoman.action = a:action
-    let s:repoman.body = a:body
-    return s:api.Review(s:repoman)
+    let s:hubbub.number = s:hubbub.current_issue
+    let s:hubbub.action = a:action
+    let s:hubbub.body = a:body
+    return s:api.Review(s:hubbub)
 endfunction
 
 function! UpdateLabels(number, labels) abort
-    let s:repoman.number = a:number
-    let s:repoman.labels = a:labels
-    let l:response = s:api.UpdateLabels(s:repoman)
-    "call repoman#utils#UpdateLocalLabels(s:repoman)
+    let s:hubbub.number = a:number
+    let s:hubbub.labels = a:labels
+    let l:response = s:api.UpdateLabels(s:hubbub)
+    "call hubbub#utils#UpdateLocalLabels(s:hubbub)
     return l:response
 endfunction
 
 function! NewItem(pr, data) abort
-    call extend(s:repoman, a:data)
-    let s:repoman.pr = a:pr
-    call s:api.NewItem(s:repoman)
+    call extend(s:hubbub, a:data)
+    let s:hubbub.pr = a:pr
+    call s:api.NewItem(s:hubbub)
 endfunction
 
 function! CloseItem(number, pr) abort
-    let s:repoman.number = a:number
-    let s:repoman.pr = a:pr
-    call s:api.CloseItem(s:repoman)
+    let s:hubbub.number = a:number
+    let s:hubbub.pr = a:pr
+    call s:api.CloseItem(s:hubbub)
 endfunction
 
 " =========================================================================
@@ -607,23 +607,23 @@ endfunction
 
 " Open issue based on the provided issue number
 function! ViewIssue(issue_number, pr) abort
-    let s:repoman.pr = a:pr
+    let s:hubbub.pr = a:pr
     set cmdheight=4
     echo s:strings.load
 
     let l:result = IssueQuery(a:issue_number, a:pr)
-    call s:buffers(s:repoman).CreateIssueBuffer(l:result)
+    call s:buffers(s:hubbub).CreateIssueBuffer(l:result)
     let b:details = l:result
 endfunction
 
-" Resets the RepoMan script dictionary
+" Resets the Hubbub script dictionary
 function! ResetState() abort
-    let s:repoman = {
-        \'token_pw': s:repoman.token_pw,
-        \'current_issue': s:repoman.current_issue,
-        \'pr': s:repoman.pr,
-        \'page': s:repoman.page,
-        \'repo': s:repoman.repo
+    let s:hubbub = {
+        \'token_pw': s:hubbub.token_pw,
+        \'current_issue': s:hubbub.current_issue,
+        \'pr': s:hubbub.pr,
+        \'page': s:hubbub.page,
+        \'repo': s:hubbub.repo
     \}
 endfunction
 
@@ -640,12 +640,12 @@ function! SoftReload() abort
 
     " Recreate home and issue buffer w/ locally updated files
     call CreateIssueListBuffer(json_decode(
-        \repoman#crypto#Decrypt(
-        \s:constants.local_files.home, s:repoman.token_pw)))
-    if s:repoman.current_issue != -1
+        \hubbub#crypto#Decrypt(
+        \s:constants.local_files.home, s:hubbub.token_pw)))
+    if s:hubbub.current_issue != -1
         call CreateIssueBuffer(json_decode(
-            \repoman#crypto#Decrypt(
-            \s:constants.local_files.issue, s:repoman.token_pw)))
+            \hubbub#crypto#Decrypt(
+            \s:constants.local_files.issue, s:hubbub.token_pw)))
     endif
 endfunction
 
@@ -661,13 +661,13 @@ function! PostReviewData() abort
         execute 'bw! ' . fnameescape(s:constants.buffers.edit)
 
         " Edit existing review comment in the buffer
-        call s:buffers(s:repoman).RemoveReviewBufferComment(l:edit_values)
+        call s:buffers(s:hubbub).RemoveReviewBufferComment(l:edit_values)
     else
         execute 'bw! ' . fnameescape(s:constants.buffers.comment)
     endif
 
     " Add review comment to the review buffer
-    call s:buffers(s:repoman).AddReviewBufferComment(l:comment, l:data)
+    call s:buffers(s:hubbub).AddReviewBufferComment(l:comment, l:data)
 endfunction
 
 function! PostEdit() abort
@@ -728,9 +728,9 @@ function! PostNewLabels() abort
         endif
     endfor
 
-    call UpdateLabels(s:repoman.current_issue, l:active_labels)
+    call UpdateLabels(s:hubbub.current_issue, l:active_labels)
     execute 'bw! ' . fnameescape(s:constants.buffers.labels)
 endfunction
 
-nnoremap <script> <silent> <BS> :RepoManBack<CR>
+nnoremap <script> <silent> <BS> :HubbubBack<CR>
 

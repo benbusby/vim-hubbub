@@ -1,23 +1,23 @@
 " ============================================================================
-" File:    autoload/repoman/gitlab.vim
+" File:    autoload/hubbub/gitlab.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
+" Website: https://github.com/benbusby/vim-hubbub
 " Description: A constructor and collection of functions for interacting
 " with the GitLab API.
 " ============================================================================
 scriptencoding utf-8
-let s:footer = '\n\n<sub>— _%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
+let s:footer = '\n\n<sub>— _%s with [vim-hubbub](https://github.com/benbusby/vim-hubbub)!_</sub>'
 
 " ============================================================================
 " GitLab API
 " ============================================================================
 let s:gitlab_api = 'https://gitlab.com/api/v4/projects/'
 
-function! repoman#gitlab#API(token_pw) abort
-    let l:encoded_path = substitute(repoman#utils#GetRepoPath(), '/', '%2F', 'ge')
-    let l:project_id = json_decode(system(repoman#request#Curl().Send(
-        \repoman#utils#ReadToken(a:token_pw),
+function! hubbub#gitlab#API(token_pw) abort
+    let l:encoded_path = substitute(hubbub#utils#GetRepoPath(), '/', '%2F', 'ge')
+    let l:project_id = json_decode(system(hubbub#request#Curl().Send(
+        \hubbub#utils#ReadToken(a:token_pw),
         \s:gitlab_api . l:encoded_path, {}, '')))['id']
 
     let request = {
@@ -28,12 +28,12 @@ function! repoman#gitlab#API(token_pw) abort
     " Views --------------------------------------------------------
     " --------------------------------------------------------------
     function! request.ViewAll(...) abort
-        let l:issues = json_decode(system(repoman#request#Curl().Send(
-            \repoman#utils#ReadToken(self.token_pw),
+        let l:issues = json_decode(system(hubbub#request#Curl().Send(
+            \hubbub#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues?state=opened',
             \{}, '')))
-        let l:merge_reqs = json_decode(system(repoman#request#Curl().Send(
-            \repoman#utils#ReadToken(self.token_pw),
+        let l:merge_reqs = json_decode(system(hubbub#request#Curl().Send(
+            \hubbub#utils#ReadToken(self.token_pw),
             \self.api_path . '/merge_requests?state=opened',
             \{}, '')))
 
@@ -51,23 +51,23 @@ function! repoman#gitlab#API(token_pw) abort
         return l:response
     endfunction
 
-    function! request.View(repoman) abort
-        let l:path_type = (a:repoman.pr ? 'merge_requests' : 'issues')
-        let l:token = repoman#utils#ReadToken(self.token_pw)
+    function! request.View(hubbub) abort
+        let l:path_type = (a:hubbub.pr ? 'merge_requests' : 'issues')
+        let l:token = hubbub#utils#ReadToken(self.token_pw)
 
         let l:issue_result = json_decode(system(
-            \repoman#request#Curl().Send(
-            \l:token, self.api_path . '/' . l:path_type . '/' . a:repoman.number,
+            \hubbub#request#Curl().Send(
+            \l:token, self.api_path . '/' . l:path_type . '/' . a:hubbub.number,
             \{}, '')))
         let l:issue_result['labels'] = FormatLabels(l:issue_result['labels'])
 
         let l:comments_result = json_decode(system(
-            \repoman#request#Curl().Send(
-            \l:token, self.api_path . '/' . l:path_type . '/' . a:repoman.number . '/notes')))
+            \hubbub#request#Curl().Send(
+            \l:token, self.api_path . '/' . l:path_type . '/' . a:hubbub.number . '/notes')))
 
         " If this is a merge request, we have to format the comments so that
         " comments on the same code changes appear grouped together
-        if a:repoman.pr
+        if a:hubbub.pr
             let l:rev_comments = []
             for comment in l:comments_result
                 let l:formatted_comment = FormatReviewComment(comment)
@@ -81,8 +81,8 @@ function! repoman#gitlab#API(token_pw) abort
                 endif
             endfor
 
-            let l:comments_result = l:rev_comments + json_decode(system(repoman#request#Send(
-                \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments')))
+            let l:comments_result = l:rev_comments + json_decode(system(hubbub#request#Send(
+                \l:token, self.api_path . '/issues/' . a:hubbub.number . '/comments')))
         endif
 
         echo l:comments_result
@@ -93,46 +93,46 @@ function! repoman#gitlab#API(token_pw) abort
     " --------------------------------------------------------------
     " Comments -----------------------------------------------------
     " --------------------------------------------------------------
-    function! request.PostComment(repoman) abort
+    function! request.PostComment(hubbub) abort
         let l:footer = ''
-        if !exists('g:repoman_footer') || g:repoman_footer
+        if !exists('g:hubbub_footer') || g:hubbub_footer
             let l:footer = printf(s:footer, 'Posted')
         endif
 
         let l:comment_data = '{"body": "' .
-            \repoman#utils#SanitizeText(a:repoman.body) . l:footer .
+            \hubbub#utils#SanitizeText(a:hubbub.body) . l:footer .
             \'"}'
 
-        call system(repoman#request#Curl().BackgroundSend(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number . '/notes',
+        call system(hubbub#request#Curl().BackgroundSend(
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/' . a:hubbub.number . '/notes',
             \l:comment_data, 'POST'))
 
         let l:temp_comment = {
             \'created_at': strftime('%G-%m-%d %H:%M:%S'),
-            \'body': a:repoman.body,
+            \'body': a:hubbub.body,
             \'author': {'username': 'You'}
         \}
-        call repoman#utils#AddLocalComment(
-            \l:temp_comment, a:repoman.current_issue, a:repoman.token_pw)
+        call hubbub#utils#AddLocalComment(
+            \l:temp_comment, a:hubbub.current_issue, a:hubbub.token_pw)
     endfunction
 
     " --------------------------------------------------------------
     " Issues/PRs ---------------------------------------------------
     " --------------------------------------------------------------
-    function! request.NewItem(repoman) abort
+    function! request.NewItem(hubbub) abort
         let l:footer = ''
-        if !exists('g:repoman_footer') || g:repoman_footer
+        if !exists('g:hubbub_footer') || g:hubbub_footer
             let l:footer = printf(s:footer, 'Created')
         endif
 
         let l:issue_data = '{
-            \"title": "' . repoman#utils#SanitizeText(a:repoman.title) . '",
-            \"description": "' . repoman#utils#SanitizeText(a:repoman.body) . l:footer . '"
+            \"title": "' . hubbub#utils#SanitizeText(a:hubbub.title) . '",
+            \"description": "' . hubbub#utils#SanitizeText(a:hubbub.body) . l:footer . '"
         \}'
 
-        call system(repoman#request#Curl().Send(
-            \repoman#utils#ReadToken(self.token_pw),
+        call system(hubbub#request#Curl().Send(
+            \hubbub#utils#ReadToken(self.token_pw),
             \self.api_path . '/issues',
             \l:issue_data, 'POST'))
     endfunction

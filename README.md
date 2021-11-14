@@ -1,13 +1,13 @@
-![Repoman Banner](doc/repoman-banner.svg)
+![Hubbub Banner](doc/hubbub-banner.svg)
 
-[![vint](https://github.com/benbusby/vim-repoman/workflows/vint/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avint)
-[![vader](https://github.com/benbusby/vim-repoman/workflows/vader/badge.svg)](https://github.com/benbusby/vim-repoman/actions?query=workflow%3Avader)
+[![vint](https://github.com/benbusby/vim-hubbub/workflows/vint/badge.svg)](https://github.com/benbusby/vim-hubbub/actions?query=workflow%3Avint)
+[![vader](https://github.com/benbusby/vim-hubbub/workflows/vader/badge.svg)](https://github.com/benbusby/vim-hubbub/actions?query=workflow%3Avader)
 
 #### (repo)sitory (man)ager:
 
 Create and modify GitHub issues, pull requests, comments, code reviews, and much more while using Vim.
 
-![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-repoman/images/repoman.gif)
+![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-hubbub/images/hubbub.gif)
 
 ## Table of Contents
 - [Features](#features)
@@ -20,7 +20,7 @@ Create and modify GitHub issues, pull requests, comments, code reviews, and much
 - [Miscellaneous](#miscellaneous)
 
 ## Features
-Repoman supports a wide variety of features and GitHub API interactions, including:
+Hubbub supports a wide variety of features and GitHub API interactions, including:
 
 - Viewing/creating/editing/closing issues and pull requests
 - Commenting on and reacting to issues and pull requests
@@ -33,71 +33,71 @@ Repoman supports a wide variety of features and GitHub API interactions, includi
 - Code block syntax highlighting
 - Integration with your Vim theme
 - Support for alternative interface languages
-    - See [the repoman wiki config page](https://github.com/benbusby/vim-repoman/wiki/Configuration#appearanceui) for details
+    - See [the hubbub wiki config page](https://github.com/benbusby/vim-hubbub/wiki/Configuration#appearanceui) for details
     - Straightforward process for [contributing new translations](#interface-translations)
 - Simple keybindings for quickly navigating issues/repos/etc
-- And more -- please refer to [the repoman wiki](https://github.com/benbusby/vim-repoman/wiki) for a comprehensive list of features and guides for using the plugin.
+- And more -- please refer to [the hubbub wiki](https://github.com/benbusby/vim-hubbub/wiki) for a comprehensive list of features and guides for using the plugin.
 
 ## Dependencies
 - `vim` >= 8.0 / `neovim`
 - `curl`
 - `openssl`
-  - For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` needs to be included in your `.vimrc`
+  - For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:hubbub_openssl_old = 1` needs to be included in your `.vimrc`
   - Not required if a password is not used to encrypt your personal access token
 
 ## Install
 #### Vundle
-`Plugin 'benbusby/vim-repoman'`
+`Plugin 'benbusby/vim-hubbub'`
 #### vim-plug
-`Plug 'benbusby/vim-repoman'`
+`Plug 'benbusby/vim-hubbub'`
 #### DIY
   1. Clone the repo to your vim plugin directory
-      - Ex: `git clone https://github.com/benbusby/vim-repoman.git ~/.vim/bundle/vim-repoman`
+      - Ex: `git clone https://github.com/benbusby/vim-hubbub.git ~/.vim/bundle/vim-hubbub`
   2. Ensure the plugin's path is included in your Vim runtime path
-      - Ex: `:set rtp+=~/.vim/bundle/vim-repoman`
+      - Ex: `:set rtp+=~/.vim/bundle/vim-hubbub`
 
 ## Setup
 1. Create a GitHub personal access token
     - Settings > Developer Settings > Personal Access Tokens
     - Generate new token with the "repo" box checked
-2. After installing vim-repoman, run `:RepoManInit`
+2. After installing vim-hubbub, run `:HubbubInit`
     - You will be prompted for your token(s) and a password to encrypt them
     - Note: A password is recommended, but not required
 
 ## Usage
 
-For information and comprehensive guides on how to use the plugin, please refer to [the repoman wiki](https://github.com/benbusby/vim-repoman/wiki)
+For information and comprehensive guides on how to use the plugin, please refer to [the hubbub wiki](https://github.com/benbusby/vim-hubbub/wiki)
 
-See also [configuration](https://github.com/benbusby/vim-repoman/wiki/Configuration) and [keybindings](https://github.com/benbusby/vim-repoman/wiki/Keybindings) in the wiki.
+See also [configuration](https://github.com/benbusby/vim-hubbub/wiki/Configuration) and [keybindings](https://github.com/benbusby/vim-hubbub/wiki/Keybindings) in the wiki.
 
-For the repoman docs, please refer to `:h repoman`
+For the hubbub docs, please refer to `:h hubbub`
 
 ## Configuration
 
-A full list of the available (optional) global variables for repoman are located [here](https://github.com/benbusby/vim-repoman/wiki/Configuration)
+A full list of the available (optional) global variables for hubbub are located [here](https://github.com/benbusby/vim-hubbub/wiki/Configuration)
 
 <hr>
   
 Example `.vimrc` settings:
 ```vim
 " Defaults
-let g:repoman_language = 'en'
-let g:repoman_show_outdated = 0
-let g:repoman_openssl_old = 0
+let g:hubbub_language = 'en'
+let g:hubbub_show_outdated = 0
+let g:hubbub_openssl_old = 0
 ```
 
 ```vim
 " French, show outdated, use short command alternatives
-let g:repoman_language = 'fr'
-let g:repoman_show_outdated = 1
-let g:repoman_short_commands = 1
+let g:hubbub_language = 'fr'
+let g:hubbub_show_outdated = 1
+let g:hubbub_short_commands = 1
 ```
 
 ```vim
 " Spanish, use older OpenSSL, show footer
-let g:repoman_language = 'es'
-let g:repoman_openssl_old = 1
-let g:repoman_footer = 1
+let g:hubbub_language = 'es'
+let g:hubbub_openssl_old = 1
+let g:hubbub_footer = 1
 ```
 
 ## Contributing
@@ -113,22 +113,22 @@ The project has the following general structure:
 │   ├── response_keys.json  # A combined json mapping of GitHub and GitLab response keys
 │   └── strings.json        # Translations/UI strings
 ├── autoload/
-│   ├── repoman/            # Utilities and helper classes (API, crypto, buffers, etc)
-│   └── repoman.vim         # User command implementations and hooks into API/buffer calls
+│   ├── hubbub/            # Utilities and helper classes (API, crypto, buffers, etc)
+│   └── hubbub.vim         # User command implementations and hooks into API/buffer calls
 ├── doc/
-│   └── repoman.txt         # Repoman documentation
+│   └── hubbub.txt         # Hubbub documentation
 ├── LICENSE
 ├── plugin/
-│   └── repoman.vim         # A "header file" of all user accessible plugin commands
+│   └── hubbub.vim         # A "header file" of all user accessible plugin commands
 ├── README.md
 └── test/
-    └── repoman.vader       # Plugin tests
+    └── hubbub.vader       # Plugin tests
 ```
 
 #### GitLab Support
-If you're interested in contributing to GitLab support, the main file you'll want to edit is `autoload/repoman/gitlab.vim`. It will likely involve a decent amount of work to match feature functionality between GitHub and GitLab, but I'm happy with even small, incremental PRs.
+If you're interested in contributing to GitLab support, the main file you'll want to edit is `autoload/hubbub/gitlab.vim`. It will likely involve a decent amount of work to match feature functionality between GitHub and GitLab, but I'm happy with even small, incremental PRs.
 
-To set up a repoman token on GitLab:
+To set up a hubbub token on GitLab:
     - Settings > Access Tokens
     - Generate new token with the "api", "read_repository" and "write_repository" boxes checked
 

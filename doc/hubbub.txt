@@ -1,33 +1,33 @@
-*repoman.txt*  Create and manage GitHub issues, PRs, reviews, etc in Vim
+*hubbub.txt*  Create and manage GitHub issues, PRs, reviews, etc in Vim
 
 Author:   Ben Busby <https://benbusby.com>
-Homepage: https://github.com/benbusby/vim-repoman
+Homepage: https://github.com/benbusby/vim-hubbub
 License:  Same terms as Vim itself (see |license|)
 
 This plugin is only available if 'compatible' is not set.
 
 ==============================================================================
-INTRODUCTION                                    *repoman*
+INTRODUCTION                                    *hubbub*
 
-Repoman is a plugin for creating and managing issues, pull requests, code
+Hubbub is a plugin for creating and managing issues, pull requests, code
 reviews, and more. "Managing" in this context can include commenting on,
 reacting to, replying to, editing, closing, labeling, and so on. The intent
 is to mirror the core functionality of GitHub in a Vim plugin.
 
 ==============================================================================
-COMMANDS                                        *repoman-commands*
+COMMANDS                                        *hubbub-commands*
 
 Nearly all commands are contextually dependent on whether or not a repo is
 "active". In the plugin, a repo is seen as active if the current buffer has
 been opened from within a GitHub repo, or if you have navigated into a repo
 view from the repo list view.
 
-NOTE: All commands are contingent on the prior execution of :RepoManInit,
+NOTE: All commands are contingent on the prior execution of :HubbubInit,
 which initializes the state of the plugin in order to query public and
 private repos for an authenticated user.
 
-                                                *:RepoManInit*
-:RepoManInit            Initialize the plugin with a GitHub authentication
+                                                *:HubbubInit*
+:HubbubInit            Initialize the plugin with a GitHub authentication
                         token and an (optional) password to encrypt the token.
 
                         This command only needs to be run once, and will allow
@@ -42,10 +42,10 @@ private repos for an authenticated user.
                         If a password isn't supplied, the token is stored in
                         plaintext in the same location that the encrypted
                         token would be stored. This can always be overwritten
-                        by re-running :RepoManInit and entering a password.
+                        by re-running :HubbubInit and entering a password.
 
-                                                *:RepoMan*
-:RepoMan                Run the primary entrypoint command for Repoman and 
+                                                *:Hubbub*
+:Hubbub                Run the primary entrypoint command for Hubbub and 
                         display the output. A password prompt will appear, but
                         will not be required for any other commands as long as
                         the plugin is open.
@@ -62,25 +62,25 @@ private repos for an authenticated user.
                         identical to the one seen when running the command
                         from within a repository.
 
-                                                *:RepoManBack*
-:RepoManBack            Navigate back to a previous buffer view. This behaves
+                                                *:HubbubBack*
+:HubbubBack            Navigate back to a previous buffer view. This behaves
                         similarly to the "Back" button on a web browser. If
                         the window is split between an issue list and an
-                        issue details view, :RepoManBack will close the issue
+                        issue details view, :HubbubBack will close the issue
                         details view and refocus on the issue list.
 
                         Note: This is more conveniently accessed via the
                         <Backspace> key mapping. 
 
-                                                *:RepoManComment*
-:RepoManComment         Opens a new buffer to write a comment. The comment
+                                                *:HubbubComment*
+:HubbubComment         Opens a new buffer to write a comment. The comment
                         contents can be submitted to GitHub/GitLab using
-                        :RepoManPost, and will apply to the currently opened
+                        :HubbubPost, and will apply to the currently opened
                         issue. If an issue is not open, this command cannot be
                         used.
 
-                                                *:RepoManLabel*
-:RepoManLabel           Opens a new buffer to modify labels for a particular
+                                                *:HubbubLabel*
+:HubbubLabel           Opens a new buffer to modify labels for a particular
                         issue/pull request/etc. The buffer is populated with a
                         list of available labels for the repo, as well as
                         indicators for which labels are active or inactive for
@@ -88,7 +88,7 @@ private repos for an authenticated user.
 
                         Selecting/deselecting a label can be done using the
                         <Enter> key on any particular label. As with any other
-                        list type buffer in the repoman plugin, the labels can
+                        list type buffer in the hubbub plugin, the labels can
                         quickly be navigated using J and K.
 
                         *Note: Current issue is determined using cursor
@@ -97,8 +97,8 @@ private repos for an authenticated user.
                         within an issue details buffer, then this command will
                         apply to that issue. 
 
-                                                *:RepoManNew*
-:RepoManNew [type]      Opens a buffer for creating a new issue or pull
+                                                *:HubbubNew*
+:HubbubNew [type]      Opens a buffer for creating a new issue or pull
                         request. The buffer is prepopulated with editable
                         content to help create the new item (examples below).
 
@@ -111,12 +111,12 @@ private repos for an authenticated user.
 
                         -- Examples --
 
-                        :RepoManNew issue -->
+                        :HubbubNew issue -->
                         1| Issue Title
                         2| --------------------
                         3| Issue Description
 
-                        :RepoManNew pr -->
+                        :HubbubNew pr -->
                         1| From: feature/vader-tests
                         2| Into: main
                         3|
@@ -124,8 +124,8 @@ private repos for an authenticated user.
                         5| --------------------
                         6| Pull Request Description
 
-                                                *:RepoManClose*
-:RepoManClose           Generates a prompt for closing the current issue*. You
+                                                *:HubbubClose*
+:HubbubClose           Generates a prompt for closing the current issue*. You
                         must supply a "y" or "n" response to the prompt to
                         finish closing the issue.
 
@@ -135,8 +135,8 @@ private repos for an authenticated user.
                         within an issue details buffer, then this command will
                         apply to that issue. 
 
-                                                *:RepoManReact*
-:RepoManReact [type]    Posts a reaction to an issue or comment, depending on
+                                                *:HubbubReact*
+:HubbubReact [type]    Posts a reaction to an issue or comment, depending on
                         where the cursor is located. If the cursor is
                         positioned over a comment in an issue details view,
                         the reaction will apply to that comment. If the cursor
@@ -155,8 +155,8 @@ private repos for an authenticated user.
 
                         Reactions not in this list are rejected.
 
-                                                *:RepoManEdit*
-:RepoManEdit            Opens a buffer for editing the content depending on
+                                                *:HubbubEdit*
+:HubbubEdit            Opens a buffer for editing the content depending on
                         the cursor location. If the cursor is positioned over
                         a comment, this will open a buffer for editing the
                         relevant comment. If the cursor is positioned in an
@@ -164,23 +164,23 @@ private repos for an authenticated user.
                         list, then the buffer will allow editing issue
                         details.
 
-                                                *:RepoManDelete*
-:RepoManDelete          Deletes the comment positioned beneath the cursor in
+                                                *:HubbubDelete*
+:HubbubDelete          Deletes the comment positioned beneath the cursor in
                         an issue buffer.
 
                         This can be used for regular issue comments, as well
                         as review comments (both pending and finalized).
 
-                                                *:RepoManReply*
-:RepoManReply           Opens a buffer for replying to the review comment
+                                                *:HubbubReply*
+:HubbubReply           Opens a buffer for replying to the review comment
                         positioned beneath the cursor.
 
                         This action only applies to review comments, as
                         regular comments do not have a parent->child
                         relationship. 
 
-                                                *:RepoManSuggest*
-:RepoManSuggest         Opens a buffer for making a suggestion in a PR review.
+                                                *:HubbubSuggest*
+:HubbubSuggest         Opens a buffer for making a suggestion in a PR review.
 
                         The buffer will contain the proper formatting for
                         making a valid suggestion, as well as the code from
@@ -193,7 +193,7 @@ private repos for an authenticated user.
                         2|% abc = 123 %
                         3|% def = 456 %
 
-                        Running :RepoManSuggest on this selected block will
+                        Running :HubbubSuggest on this selected block will
                         create the following suggestion buffer for editing.
 
                         1|```suggestion
@@ -202,10 +202,10 @@ private repos for an authenticated user.
                         4|```
 
                         The suggestion can then be updated as needed, and
-                        added to the current PR review using :RepoManPost.
+                        added to the current PR review using :HubbubPost.
 
-                                                *:RepoManMerge*
-:RepoManMerge {method}  Merges the current pull request / merge request using
+                                                *:HubbubMerge*
+:HubbubMerge {method}  Merges the current pull request / merge request using
                         the default merge method (merge commit), or using the
                         method specified. 
 
@@ -217,8 +217,8 @@ private repos for an authenticated user.
                         Note: At this time, each of these methods use the
                         default commit message/description.
 
-                                                *:RepoManReview*
-:RepoManReview [state]  When [state] is "new", a new buffer is opened with the
+                                                *:HubbubReview*
+:HubbubReview [state]  When [state] is "new", a new buffer is opened with the
                         latest diff contents for the pull request.
 
                         When [state] is any of the other supported state (see
@@ -241,7 +241,7 @@ private repos for an authenticated user.
                         desired.
 
 ==============================================================================
-KEY MAPPINGS                                    *repoman-maps*
+KEY MAPPINGS                                    *hubbub-maps*
 
 These key mappings are available in all buffers, but some will do nothing if
 used out of context. For example, "J" and "K" are used for navigating between
@@ -259,9 +259,9 @@ issues/comments/etc, but will do nothing when in the "Create Issue" buffer.
                         close the issue's buffer and refocus on the issue list
                         buffer.
 
-<C-p>                   Shortcut for :RepoManPost (see |:RepoManPost|)
+<C-p>                   Shortcut for :HubbubPost (see |:HubbubPost|)
 
-<C-e>                   Shortcut for :RepoManEdit (see |:RepoManEdit|)
+<C-e>                   Shortcut for :HubbubEdit (see |:HubbubEdit|)
 
 gi                      Navigate back to the issues list (if in an issue
                         details view)
@@ -275,18 +275,18 @@ K                       Move cursor up to prev issue/comment/label/repo
 L                       Navigate to the next page of issues/comments/repos
 
 ==============================================================================
-HISTORY                                         *repoman-history*
+HISTORY                                         *hubbub-history*
 
 1.0 (Jan 2021)
     - Initial release
 ==============================================================================
-ABOUT                                           *repoman-about*
+ABOUT                                           *hubbub-about*
 
-Repoman was written by Ben Busby and is released under the Vim license, see
+Hubbub was written by Ben Busby and is released under the Vim license, see
 |license|. It was very loosely inspired by the vim-rhubarb plugin by Tim Pope.
 
 For the latest release, or to file a bug report, go to:
 
-https://github.com/benbusby/vim-repoman
+https://github.com/benbusby/vim-hubbub
 
 vim: tw=78 ts=8 sw=4 sts=4 et ft=help

@@ -1,0 +1,51 @@
+Execute (init):
+  let g:hubbub_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+  let g:curl_obj = hubbub#request#Curl()
+  let g:branch_file = '.branch.hubbub'
+  let g:token_file = '.github.hubbub'
+  let g:password = 'p@s$w0rD'
+  let g:hubbub_issue = 25
+  let g:hubbub_issue_title = 'Vader Test'
+  let g:hubbub_comment = '**[VADER TEST]**\nPassed: ' . strftime('%c')
+
+  call hubbub#crypto#Encrypt(join(readfile(g:token_file)), g:token_file, g:password)
+
+Execute (validate curl object):
+  AssertEqual g:curl_obj.type, 'application/json'
+  AssertEqual g:curl_obj.auth, '-H ''Authorization: token '
+
+Execute (validate crypto):
+  let plaintext = 'testing crypto'
+  let test_file = 'test.hubbub'
+  call hubbub#crypto#Encrypt(plaintext, test_file, g:password)
+  let decrypted = hubbub#crypto#Decrypt(test_file, g:password)
+  let decrypted = substitute(decrypted, '[[:cntrl:]]', '', 'ge')
+
+  AssertEqual decrypted, plaintext
+
+Execute (validate git utils):
+  AssertEqual hubbub#utils#InGitRepo(), 1
+  AssertEqual hubbub#utils#GetRepoHost(), 'github'
+  Assert hubbub#utils#GetRepoPath() =~# 'vim-hubbub'
+
+Execute (validate api):
+  let api_path = 'https://api.github.com/repos/'
+  let github_api = hubbub#github#API(g:password)
+  AssertEqual github_api.api_path, api_path . hubbub#utils#GetRepoPath()
+
+  call system('cp ' . g:token_file . ' ' . g:hubbub_dir)
+
+  let issues = github_api.ViewAll({'page': 1})
+  Assert len(issues) > 0
+
+  let issue = github_api.View({'pr': 0, 'number': g:hubbub_issue})
+  Assert has_key(issue, 'title') && issue.title ==# g:hubbub_issue_title
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 1
+
+  call github_api.DeleteComment({'type': 'issues', 'comment_id': issue.comments[0].id})
+  let issue = github_api.View({'pr': 0, 'number': g:hubbub_issue})
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 0
+
+  call github_api.PostComment({'number': g:hubbub_issue, 'body': g:hubbub_comment, 'parent_id': -1})
+  let issue = github_api.View({'pr': 0, 'number': g:hubbub_issue})
+  Assert has_key(issue, 'comments') && len(issue.comments) ==# 1

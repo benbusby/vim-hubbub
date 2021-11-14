@@ -1,13 +1,13 @@
 " =========================================================================
-" File:    autoload/repoman/github.vim
+" File:    autoload/hubbub/github.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
+" Website: https://github.com/benbusby/vim-hubbub
 " Description: A constructor and collection of functions for interacting
 " with the GitHub API.
 " =========================================================================
 scriptencoding utf-8
-let s:footer = '\n\n<sub>— _%s with [vim-repoman](https://github.com/benbusby/vim-repoman)!_</sub>'
+let s:footer = '\n\n<sub>— _%s with [vim-hubbub](https://github.com/benbusby/vim-hubbub)!_</sub>'
 
 " =========================================================================
 " GitHub API
@@ -16,8 +16,8 @@ let s:api_root = 'https://api.github.com/user/repos'
 let s:reactions_type = 'application/vnd.github.squirrel-girl-preview'
 let s:multiline_type = 'application/vnd.github.comfort-fade-preview+json'
 let s:diff_type = 'application/vnd.github.v3.diff'
-let s:curl = repoman#request#Curl(s:reactions_type . ', ' . s:multiline_type)
-let s:constants = repoman#constants#Constants()
+let s:curl = hubbub#request#Curl(s:reactions_type . ', ' . s:multiline_type)
+let s:constants = hubbub#constants#Constants()
 
 " The primary class for interfacing with the GitHub API.
 "
@@ -26,8 +26,8 @@ let s:constants = repoman#constants#Constants()
 "
 " Returns:
 " - (API) the API object for sending requests to GitHub
-function! repoman#github#API(token_pw) abort
-    let l:github_api = 'https://api.github.com/repos/' . repoman#utils#GetRepoPath()
+function! hubbub#github#API(token_pw) abort
+    let l:github_api = 'https://api.github.com/repos/' . hubbub#utils#GetRepoPath()
     let request = {
         \'token_pw': a:token_pw,
         \'api_path': l:github_api
@@ -38,42 +38,42 @@ function! repoman#github#API(token_pw) abort
     " --------------------------------------------------------------
     function! request.RepoInfo() abort
         return json_decode(s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
+            \hubbub#utils#ReadToken(self.token_pw),
             \self.api_path))
     endfunction
 
     " --------------------------------------------------------------
     " Views --------------------------------------------------------
     " --------------------------------------------------------------
-    function! request.ViewRepos(repoman) abort
+    function! request.ViewRepos(hubbub) abort
         return json_decode(s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
+            \hubbub#utils#ReadToken(self.token_pw),
             \s:api_root . '?sort=updated&type=owner&per_page=10&page=' .
-            \a:repoman.page))
+            \a:hubbub.page))
     endfunction
 
-    function! request.ViewAll(repoman) abort
+    function! request.ViewAll(hubbub) abort
         return json_decode(s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues?state=open&per_page=10&sort=updated&page=' . a:repoman.page,
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues?state=open&per_page=10&sort=updated&page=' . a:hubbub.page,
             \{}, ''))
     endfunction
 
-    function! request.View(repoman) abort
-        let l:path_type = (a:repoman.pr ? 'pulls' : 'issues')
-        let l:token = repoman#utils#ReadToken(self.token_pw)
+    function! request.View(hubbub) abort
+        let l:path_type = (a:hubbub.pr ? 'pulls' : 'issues')
+        let l:token = hubbub#utils#ReadToken(self.token_pw)
 
         let l:issue_result = json_decode(s:curl.Send(
             \l:token, self.api_path . '/' . l:path_type .
-            \'/' . a:repoman.number))
+            \'/' . a:hubbub.number))
 
         let l:comments_result = json_decode(s:curl.Send(
             \l:token, self.api_path . '/' . l:path_type .
-            \'/' . a:repoman.number . '/comments'))
+            \'/' . a:hubbub.number . '/comments'))
 
         " If this is a pull request, we need to format the comments so that
         " comments on the same code changes appear grouped together
-        if a:repoman.pr
+        if a:hubbub.pr
             let l:idx = 0
             while l:idx < len(l:comments_result)
                 let l:comment = l:comments_result[l:idx]
@@ -91,7 +91,7 @@ function! repoman#github#API(token_pw) abort
 
             let l:comments_result = l:comments_result +
                 \json_decode(s:curl.Send(
-                \l:token, self.api_path . '/issues/' . a:repoman.number . '/comments'))
+                \l:token, self.api_path . '/issues/' . a:hubbub.number . '/comments'))
         endif
 
         let l:issue_result['comments'] = l:comments_result
@@ -102,93 +102,93 @@ function! repoman#github#API(token_pw) abort
     " Comments -----------------------------------------------------
     " --------------------------------------------------------------
 
-    function! request.PostComment(repoman) abort
+    function! request.PostComment(hubbub) abort
         let l:footer = ''
-        if exists('g:repoman_footer') && g:repoman_footer
+        if exists('g:hubbub_footer') && g:hubbub_footer
             let l:footer = printf(s:footer, 'Posted')
         endif
 
         let l:comment_data = '{"body": "' .
-            \repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer .
+            \hubbub#utils#SanitizeText(a:hubbub.body, 1) . l:footer .
             \'"}'
 
-        let l:reply_path = a:repoman.parent_id > 0
-            \? '/' . a:repoman.parent_id . '/replies'
+        let l:reply_path = a:hubbub.parent_id > 0
+            \? '/' . a:hubbub.parent_id . '/replies'
             \: ''
         let l:type = empty(l:reply_path) ? 'issues' : 'pulls'
 
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/' . l:type . '/' . a:repoman.number .
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/' . l:type . '/' . a:hubbub.number .
             \'/comments' . l:reply_path,
             \l:comment_data, 'POST')
 
         "let l:temp_comment = {
             "\'created_at': strftime('%G-%m-%d %H:%M:%S'),
-            "\'body': a:repoman.body,
+            "\'body': a:hubbub.body,
             "\'user': {'login': 'You'}
         "\}
-        "call repoman#utils#AddLocalComment(
-            "\l:temp_comment, a:repoman.current_issue, a:repoman.token_pw)
+        "call hubbub#utils#AddLocalComment(
+            "\l:temp_comment, a:hubbub.current_issue, a:hubbub.token_pw)
     endfunction
 
-    function! request.DeleteComment(repoman) abort
+    function! request.DeleteComment(hubbub) abort
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/' . a:hubbub.type . '/comments/' . a:hubbub.comment_id,
             \{}, 'DELETE')
     endfunction
 
-    function! request.EditComment(repoman) abort
+    function! request.EditComment(hubbub) abort
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/' . a:repoman.type . '/comments/' . a:repoman.comment_id,
-            \'{"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . '"}', 'PATCH')
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/' . a:hubbub.type . '/comments/' . a:hubbub.comment_id,
+            \'{"body": "' . hubbub#utils#SanitizeText(a:hubbub.body, 1) . '"}', 'PATCH')
     endfunction
 
     " --------------------------------------------------------------
     " Issues/PRs ---------------------------------------------------
     " --------------------------------------------------------------
 
-    function! request.NewItem(repoman) abort
+    function! request.NewItem(hubbub) abort
         let l:type = 'issues'
         let l:footer = ''
-        if exists('g:repoman_footer') && g:repoman_footer
+        if exists('g:hubbub_footer') && g:hubbub_footer
             let l:footer = printf(s:footer, 'Created')
         endif
 
         let l:item_data = '
-            \"title": "' . repoman#utils#SanitizeText(a:repoman.title, 1) . '",
-            \"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . l:footer . '"
+            \"title": "' . hubbub#utils#SanitizeText(a:hubbub.title, 1) . '",
+            \"body": "' . hubbub#utils#SanitizeText(a:hubbub.body, 1) . l:footer . '"
         \'
 
-        if a:repoman.pr
+        if a:hubbub.pr
             let l:type = 'pulls'
             let l:item_data = '{' . l:item_data . '
-                \,"head": "' . a:repoman.head . '","base":"' . a:repoman.base . '"}'
+                \,"head": "' . a:hubbub.head . '","base":"' . a:hubbub.base . '"}'
         else
             let l:item_data = '{' . l:item_data . '}'
         endif
 
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
+            \hubbub#utils#ReadToken(self.token_pw),
             \self.api_path . '/' . l:type,
             \l:item_data, 'POST')
     endfunction
 
-    function! request.UpdateIssue(repoman) abort
+    function! request.UpdateIssue(hubbub) abort
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number,
-            \'{"title": "' . repoman#utils#SanitizeText(a:repoman.title, 1) . '",' .
-            \'"body": "' . repoman#utils#SanitizeText(a:repoman.body, 1) . '"}',
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/' . a:hubbub.number,
+            \'{"title": "' . hubbub#utils#SanitizeText(a:hubbub.title, 1) . '",' .
+            \'"body": "' . hubbub#utils#SanitizeText(a:hubbub.body, 1) . '"}',
             \'PATCH')
     endfunction
 
-    function! request.CloseItem(repoman) abort
+    function! request.CloseItem(hubbub) abort
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number,
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/' . a:hubbub.number,
             \'{"state": "closed"}', 'PATCH')
     endfunction
 
@@ -196,32 +196,32 @@ function! repoman#github#API(token_pw) abort
     " PRs only -----------------------------------------------------
     " --------------------------------------------------------------
 
-    function! request.Merge(repoman) abort
+    function! request.Merge(hubbub) abort
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/pulls/' . a:repoman.number . '/merge',
-            \'{"merge_method": "' . a:repoman.method . '"}', 'PUT')
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/pulls/' . a:hubbub.number . '/merge',
+            \'{"merge_method": "' . a:hubbub.method . '"}', 'PUT')
     endfunction
 
-    function! request.Review(repoman) abort
-        let l:curl = repoman#request#Curl(s:diff_type)
-        if a:repoman.action =~# 'new'
+    function! request.Review(hubbub) abort
+        let l:curl = hubbub#request#Curl(s:diff_type)
+        if a:hubbub.action =~# 'new'
             return l:curl.Send(
-                \repoman#utils#ReadToken(self.token_pw),
-                \self.api_path . '/pulls/' . a:repoman.number)
+                \hubbub#utils#ReadToken(self.token_pw),
+                \self.api_path . '/pulls/' . a:hubbub.number)
         else
             " Extract review comments
             let l:comments = []
-            let l:event = a:repoman.action ==# 'PENDING' ?
-                \'' : '"event": "' . a:repoman.action . '"'
-            let l:body = empty(a:repoman.body) ?
-                \'' : '"body": "' . a:repoman.body . '"'
+            let l:event = a:hubbub.action ==# 'PENDING' ?
+                \'' : '"event": "' . a:hubbub.action . '"'
+            let l:body = empty(a:hubbub.body) ?
+                \'' : '"body": "' . a:hubbub.body . '"'
             for item in items(b:review_comments)
                 let l:comment = item[1]
 
                 " Single-line and multi-line comments use different parameters
                 " for determining where they appear in the review. See
-                " repoman#buffers#Buffers->CreateReviewBuffer for more info.
+                " hubbub#buffers#Buffers->CreateReviewBuffer for more info.
                 let l:key_filter = s:constants.multiline_keys
                 if l:comment.start_line ==# l:comment.line
                     let l:key_filter = s:constants.singleline_keys
@@ -235,8 +235,8 @@ function! repoman#github#API(token_pw) abort
             endfor
 
             return l:curl.Send(
-                \repoman#utils#ReadToken(self.token_pw),
-                \self.api_path . '/pulls/' . a:repoman.number . '/reviews',
+                \hubbub#utils#ReadToken(self.token_pw),
+                \self.api_path . '/pulls/' . a:hubbub.number . '/reviews',
                 \'{' . l:event . (!empty(l:event) ? ',' : '') .
                 \l:body . (!empty(l:body) ? ',' : '') .
                 \'"comments": ' . substitute(json_encode(l:comments), '<br>', '\\n', 'ge') .
@@ -248,13 +248,13 @@ function! repoman#github#API(token_pw) abort
     " Labels -------------------------------------------------------
     " --------------------------------------------------------------
 
-    function! request.ViewLabels(repoman) abort
+    function! request.ViewLabels(hubbub) abort
         " Need to fetch all labels, then cross check against issue labels
         let l:current_labels = json_decode(s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number . '/labels'))
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/' . a:hubbub.number . '/labels'))
         let l:all_labels = json_decode(s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
+            \hubbub#utils#ReadToken(self.token_pw),
             \self.api_path . '/labels'))
 
         for label in l:all_labels
@@ -266,28 +266,28 @@ function! repoman#github#API(token_pw) abort
         return l:all_labels
     endfunction
 
-    function! request.UpdateLabels(repoman) abort
-        let l:labels = substitute(json_encode(a:repoman.labels), "'", "'\"'\"'", 'ge')
+    function! request.UpdateLabels(hubbub) abort
+        let l:labels = substitute(json_encode(a:hubbub.labels), "'", "'\"'\"'", 'ge')
         call s:curl.Send(
-            \repoman#utils#ReadToken(self.token_pw),
-            \self.api_path . '/issues/' . a:repoman.number . '/labels',
+            \hubbub#utils#ReadToken(self.token_pw),
+            \self.api_path . '/issues/' . a:hubbub.number . '/labels',
             \'{"labels": ' . l:labels . '}', 'PUT')
     endfunction
 
     " --------------------------------------------------------------
     " Reactions ----------------------------------------------------
     " --------------------------------------------------------------
-    function! request.PostReaction(repoman) abort
-        if a:repoman.type ==# 'comment'
+    function! request.PostReaction(hubbub) abort
+        if a:hubbub.type ==# 'comment'
             call s:curl.Send(
-                \repoman#utils#ReadToken(self.token_pw),
-                \self.api_path . '/issues/comments/' . a:repoman.id . '/reactions',
-                \'{"content": "' . a:repoman.reaction . '"}', 'POST')
-        elseif a:repoman.type ==# 'issue'
+                \hubbub#utils#ReadToken(self.token_pw),
+                \self.api_path . '/issues/comments/' . a:hubbub.id . '/reactions',
+                \'{"content": "' . a:hubbub.reaction . '"}', 'POST')
+        elseif a:hubbub.type ==# 'issue'
             call s:curl.Send(
-                \repoman#utils#ReadToken(self.token_pw),
-                \self.api_path . '/issues/' . a:repoman.id . '/reactions',
-                \'{"content": "' . a:repoman.reaction . '"}', 'POST')
+                \hubbub#utils#ReadToken(self.token_pw),
+                \self.api_path . '/issues/' . a:hubbub.id . '/reactions',
+                \'{"content": "' . a:hubbub.reaction . '"}', 'POST')
         endif
     endfunction
 

@@ -1,32 +1,32 @@
 " =========================================================================
-" File:    autoload/repoman/constants.vim
+" File:    autoload/hubbub/constants.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
-" Description: Constants used in the repoman plugin.
+" Website: https://github.com/benbusby/vim-hubbub
+" Description: Constants used in the hubbub plugin.
 " =========================================================================
 scriptencoding utf-8
 
-function! repoman#constants#Constants() abort
-    let emojis = !exists('g:repoman_emojis') || g:repoman_emojis
+function! hubbub#constants#Constants() abort
+    let emojis = !exists('g:hubbub_emojis') || g:hubbub_emojis
     let constants = {
         \'buffers': {
-            \'issue':      '/dev/null/issue.repoman.diff',
-            \'issue_list': '/dev/null/issue_list.repoman',
-            \'comment':    '/dev/null/comment.repoman',
-            \'new_issue':  '/dev/null/new_issue.repoman',
-            \'new_req':    '/dev/null/new_req.repoman',
-            \'labels':     '/dev/null/labels.repoman',
-            \'edit':       '/dev/null/edit.repoman',
-            \'review':     '/dev/null/review.repoman.diff'
+            \'issue':      '/dev/null/issue.hubbub.diff',
+            \'issue_list': '/dev/null/issue_list.hubbub',
+            \'comment':    '/dev/null/comment.hubbub',
+            \'new_issue':  '/dev/null/new_issue.hubbub',
+            \'new_req':    '/dev/null/new_req.hubbub',
+            \'labels':     '/dev/null/labels.hubbub',
+            \'edit':       '/dev/null/edit.hubbub',
+            \'review':     '/dev/null/review.hubbub.diff'
         \},
         \'local_files': {
-            \'github': g:repoman_dir . '/.github.repoman',
-            \'gitlab': g:repoman_dir . '/.gitlab.repoman',
-            \'home':   g:repoman_dir . '/.view_all.repoman',
-            \'issue':  g:repoman_dir . '/.view.repoman',
-            \'labels': g:repoman_dir . '/.view_labels.repoman',
-            \'review': g:repoman_dir . '/.review.repoman'
+            \'github': g:hubbub_dir . '/.github.hubbub',
+            \'gitlab': g:hubbub_dir . '/.gitlab.hubbub',
+            \'home':   g:hubbub_dir . '/.view_all.hubbub',
+            \'issue':  g:hubbub_dir . '/.view.hubbub',
+            \'labels': g:hubbub_dir . '/.view_labels.hubbub',
+            \'review': g:hubbub_dir . '/.review.hubbub'
         \},
         \'reactions': {
             \'+1': emojis ? '👍 x' : '+',

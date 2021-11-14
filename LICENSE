@@ -1,66 +1,66 @@
-REPOMAN LICENSE
+HUBBUB LICENSE
 
 This is the normal Vim license (see ':h license' in Vim) with the necessary
 replacements for the project and maintainer information.
 
-I)  There are no restrictions on distributing unmodified copies of Repoman
+I)  There are no restrictions on distributing unmodified copies of Hubbub
     except that they must include this license text.  You can also distribute
-    unmodified parts of Repoman, likewise unrestricted except that they must
+    unmodified parts of Hubbub, likewise unrestricted except that they must
     include this license text.  You are also allowed to include executables
-    that you made from the unmodified Repoman sources, plus your own usage
+    that you made from the unmodified Hubbub sources, plus your own usage
     examples and scripts.
 
-II) It is allowed to distribute a modified (or extended) version of Repoman,
+II) It is allowed to distribute a modified (or extended) version of Hubbub,
     including executables and/or source code, when the following four
     conditions are met:
     1) This license text must be included unmodified.
-    2) The modified Repoman must be distributed in one of the following five ways:
-       a) If you make changes to Repoman yourself, you must clearly describe in
+    2) The modified Hubbub must be distributed in one of the following five ways:
+       a) If you make changes to Hubbub yourself, you must clearly describe in
           the distribution how to contact you.  When the maintainer asks you
-          (in any way) for a copy of the modified Repoman you distributed, you
+          (in any way) for a copy of the modified Hubbub you distributed, you
           must make your changes, including source code, available to the
           maintainer without fee.  The maintainer reserves the right to
-          include your changes in the official version of Repoman.  What the
+          include your changes in the official version of Hubbub.  What the
           maintainer will do with your changes and under what license they
           will be distributed is negotiable.  If there has been no negotiation
           then this license, or a later version, also applies to your changes.
           The current maintainer is Ben Busby <contact@benbusby.com>.  If this
           changes it will be announced in appropriate places (most likely
-          https://github.com/benbusby/vim-repoman).
+          https://github.com/benbusby/vim-hubbub).
           When it is completely impossible to contact the maintainer, the
           obligation to send him your changes ceases.  Once the maintainer has
           confirmed that he has received your changes they will not have to be
           sent again.
-       b) If you have received a modified Repoman that was distributed as
+       b) If you have received a modified Hubbub that was distributed as
           mentioned under a) you are allowed to further distribute it
           unmodified, as mentioned at I).  If you make additional changes the
           text under a) applies to those changes.
        c) Provide all the changes, including source code, with every copy of
-          the modified Repoman you distribute.  This may be done in the form of
+          the modified Hubbub you distribute.  This may be done in the form of
           a context diff.  You can choose what license to use for new code you
           add.  The changes and their license must not restrict others from
-          making their own changes to the official version of Repoman.
-       d) When you have a modified Repoman which includes changes as mentioned
+          making their own changes to the official version of Hubbub.
+       d) When you have a modified Hubbub which includes changes as mentioned
           under c), you can distribute it without the source code for the
           changes if the following three conditions are met:
           - The license that applies to the changes permits you to distribute
-            the changes to the Repoman maintainer without fee or restriction, and
-            permits the Repoman maintainer to include the changes in the official
-            version of Repoman without fee or restriction.
+            the changes to the Hubbub maintainer without fee or restriction, and
+            permits the Hubbub maintainer to include the changes in the official
+            version of Hubbub without fee or restriction.
           - You keep the changes for at least three years after last
-            distributing the corresponding modified Repoman.  When the
-            maintainer or someone who you distributed the modified Repoman to
+            distributing the corresponding modified Hubbub.  When the
+            maintainer or someone who you distributed the modified Hubbub to
             asks you (in any way) for the changes within this period, you must
             make them available to him.
           - You clearly describe in the distribution how to contact you.  This
             contact information must remain valid for at least three years
-            after last distributing the corresponding modified Repoman, or as
+            after last distributing the corresponding modified Hubbub, or as
             long as possible.
        e) When the GNU General Public License (GPL) applies to the changes,
-          you can distribute the modified Repoman under the GNU GPL version 2
+          you can distribute the modified Hubbub under the GNU GPL version 2
           or any later version.
     3) A message must be added, at least in the documentation, such that the
-       user of the modified Repoman is able to see that it was modified.  When
+       user of the modified Hubbub is able to see that it was modified.  When
        distributing as mentioned under 2)e) adding the message is only
        required for as far as this does not conflict with the license used for
        the changes.
@@ -68,8 +68,8 @@ II) It is allowed to distribute a modified (or extended) version of Repoman,
        removed or changed, except that the person himself can make
        corrections.
 
-III) If you distribute a modified version of Repoman, you are encouraged to use
-     the Repoman license for your changes and make them available to the
+III) If you distribute a modified version of Hubbub, you are encouraged to use
+     the Hubbub license for your changes and make them available to the
      maintainer, including the source code.  The preferred way to do this is
      by e-mail or by uploading the files to a server and e-mailing the URL. If
      the number of changes is small (e.g., a modified Makefile) e-mailing a
@@ -77,6 +77,6 @@ III) If you distribute a modified version of Repoman, you are encouraged to use
      <contact@benbusby.com>
 
 IV)  It is not allowed to remove this license from the distribution of the
-     Repoman sources, parts of it or from a modified version.  You may use this
-     license for previous Repoman releases instead of the license that they
+     Hubbub sources, parts of it or from a modified version.  You may use this
+     license for previous Hubbub releases instead of the license that they
      came with, at your option.

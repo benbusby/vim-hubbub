@@ -1,17 +1,17 @@
 " =========================================================================
-" File:    autoload/repoman/buffers.vim
+" File:    autoload/hubbub/buffers.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
+" Website: https://github.com/benbusby/vim-hubbub
 " Description: Methods/utilities and a constructor for creating/modifying
 " specific buffers for every view.
 " =========================================================================
 scriptencoding utf-8
 
-let s:constants = function('repoman#constants#Constants')()
-let s:r_keys = response_keys[repoman#utils#GetRepoHost()]
-let s:ui = repoman#decorations#Decorations().ui
-let s:strings = lang_dict[(exists('g:repoman_language') ? g:repoman_language : 'en')]
+let s:constants = function('hubbub#constants#Constants')()
+let s:r_keys = response_keys[hubbub#utils#GetRepoHost()]
+let s:ui = hubbub#decorations#Decorations().ui
+let s:strings = lang_dict[(exists('g:hubbub_language') ? g:hubbub_language : 'en')]
 
 " =========================================================================
 " Buffer Utilities
@@ -38,7 +38,7 @@ function! OpenBuffer(buf_name, header_mode, state) abort
     " Open issue buffer in new buffer if split is disabled
     " Note that we do not want to open a new buffer for non-primary buffers
     " (i.e. new comments, issue mods, etc).
-    let l:skip_split = exists('g:repoman_split_issue') && !g:repoman_split_issue
+    let l:skip_split = exists('g:hubbub_split_issue') && !g:hubbub_split_issue
     if (index(s:constants.primary_bufs, a:buf_name) >= 0 && l:skip_split) ||
             \a:buf_name == s:constants.buffers.review
         enew
@@ -83,7 +83,7 @@ endfunction
 " - (int) the current line number
 function! SetHeader(header_mode, state) abort
     let l:line_idx = 1
-    for line in readfile(g:repoman_dir . '/assets/header.txt')
+    for line in readfile(g:hubbub_dir . '/assets/header.txt')
         let l:page_id = a:header_mode ? ' (page ' . a:state.page . ')' : ''
         if l:line_idx == 1
             if empty(a:state.repo)
@@ -147,14 +147,14 @@ endfunction
 function! FinishOutput() abort
     setlocal nomodifiable
     set cmdheight=1 hidden bt=nofile splitright
-    call repoman#utils#LoadSyntaxColoring(s:strings)
+    call hubbub#utils#LoadSyntaxColoring(s:strings)
 
     " Add HJKL shortcuts if in the buffer supports it
     if exists('b:jump_guide') && len(b:jump_guide) > 0
-        nnoremap <buffer> <silent> J :call repoman#RepoManJump(1)<CR>
-        nnoremap <buffer> <silent> K :call repoman#RepoManJump(-1)<CR>
-        nnoremap <script> <silent> L :call repoman#RepoManPage(1)<CR>
-        nnoremap <script> <silent> H :call repoman#RepoManPage(-1)<CR>
+        nnoremap <buffer> <silent> J :call hubbub#HubbubJump(1)<CR>
+        nnoremap <buffer> <silent> K :call hubbub#HubbubJump(-1)<CR>
+        nnoremap <script> <silent> L :call hubbub#HubbubPage(1)<CR>
+        nnoremap <script> <silent> H :call hubbub#HubbubPage(-1)<CR>
     endif
 endfunction
 
@@ -300,7 +300,7 @@ function! InsertReviewComments(comment) abort
     " The 'position' element indicates if this comment is still relevant
     " in the current state of the pull request
     if !a:comment['position']
-        if exists('g:repoman_show_outdated') && g:repoman_show_outdated
+        if exists('g:hubbub_show_outdated') && g:hubbub_show_outdated
             call WriteLine(s:strings.outdated)
         else
             call WriteLine(s:strings.outdated . ' ' . s:strings.hidden)
@@ -387,24 +387,24 @@ endfunction
 " =========================================================================
 
 " The "Buffers" class constructs various buffers that are relevant to the data
-" that is handled in repoman.
+" that is handled in hubbub.
 "
 " Args:
-" - repoman: the current state of the repoman plugin.
+" - hubbub: the current state of the hubbub plugin.
 "
 " Returns:
 " - (Buffers) a Buffers object for easily creating new buffers
-function! repoman#buffers#Buffers(repoman) abort
-    let state = a:repoman
+function! hubbub#buffers#Buffers(hubbub) abort
+    let state = a:hubbub
 
     " =====================================================================
     " Repositories
     " =====================================================================
 
     " Creates a buffer representing the authenticated user's list of available
-    " repos. By default, repoman pulls repos from GitHub, but can be
+    " repos. By default, hubbub pulls repos from GitHub, but can be
     " configured to use GitLab (see
-    " https://github.com/benbusby/vim-repoman#configuration)
+    " https://github.com/benbusby/vim-hubbub#configuration)
     "
     " Args:
     " - repos: a json array of repos
@@ -444,7 +444,7 @@ function! repoman#buffers#Buffers(repoman) abort
         " position to open an issues list buffer for that repo
         call cursor(s:results_line, 1)
         nnoremap <buffer> <silent> <CR> :call 
-            \repoman#buffers#Buffers(
+            \hubbub#buffers#Buffers(
                 \{'page': 1,
                 \'repo': b:repo_lookup[getcurpos()[1]]['path']
             \}).CreateIssueListBuffer(
@@ -560,7 +560,7 @@ function! repoman#buffers#Buffers(repoman) abort
         " etc)
         let self.current_issue = a:contents[s:r_keys.number]
 
-        nnoremap <buffer> <silent> gi :RepoManBack<CR>
+        nnoremap <buffer> <silent> gi :HubbubBack<CR>
 
         call FinishOutput()
     endfunction
@@ -582,7 +582,7 @@ function! repoman#buffers#Buffers(repoman) abort
         else
             call OpenBuffer(s:constants.buffers.new_req, -1, self)
             let l:descriptor = s:strings.pr
-            call WriteLine(s:strings.head . ': ' . repoman#utils#GetBranchName())
+            call WriteLine(s:strings.head . ': ' . hubbub#utils#GetBranchName())
             call WriteLine(s:strings.base . ': ' . a:1)
             call WriteLine('')
         endif
@@ -782,10 +782,10 @@ function! repoman#buffers#Buffers(repoman) abort
             \'position': b:review_lookup[a:review_data.cursor]['position'],
             \'cursor_start': a:review_data.cursor_start,
             \'cursor': a:review_data.cursor,
-            \'body': repoman#utils#SanitizeText(join(a:comment, '<br>'), 1)
+            \'body': hubbub#utils#SanitizeText(join(a:comment, '<br>'), 1)
         \}
 
-        call extend(b:review_comments[l:comment_id], repoman#utils#GetDiffPosition(
+        call extend(b:review_comments[l:comment_id], hubbub#utils#GetDiffPosition(
             \b:review_lookup[a:review_data.cursor_start],
             \b:review_lookup[a:review_data.cursor]))
 
@@ -851,7 +851,7 @@ function! repoman#buffers#Buffers(repoman) abort
 
         " Re-enable modifiable so that we can write something
         set modifiable
-        nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
+        nnoremap <buffer> <C-p> :call hubbub#HubbubPost()<CR>
     endfunction
 
     function! state.CreateReplyBuffer(parent_id, line) abort
@@ -878,7 +878,7 @@ function! repoman#buffers#Buffers(repoman) abort
 
         call OpenBuffer(s:constants.buffers.edit, -1, self)
 
-        let l:body = repoman#utils#SanitizeText(a:comment.body)
+        let l:body = hubbub#utils#SanitizeText(a:comment.body)
         let b:body = l:body
         for chunk in split(substitute(l:body, '<br>' , '\n', 'ge'), '\\n')
             call WriteLine(chunk)
@@ -896,7 +896,7 @@ function! repoman#buffers#Buffers(repoman) abort
         let b:edit_values.edit = 'comment'
 
         set modifiable
-        nnoremap <buffer> <C-p> :call repoman#RepoManPost()<CR>
+        nnoremap <buffer> <C-p> :call hubbub#HubbubPost()<CR>
     endfunction
 
     function! state.CreateSuggestionBuffer(code, start_line, line) abort

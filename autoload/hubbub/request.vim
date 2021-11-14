@@ -1,8 +1,8 @@
 " =========================================================================
-" File:    autoload/repoman/request.vim
+" File:    autoload/hubbub/request.vim
 " Author:  Ben Busby <https://benbusby.com>
 " License: MIT
-" Website: https://github.com/benbusby/vim-repoman
+" Website: https://github.com/benbusby/vim-hubbub
 " Description: A class for constructing and sending curl requests to the
 " appropriate endpoint.
 " =========================================================================
@@ -15,10 +15,10 @@
 "
 " Returns:
 " - (Curl) a new curl object for sending requests
-function! repoman#request#Curl(...) abort
+function! hubbub#request#Curl(...) abort
     let request = {
         \'type': (a:0 > 0 ? a:1 : 'application/json'),
-        \'auth': (repoman#utils#GetRepoHost() ==# 'github'
+        \'auth': (hubbub#utils#GetRepoHost() ==# 'github'
             \? '-H ''Authorization: token '
             \: '-H ''PRIVATE-TOKEN: ')}
 
@@ -41,7 +41,7 @@ function! repoman#request#Curl(...) abort
         endif
 
         let l:request = 'curl -L -s ' .
-            \'-A ''vim-repoman'' ' .
+            \'-A ''vim-hubbub'' ' .
             \'-H ''Accept: ' . self.type . ''' ' .
             \self.auth . a:token . ''' '
 
