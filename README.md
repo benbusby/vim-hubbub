@@ -5,7 +5,7 @@
 
 #### (repo)sitory (man)ager:
 
-Create and manage GitHub issues, pull requests, comments, code reviews, and more using Vim.
+Create and modify GitHub issues, pull requests, comments, code reviews, and much more while using Vim.
 
 ![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-repoman/images/repoman.gif)
 
@@ -24,15 +24,18 @@ Repoman supports a wide variety of features and GitHub API interactions, includi
 
 - Viewing/creating/editing/closing issues and pull requests
 - Commenting on and reacting to issues and pull requests
+- Reacting to issues and comments
+- Labeling issues and PRs
 - Creating and submitting PR reviews
     - Includes multi-line comment and suggestion support, as well as replying to existing review comments
+- An intuitive multi-buffer layout
 - Quick setup process
 - Code block syntax highlighting
 - Integration with your Vim theme
 - Support for alternative interface languages
     - See [the repoman wiki config page](https://github.com/benbusby/vim-repoman/wiki/Configuration#appearanceui) for details
     - Straightforward process for [contributing new translations](#interface-translations)
-- Intuitive keybindings for quickly navigating issues/repos/etc
+- Simple keybindings for quickly navigating issues/repos/etc
 - And more -- please refer to [the repoman wiki](https://github.com/benbusby/vim-repoman/wiki) for a comprehensive list of features and guides for using the plugin.
 
 ## Dependencies
