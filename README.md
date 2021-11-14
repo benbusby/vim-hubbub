@@ -39,7 +39,8 @@ Repoman supports a wide variety of features and GitHub API interactions, includi
 - `vim` >= 8.0 / `neovim`
 - `curl`
 - `openssl`
-  - *Note: For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` needs to be included in your `.vimrc`*
+  - For OpenSSL < 1.1.1 or LibreSSL < 2.9.1, `let g:repoman_openssl_old = 1` needs to be included in your `.vimrc`
+  - Not required if a password is not used to encrypt your personal access token
 
 ## Install
 #### Vundle
