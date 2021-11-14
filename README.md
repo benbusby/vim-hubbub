@@ -3,8 +3,6 @@
 [![vint](https://github.com/benbusby/vim-hubbub/workflows/vint/badge.svg)](https://github.com/benbusby/vim-hubbub/actions?query=workflow%3Avint)
 [![vader](https://github.com/benbusby/vim-hubbub/workflows/vader/badge.svg)](https://github.com/benbusby/vim-hubbub/actions?query=workflow%3Avader)
 
-#### (repo)sitory (man)ager:
-
 Create and modify GitHub issues, pull requests, comments, code reviews, and much more while using Vim.
 
 ![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-hubbub/images/hubbub.gif)
