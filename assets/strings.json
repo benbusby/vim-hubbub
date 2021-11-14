@@ -23,7 +23,8 @@
         "hidden": "(hidden)",
         "suggestion": "Suggestion",
         "head": "From",
-        "base": "Into"
+        "base": "Into",
+        "repos": "Repositories"
     },
     "es": {
         "pw_prompt": "Ingrese la contraseña del token: ",
@@ -49,7 +50,8 @@
         "hidden": "(oculto)",
         "suggestion": "Sugerencia",
         "head": "Desde: ",
-        "base": "Dentro: "
+        "base": "Dentro: ",
+        "repos": "Repositorios"
     },
     "fr": {
         "pw_prompt": "Entrez le mot de passe du jeton: ",
@@ -75,7 +77,8 @@
         "hidden": "(caché)",
         "suggestion": "Suggestion",
         "head": "De: ",
-        "base": "Dans: "
+        "base": "Dans: ",
+        "repos": "Référentiels"
     },
     "cn_sm": {
         "pw_prompt": "输入令牌密码: ",
@@ -101,7 +104,8 @@
         "hidden": "(隐)",
         "suggestion": "建议",
         "head": "从",
-        "base": "进入"
+        "base": "进入",
+        "repos": "存储库"
     },
     "cn_tr": {
         "pw_prompt": "輸入令牌密碼: ",
@@ -127,6 +131,7 @@
         "hidden": "(隱)",
         "suggestion": "建議",
         "head": "從",
-        "base": "進入"
+        "base": "進入",
+        "repos": "存儲庫"
     }
 }

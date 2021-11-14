@@ -87,9 +87,9 @@ function! SetHeader(header_mode, state) abort
         let l:page_id = a:header_mode ? ' (page ' . a:state.page . ')' : ''
         if l:line_idx == 1
             if empty(a:state.repo)
-                let l:line_idx = WriteLine(line[:-3] . l:page_id)
+                let l:line_idx = WriteLine(line[:-3] . s:strings.repos . l:page_id)
             else
-                let l:line_idx = WriteLine(line . ' ' . a:state.repo . l:page_id)
+                let l:line_idx = WriteLine(line . a:state.repo . l:page_id)
             endif
         else
             let l:line_idx = WriteLine(line)
