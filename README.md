@@ -58,6 +58,7 @@ Repoman supports a wide variety of features and GitHub API interactions, includi
     - Generate new token with the "repo" box checked
 2. After installing vim-repoman, run `:RepoManInit`
     - You will be prompted for your token(s) and a password to encrypt them
+    - Note: A password is recommended, but not required
 
 ## Usage
 

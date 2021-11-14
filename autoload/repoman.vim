@@ -9,6 +9,7 @@
 scriptencoding utf-8
 
 let g:repoman_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
+let g:repoman_open = 0
 let s:buffers = function('repoman#buffers#Buffers')
 let s:constants = function('repoman#constants#Constants')()
 
@@ -44,18 +45,13 @@ let s:api = {}
 " access the GitHub and/or GitLab API
 function! repoman#RepoManInit() abort
     call inputsave()
-    let l:token_gh = input('GitHub Token (leave empty to skip): ')
+    let l:token_gh = input('GitHub Token: ')
 
     " TODO: GitLab integration
     let l:token_gl = ''
     "let l:token_gl = input('GitLab Token (leave empty to skip): ')
-    let l:token_pw = inputsecret('Enter a password to encrypt your token(s): ')
+    let l:token_pw = inputsecret('Enter a password to encrypt your token (optional): ')
     call inputrestore()
-
-    if empty(l:token_pw)
-        echo 'Error: Password must be > 0 characters long'
-        return
-    endif
 
     if !empty(l:token_gh)
         call repoman#crypto#Encrypt(l:token_gh, s:gh_token_path, l:token_pw)
@@ -100,8 +96,16 @@ function! repoman#RepoMan() abort
         endif
     endif
 
+    if !s:in_repo && g:repoman_default_host
+        let l:repo_host = g:repoman_default_host
+    endif
+
     let l:issue_open = 0
-    if len(s:repoman.token_pw) > 0
+
+    " Skip password if the user has not set one
+    let l:nopass = function('repoman#utils#' . l:repo_host . '_NoPass')()
+
+    if g:repoman_open
         set cmdheight=4
         echo s:strings.refresh
 
@@ -114,19 +118,14 @@ function! repoman#RepoMan() abort
             execute 'bw! ' . fnameescape(s:constants.buffers.issue)
             let l:issue_open = 1
         endif
-    else
+    elseif !l:nopass
         " New session, prompt for token pw
         call inputsave()
         let s:repoman.token_pw = inputsecret(s:strings.pw_prompt)
         call inputrestore()
-
-        if len(s:repoman.token_pw) == 0
-            return
-        endif
-    endif
-
-    if !s:in_repo && g:repoman_default_host
-        let l:repo_host = g:repoman_default_host
+    else
+        " No password, continue without one
+        let s:repoman.token_pw = ''
     endif
 
     " Initialize script API object
@@ -151,6 +150,9 @@ function! repoman#RepoMan() abort
             let s:repoman.current_issue = -1
         endif
     endif
+
+    " Plugin is now initialized
+    let g:repoman_open = 1
 endfunction
 
 " :RepoManBack can be used to navigate back to the home page buffer

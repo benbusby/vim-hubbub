@@ -28,7 +28,7 @@ private repos for an authenticated user.
 
                                                 *:RepoManInit*
 :RepoManInit            Initialize the plugin with a GitHub authentication
-                        token and a password to encrypt the token. 
+                        token and an (optional) password to encrypt the token.
 
                         This command only needs to be run once, and will allow
                         for indefinite use of the plugin, provided the token
@@ -38,6 +38,11 @@ private repos for an authenticated user.
                         avoid having sensitive plaintext information on your
                         device. If OpenSSL v1.1.1 or later is available, the
                         PBKDF2 algorithm is used for key derivation.
+
+                        If a password isn't supplied, the token is stored in
+                        plaintext in the same location that the encrypted
+                        token would be stored. This can always be overwritten
+                        by re-running :RepoManInit and entering a password.
 
                                                 *:RepoMan*
 :RepoMan                Run the primary entrypoint command for Repoman and 
@@ -272,7 +277,7 @@ L                       Navigate to the next page of issues/comments/repos
 ==============================================================================
 HISTORY                                         *repoman-history*
 
-1.0 (TBD 2021)
+1.0 (Jan 2021)
     - Initial release
 ==============================================================================
 ABOUT                                           *repoman-about*

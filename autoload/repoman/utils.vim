@@ -88,6 +88,12 @@ function! repoman#utils#ReadFile(name, password) abort
 endfunction
 
 function! repoman#utils#ReadToken(password) abort
+    if empty(a:password)
+        return substitute(
+            \system('cat ' . s:constants.local_files[repoman#utils#GetRepoHost()]),
+            \'[[:cntrl:]]', '', 'ge')
+    endif
+
     return substitute(
         \repoman#crypto#Decrypt(s:constants.local_files[repoman#utils#GetRepoHost()], a:password),
         \'[[:cntrl:]]', '', 'ge')
@@ -177,4 +183,12 @@ function! repoman#utils#GetDiffPosition(start, end) abort
         \'start_side': l:start_left ? 'LEFT' : 'RIGHT',
         \'side': l:end_left ? 'LEFT' : 'RIGHT'
     \}
+endfunction
+
+function! repoman#utils#github_NoPass() abort
+    return filereadable(g:repoman_dir . '/.github.repoman.nopass')
+endfunction
+
+function! repoman#utils#gitlab_NoPass() abort
+    return filereadable(g:repoman_dir . '/.gitlab.repoman.nopass')
 endfunction

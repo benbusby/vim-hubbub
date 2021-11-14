@@ -10,8 +10,14 @@ let s:decrypt_cmd = 'openssl aes-256-cbc -md sha256 -d %s -in '
 let s:pw_str = ' -pass pass:'
 
 function! repoman#crypto#Encrypt(contents, file, password) abort
-    call system('echo ''' . a:contents . ''' | ' .
-        \GetCommand(s:encrypt_cmd) . a:file . s:pw_str . a:password)
+    if empty(a:password)
+        call system('echo ''' . a:contents . ''' > ' . a:file)
+        call system('touch ' . a:file . '.nopass')
+    else
+        call system('rm -f ' . a:file . '.nopass')
+        call system('echo ''' . a:contents . ''' | ' .
+            \GetCommand(s:encrypt_cmd) . a:file . s:pw_str . a:password)
+    endif
 endfunction
 
 function! repoman#crypto#Decrypt(file, password) abort
