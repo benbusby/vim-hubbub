@@ -1,4 +1,4 @@
-![Hubbub Banner](doc/hubbub-banner.svg)
+# hubbub.vim
 
 [![vint](https://github.com/benbusby/vim-hubbub/workflows/vint/badge.svg)](https://github.com/benbusby/vim-hubbub/actions?query=workflow%3Avint)
 [![vader](https://github.com/benbusby/vim-hubbub/workflows/vader/badge.svg)](https://github.com/benbusby/vim-hubbub/actions?query=workflow%3Avader)
