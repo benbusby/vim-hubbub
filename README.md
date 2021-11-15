@@ -5,8 +5,6 @@
 
 Create and modify GitHub issues, pull requests, comments, code reviews, and much more while using Vim.
 
-![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-hubbub/images/hubbub.gif)
-
 ## Table of Contents
 - [Features](#features)
 - [Dependencies](#dependencies)
@@ -16,6 +14,7 @@ Create and modify GitHub issues, pull requests, comments, code reviews, and much
 - [Configuration](#configuration)
 - [Contributing](#contributing)
 - [Miscellaneous](#miscellaneous)
+- [Screenshots](#screenshots)
 
 ## Features
 Hubbub supports a wide variety of features and GitHub API interactions, including:
@@ -149,3 +148,16 @@ At the moment, there are quite a few GitHub features that are either only partia
 - Probably quite a few others
 
 The project started as a fun way for me to learn Vimscript, and was initially built for replying to comments on GitHub. It eventually snowballed into its current form, which I find to be somewhat useful as a quick and easy way to manage issues, reply to comments, review (small) PRs, etc.
+
+## Screenshots
+
+#### Issue View
+![Example Issue View](https://raw.githubusercontent.com/wiki/benbusby/vim-hubbub/images/ss_issue.png)
+
+
+#### PR View
+![Example PR View](https://raw.githubusercontent.com/wiki/benbusby/vim-hubbub/images/ss_pr.png)
+
+
+#### Demo GIF
+![Demo Gif](https://raw.githubusercontent.com/wiki/benbusby/vim-hubbub/images/hubbub.gif)
