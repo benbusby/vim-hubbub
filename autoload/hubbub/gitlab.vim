@@ -95,7 +95,7 @@ function! hubbub#gitlab#API(token_pw) abort
     " --------------------------------------------------------------
     function! request.PostComment(hubbub) abort
         let l:footer = ''
-        if !exists('g:hubbub_footer') || g:hubbub_footer
+        if exists('g:hubbub_footer') && g:hubbub_footer
             let l:footer = printf(s:footer, 'Posted')
         endif
 
@@ -122,7 +122,7 @@ function! hubbub#gitlab#API(token_pw) abort
     " --------------------------------------------------------------
     function! request.NewItem(hubbub) abort
         let l:footer = ''
-        if !exists('g:hubbub_footer') || g:hubbub_footer
+        if exists('g:hubbub_footer') && g:hubbub_footer
             let l:footer = printf(s:footer, 'Created')
         endif
 
