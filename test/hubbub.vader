@@ -1,4 +1,5 @@
 Execute (init):
+  let g:api_path = 'https://api.github.com/repos/'
   let g:hubbub_dir = '/' . join(split(expand('<sfile>:p:h'), '/')[:-2], '/')
   let g:curl_obj = hubbub#request#Curl()
   let g:branch_file = '.branch.hubbub'
@@ -28,11 +29,11 @@ Execute (validate git utils):
   AssertEqual hubbub#utils#GetRepoHost(), 'github'
   Assert hubbub#utils#GetRepoPath() =~# 'vim-hubbub'
 
-Execute (validate api):
-  let api_path = 'https://api.github.com/repos/'
+Execute (validate api path):
   let github_api = hubbub#github#API(g:password)
-  AssertEqual github_api.api_path, api_path . hubbub#utils#GetRepoPath()
+  AssertEqual github_api.api_path, g:api_path . hubbub#utils#GetRepoPath()
 
+Execute (validate issues api):
   call system('cp ' . g:token_file . ' ' . g:hubbub_dir)
 
   let issues = github_api.ViewAll({'page': 1})
