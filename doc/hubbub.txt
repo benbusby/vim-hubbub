@@ -42,10 +42,11 @@ private repos for an authenticated user.
                         If a password isn't supplied, the token is stored in
                         plaintext in the same location that the encrypted
                         token would be stored. This can always be overwritten
-                        by re-running :HubbubInit and entering a password.
+                        by re-running :HubbubInit and entering a password
+                        after submitting your new token.
 
                                                 *:Hubbub*
-:Hubbub                Run the primary entrypoint command for Hubbub and 
+:Hubbub                Run the primary entrypoint command for Hubbub and
                         display the output. A password prompt will appear, but
                         will not be required for any other commands as long as
                         the plugin is open.
@@ -70,7 +71,7 @@ private repos for an authenticated user.
                         details view and refocus on the issue list.
 
                         Note: This is more conveniently accessed via the
-                        <Backspace> key mapping. 
+                        <Backspace> key mapping.
 
                                                 *:HubbubComment*
 :HubbubComment         Opens a new buffer to write a comment. The comment
@@ -84,7 +85,7 @@ private repos for an authenticated user.
                         issue/pull request/etc. The buffer is populated with a
                         list of available labels for the repo, as well as
                         indicators for which labels are active or inactive for
-                        the current issue*. 
+                        the current issue*.
 
                         Selecting/deselecting a label can be done using the
                         <Enter> key on any particular label. As with any other
@@ -95,7 +96,7 @@ private repos for an authenticated user.
                         position. If your cursor is positioned over an issue
                         in the issues list buffer, or if it is located anywhere
                         within an issue details buffer, then this command will
-                        apply to that issue. 
+                        apply to that issue.
 
                                                 *:HubbubNew*
 :HubbubNew [type]      Opens a buffer for creating a new issue or pull
@@ -103,9 +104,9 @@ private repos for an authenticated user.
                         content to help create the new item (examples below).
 
                         Descriptions can be as long as needed, and line breaks
-                        are supported. 
+                        are supported.
 
-                        [type] can be: 
+                        [type] can be:
                             issue
                             pr
 
@@ -133,7 +134,7 @@ private repos for an authenticated user.
                         position. If your cursor is positioned over an issue
                         in the issues list buffer, or if it is located anywhere
                         within an issue details buffer, then this command will
-                        apply to that issue. 
+                        apply to that issue.
 
                                                 *:HubbubReact*
 :HubbubReact [type]    Posts a reaction to an issue or comment, depending on
@@ -177,14 +178,14 @@ private repos for an authenticated user.
 
                         This action only applies to review comments, as
                         regular comments do not have a parent->child
-                        relationship. 
+                        relationship.
 
                                                 *:HubbubSuggest*
 :HubbubSuggest         Opens a buffer for making a suggestion in a PR review.
 
                         The buffer will contain the proper formatting for
                         making a valid suggestion, as well as the code from
-                        the current cursor line (or range of lines). 
+                        the current cursor line (or range of lines).
 
                         Example: The code below wrapped with a % has been
                         visually selected.
@@ -207,7 +208,7 @@ private repos for an authenticated user.
                                                 *:HubbubMerge*
 :HubbubMerge {method}  Merges the current pull request / merge request using
                         the default merge method (merge commit), or using the
-                        method specified. 
+                        method specified.
 
                         {method} can be:
                             merge
@@ -225,7 +226,7 @@ private repos for an authenticated user.
                         below), the current review is submitted to GitHub in
                         the specified state.
 
-                        [state] can be: 
+                        [state] can be:
                             new
                             approve
                             request_changes
