@@ -56,7 +56,15 @@ Hubbub supports a wide variety of features and GitHub API interactions, includin
 ## Setup
 1. Create a GitHub personal access token
     - Settings > Developer Settings > Personal Access Tokens
-    - Generate new token with the "repo" box checked
+    - Fine-grained tokens:
+        - Generate a new token with either "All repositories" or
+          "Only select repositories" checked.
+        - Under "Repository permissions" check read/write permissions
+          that reflect how you want to use Hubbub (i.e. creating issues
+          requires write-mode for Issues, reviewing PRs requires write-mode
+          for Pull Requests, etc).
+    - Tokens (classic):
+        - Generate new token with the "repo" box checked
 2. After installing vim-hubbub, run `:HubbubInit`
     - You will be prompted for your token(s) and a password to encrypt them
     - Note: A password is recommended, but not required
@@ -74,7 +82,7 @@ For the hubbub docs, please refer to `:h hubbub`
 A full list of the available (optional) global variables for hubbub are located [here](https://github.com/benbusby/vim-hubbub/wiki/Configuration)
 
 <hr>
-  
+
 Example `.vimrc` settings:
 ```vim
 " Defaults
@@ -105,7 +113,7 @@ The project has the following general structure:
 
 ```
 ├── assets/
-│   ├── header.txt          # The "header" that appears on nearly every page in the UI 
+│   ├── header.txt          # The "header" that appears on nearly every page in the UI
 │   ├── img/
 │   ├── response_keys.json  # A combined json mapping of GitHub and GitLab response keys
 │   └── strings.json        # Translations/UI strings
