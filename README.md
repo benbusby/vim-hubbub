@@ -61,7 +61,7 @@ Hubbub supports a wide variety of features and GitHub API interactions, includin
           "Only select repositories" checked.
         - Under "Repository permissions" check read/write permissions
           that reflect how you want to use Hubbub (i.e. creating issues
-          requires write-mode for Issues, reviewing PRs requires write-mode
+          requires write-mode for Contents, reviewing PRs requires write-mode
           for Pull Requests, etc).
     - Tokens (classic):
         - Generate new token with the "repo" box checked

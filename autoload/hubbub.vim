@@ -45,7 +45,7 @@ let s:api = {}
 " access the GitHub and/or GitLab API
 function! hubbub#HubbubInit() abort
     call inputsave()
-    let l:token_gh = input('GitHub Token: ')
+    let l:token_gh = inputsecret('GitHub Token: ')
 
     " TODO: GitLab integration
     let l:token_gl = ''
